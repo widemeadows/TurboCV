@@ -1,4 +1,5 @@
 #include "String.h"
+#include "Exception.h"
 
 namespace System
 {
@@ -184,7 +185,7 @@ namespace System
 		}
 	}
 
-	inline char* String::Chars()
+	inline char* String::Chars() const
 	{
 		if (!_length)
 			return NULL;
@@ -195,7 +196,7 @@ namespace System
 		return result;
 	}
 
-	inline int String::Length()
+	inline int String::Length() const
 	{
 		return _length;
 	}
@@ -208,5 +209,75 @@ namespace System
 	inline String operator+(const string& lhs, const String& rhs)
 	{
 		return rhs + lhs;
+	}
+
+	inline String::operator char*() const
+	{
+		if (!_chars)
+			return NULL;
+		else
+		{
+			char* result = new char[_length];
+			strcpy(result, _chars);
+			return result;
+		}
+	}
+
+	inline String::operator string() const
+	{
+		if (!_chars)
+			return string();
+		else
+			return string(_chars); 
+	}
+
+	inline String String::Substring(int offset) const
+	{
+		return Substring(offset, _length - offset);
+	}
+
+	inline String String::Substring(int offset, int length) const
+	{
+		if (offset < 0 || length == 0 || offset + length > _length)
+			throw ArgumentOutOfRangeException();
+
+		String result;
+		result._length = length;
+		result._chars = new char[length + 1];
+		strncpy(result._chars, _chars + offset, length);
+		result._chars[length] = '\0';
+
+		return result;
+	}
+
+	inline vector<String> String::Split(const char* separateCharacters) const
+	{
+		if (separateCharacters == NULL)
+			throw ArgumentNullException();
+
+		vector<String> tokens;
+		int lastPos = -1, separatorNum = strlen(separateCharacters);
+
+		for (int i = 0; i < _length; i++)
+		{
+			bool needToSplit = false;
+
+			for (int j = 0; j < separatorNum; j++)
+			{
+				if (separateCharacters[j] == _chars[i])
+				{
+					needToSplit = true;
+					break;
+				}
+			}
+
+			if (needToSplit || i == _length - 1)
+			{
+				tokens.push_back(Substring(lastPos + 1, i - lastPos));
+				lastPos = i;
+			}
+		}
+
+		return tokens;
 	}
 }

@@ -1,6 +1,9 @@
+#pragma once
+
 #include <cstring>
 #include <string>
 #include <iostream>
+#include <vector>
 using namespace std;
 
 namespace System
@@ -30,8 +33,16 @@ namespace System
 		inline friend String operator+(const char* lhs, const String& rhs);
 		inline friend String operator+(const string& lhs, const String& rhs);
 
-		inline char* Chars();
-		inline int Length();
+		inline operator char*() const;
+		inline operator string() const;
+
+		inline String Substring(int offset) const;
+		inline String Substring(int offset, int length) const;
+
+		inline vector<String> Split(const char* separateCharacters) const;
+
+		inline char* Chars() const;
+		inline int Length() const;
 
 	private:
 		char* _chars;
