@@ -13,8 +13,8 @@ namespace System
 	{
 	public:
 		inline String() : _chars(NULL), _length(0) {}
-		explicit inline String(const char* str);
-		explicit inline String(const string& str);
+		inline String(const char* str);
+		inline String(const string& str);
 		inline String(const String& str);
 
 		inline ~String()
@@ -297,14 +297,7 @@ namespace System
 
 	inline String::operator char*() const
 	{
-		if (!_chars)
-			return NULL;
-		else
-		{
-			char* result = new char[_length];
-			strcpy(result, _chars);
-			return result;
-		}
+		return Chars();
 	}
 
 	inline String::operator string() const
