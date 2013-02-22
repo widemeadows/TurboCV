@@ -126,9 +126,6 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="String.cpp" />
-  </ItemGroup>
-  <ItemGroup>
     <ClInclude Include="String.h" />
     <ClInclude Include="Exception.h" />
   </ItemGroup>
