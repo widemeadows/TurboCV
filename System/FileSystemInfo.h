@@ -19,7 +19,7 @@ namespace System
             virtual bool Exists() const = 0;
             virtual bool Create() const = 0;
             virtual bool Delete() const = 0;
-            bool MoveTo(const String& newPath) const;
+            bool MoveTo(const String& newPath);
 
         protected:
             String _path;
@@ -74,9 +74,15 @@ namespace System
             return result;
         }
 
-        inline bool FileSystemInfo::MoveTo(const String& newPath) const
+        inline bool FileSystemInfo::MoveTo(const String& newPath)
         {
-            return MoveFile(_path, newPath);
+            if (MoveFile(_path, newPath))
+            {
+                _path = newPath;
+                return true;
+            }
+            else
+                return false;
         }
     }
 }

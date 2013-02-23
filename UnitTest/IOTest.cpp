@@ -21,9 +21,9 @@ namespace UnitTest
 
             Assert::AreEqual(false, rootDir.Exists());
             Assert::AreEqual("", rootDir.Extension());
-            Assert::AreEqual("IOUnitTest", (const char*)rootDir.Name());
-            Assert::AreEqual(rootDirFullName, (const char*)rootDir.FullName());
-            Assert::AreEqual("D:", (const char*)rootDir.Parent());
+            Assert::AreEqual("IOUnitTest", rootDir.Name());
+            Assert::AreEqual((const char*)rootDirFullName, rootDir.FullName());
+            Assert::AreEqual("D:", rootDir.Parent());
 
             Assert::AreEqual(true, rootDir.Create());
             Assert::AreEqual(true, rootDir.Exists());
@@ -55,27 +55,33 @@ namespace UnitTest
 
             vector<String> subDirs = rootDir.GetDirectories();
             sort(subDirs.begin(), subDirs.end());
+
             Assert::AreEqual(2, (int)subDirs.size());
             Assert::AreEqual((const char*)subDirFullName1, subDirs[0]);
             Assert::AreEqual((const char*)subDirFullName2, subDirs[1]);
 
             vector<String> files = rootDir.GetFiles();
             sort(files.begin(), files.end());
+            
             Assert::AreEqual(2, (int)files.size());
             Assert::AreEqual((const char*)fileFullName1, files[0]);
             Assert::AreEqual((const char*)fileFullName2, files[1]);
 
             String subDirNewFullName = rootDirFullName + "\\SubDirNew";
-            DirectoryInfo subDirNew(subDirNewFullName);
-            String fileNewFullName = rootDirFullName + "\\FileNew.txt";
-            FileInfo fileNew(fileNewFullName);
 
             Assert::AreEqual(true, subDir1.MoveTo(subDirNewFullName));
-            Assert::AreEqual(true, file1.MoveTo(fileNewFullName));
+            Assert::AreEqual("SubDirNew", subDir1.Name());
+            Assert::AreEqual((const char*)subDirNewFullName, subDir1.FullName());
 
-            Assert::AreEqual(true, subDirNew.Delete());
+            String fileNewFullName = rootDirFullName + "\\FileNew.txt";
+
+            Assert::AreEqual(true, file1.MoveTo(fileNewFullName));
+            Assert::AreEqual("FileNew.txt", file1.Name());
+            Assert::AreEqual((const char*)fileNewFullName, file1.FullName());
+
+            Assert::AreEqual(true, subDir1.Delete());
             Assert::AreEqual(true, subDir2.Delete());
-            Assert::AreEqual(true, fileNew.Delete());
+            Assert::AreEqual(true, file1.Delete());
             Assert::AreEqual(true, file2.Delete());
             Assert::AreEqual(true, rootDir.Delete());
         }
