@@ -12,114 +12,98 @@ namespace System
 	class String
 	{
 	public:
-		inline String() : _chars(NULL), _length(0) {}
-		inline String(const char* str);
-		inline String(const string& str);
-		inline String(const String& str);
+		String();
+		String(const char* str);
+		String(const string& str);
+		String(const String& str);
 
-		inline ~String()
+		~String()
 		{
 			delete[] _chars;
-			_chars = NULL;
-			_length = 0;
 		}
 
-		inline String& operator=(const char* str);
-		inline String& operator=(const string& str);
-		inline String& operator=(const String& str);
+		String& operator=(const char* str);
+		String& operator=(const string& str);
+		String& operator=(const String& str);
 
-		inline String operator+(const char* append) const;
-		inline String operator+(const string& append) const;
-		inline String operator+(const String& append) const;
-		inline friend String operator+(const char* lhs, const String& rhs);
-		inline friend String operator+(const string& lhs, const String& rhs);
+		String operator+(const char* append) const;
+		String operator+(const string& append) const;
+		String operator+(const String& append) const;
+		friend String operator+(const char* lhs, const String& rhs);
+		friend String operator+(const string& lhs, const String& rhs);
 
-		inline bool operator<(const String& str) const;
-		inline bool operator==(const String& str) const;
+		bool operator<(const String& str) const;
+		bool operator==(const String& str) const;
 
-		inline operator char*() const;
-		inline operator string() const;
+		operator const char*() const;
+		operator string() const;
 
-		inline String Substring(int offset) const;
-		inline String Substring(int offset, int length) const;
+		friend ostream& operator<<(ostream& out, const String& str);
+		friend istream& operator>>(istream& in, String& str);
 
-		inline int IndexOf(char value) const;
-		inline int IndexOf(const String& substr) const;
+		String Substring(int offset) const;
+		String Substring(int offset, int length) const;
 
-		inline vector<String> Split(const char* separateCharacters) const;
+		int IndexOf(char value) const;
+		int IndexOf(const String& substr) const;
 
-		inline char* Chars() const;
-		inline int Length() const;
+		vector<String> Split(char separateCharacter) const;
+		vector<String> Split(const char* separateCharacters) const;
+
+		char* Chars() const;
+		int Length() const;
 		
-		inline friend ostream& operator<<(ostream& out, const String& str);
-		inline friend istream& operator>>(istream& in, String& str);
-
 	private:
 		char* _chars;
 		int _length;
 	};
 
+	inline String::String()
+	{
+		_length = 0;
+
+		_chars = new char[1];
+		_chars[0] = '\0';
+	}
+
 	inline String::String(const char* str)
 	{
 		if (!str)
-			_length = 0;
-		else
-			_length = strlen(str);
+			throw ArgumentNullException();
 
-		if (!_length)
-			_chars = NULL;
-		else
-		{
-			_chars = new char[_length + 1];
-			strcpy(_chars, str);
-		}
+		_length = strlen(str);
+
+		_chars = new char[_length + 1];
+		strcpy(_chars, str);
 	}
 
 	inline String::String(const string& str)
 	{
 		_length = str.length();
 
-		if (!_length)
-			_chars = NULL;
-		else
-		{
-			_chars = new char[_length + 1];
-			strcpy(_chars, str.c_str());
-		}
+		_chars = new char[_length + 1];
+		strcpy(_chars, str.c_str());
 	}
 
 	inline String::String(const String& str)
 	{
 		_length = str._length;
 
-		if (!_length)
-			_chars = NULL;
-		else
-		{
-			_chars = new char[_length + 1];
-			strcpy(_chars, str._chars);
-		}
+		_chars = new char[_length + 1];
+		strcpy(_chars, str._chars);
 	}
 
 	inline String& String::operator=(const char* str)
 	{
 		if (!str)
-			_length = 0;
-		else
-			_length = strlen(str);
+			throw ArgumentNullException();
 
-		if (!_length)
-		{
-			delete[] _chars;
-			_chars = NULL;
-		}
-		else
-		{
-			char* tmp = new char[_length + 1];
-			strcpy(tmp, str);
-			delete[] _chars;
-			_chars = tmp;
-		}
+		_length = strlen(str);
+
+		char* tmp = new char[_length + 1];
+		strcpy(tmp, str);
+		delete[] _chars;
+		_chars = tmp;
 
 		return *this;
 	}
@@ -128,18 +112,10 @@ namespace System
 	{
 		_length = str.length();
 
-		if (!_length)
-		{
-			delete[] _chars;
-			_chars = NULL;
-		}
-		else
-		{
-			char* tmp = new char[_length + 1];
-			strcpy(tmp, str.c_str());
-			delete[] _chars;
-			_chars = tmp;
-		}
+		char* tmp = new char[_length + 1];
+		strcpy(tmp, str.c_str());
+		delete[] _chars;
+		_chars = tmp;
 
 		return *this;
 	}
@@ -148,164 +124,99 @@ namespace System
 	{
 		_length = str._length;
 
-		if (!_length)
-		{
-			delete[] _chars;
-			_chars = NULL;
-		}
-		else
-		{
-			char* tmp = new char[_length + 1];
-			strcpy(tmp, str._chars);
-			delete[] _chars;
-			_chars = tmp;
-		}
+		char* tmp = new char[_length + 1];
+		strcpy(tmp, str._chars);
+		delete[] _chars;
+		_chars = tmp;
 
 		return *this;
 	}
 
 	inline String String::operator+(const char* append) const
 	{
-		int appendLength = 0;
-
 		if (!append)
-			appendLength = 0;
-		else
-			appendLength = strlen(append);
+			throw ArgumentNullException();
 
-		if (!appendLength)
-			return *this;
-		else
-		{
-			String result;
+		int appendLength = strlen(append);
+		String result;
 
-			result._length = _length + appendLength;
-			result._chars = new char[result._length + 1];
-			if (!_chars)
-				strcpy(result._chars, append);
-			else
-			{
-				strcpy(result._chars, _chars);
-				strcat(result._chars, append);
-			}
+		result._length = _length + appendLength;
+		result._chars = new char[result._length + 1];
+		strcpy(result._chars, _chars);
+		strcat(result._chars, append);
 
-			return result;
-		}
+		return result;
 	}
 
 	inline String String::operator+(const string& append) const
 	{
 		int appendLength = append.length();
+		String result;
 
-		if (!appendLength)
-			return *this;
-		else
-		{
-			String result;
+		result._length = _length + appendLength;
+		result._chars = new char[result._length + 1];
+		strcpy(result._chars, _chars);
+		strcat(result._chars, append.c_str());
 
-			result._length = _length + appendLength;
-			result._chars = new char[result._length + 1];
-			if (!_chars)
-				strcpy(result._chars, append.c_str());
-			else
-			{
-				strcpy(result._chars, _chars);
-				strcat(result._chars, append.c_str());
-			}
-
-			return result;
-		}
+		return result;
 	}
 
 	inline String String::operator+(const String& append) const
 	{
 		int appendLength = append._length;
+		String result;
 
-		if (!appendLength)
-			return *this;
-		else
-		{
-			String result;
-
-			result._length = _length + appendLength;
-			result._chars = new char[result._length + 1];
-			if (!_chars)
-				strcpy(result._chars, append._chars);
-			else
-			{
-				strcpy(result._chars, _chars);
-				strcat(result._chars, append._chars);
-			}
-
-			return result;
-		}
-	}
-
-	inline char* String::Chars() const
-	{
-		if (!_length)
-			return NULL;
-
-		char* result = new char[_length + 1];
-		strcpy(result, _chars);
+		result._length = _length + appendLength;
+		result._chars = new char[result._length + 1];
+		strcpy(result._chars, _chars);
+		strcat(result._chars, append._chars);
 
 		return result;
 	}
 
-	inline int String::Length() const
-	{
-		return _length;
-	}
-
 	inline String operator+(const char* lhs, const String& rhs)
 	{
-		return rhs + lhs;
+		return String(lhs) + rhs;
 	}
 
 	inline String operator+(const string& lhs, const String& rhs)
 	{
-		return rhs + lhs;
+		return String(lhs) + rhs;
 	}
 
 	inline bool String::operator<(const String& str) const
 	{
-		if (!_chars)
-		{
-			if (!str._chars)
-				return false;
-			else
-				return true;
-		}
-		else if (!str._chars)
-			return false;
-		else
-			return strcmp(_chars, str._chars) < 0;
+		return strcmp(_chars, str._chars) < 0;
 	}
 
 	inline bool String::operator==(const String& str) const
 	{
-		if (!_chars || !str._chars)
-		{
-			if (!_chars && !str._chars)
-				return true;
-			else
-				return false;
-		}
-
 		return strcmp(_chars, str._chars) == 0;
 	}
 
-	inline String::operator char*() const
+	inline String::operator const char*() const
 	{
-		return Chars();
+		return _chars;
 	}
 
 	inline String::operator string() const
 	{
-		if (!_chars)
-			return string();
-		else
-			return string(_chars); 
+		return string(_chars); 
+	}
+
+	inline ostream& operator<<(ostream& out, const String& str)
+	{
+		out << str._chars;
+		return out;
+	}
+
+	inline istream& operator>>(istream& in, String& str)
+	{
+		string tmp;
+		in >> tmp;
+		str = tmp;
+
+		return in;
 	}
 
 	inline String String::Substring(int offset) const
@@ -315,7 +226,7 @@ namespace System
 
 	inline String String::Substring(int offset, int length) const
 	{
-		if (offset < 0 || length == 0 || offset + length > _length)
+		if (offset < 0 || length < 0 || offset + length > _length)
 			throw ArgumentOutOfRangeException();
 
 		String result;
@@ -339,9 +250,6 @@ namespace System
 
 	inline int String::IndexOf(const String& substr) const
 	{
-		if (substr._chars == NULL)
-			return 0;
-
 		char* ptr = strstr(_chars, substr._chars);
 
 		if (!ptr)
@@ -350,49 +258,50 @@ namespace System
 			return ptr - _chars;
 	}
 
+	inline vector<String> String::Split(char separateCharacter) const
+	{
+		char tmp[] = { separateCharacter };
+		return Split(tmp);
+	}
+
 	inline vector<String> String::Split(const char* separateCharacters) const
 	{
-		if (separateCharacters == NULL)
+		if (!separateCharacters)
 			throw ArgumentNullException();
 
 		vector<String> tokens;
-		int lastPos = -1, separatorNum = strlen(separateCharacters);
+		int beginPos = -1, endPos = -1;
 
-		for (int i = 0; i < _length; i++)
-		{
-			bool needToSplit = false;
-
-			for (int j = 0; j < separatorNum; j++)
+		while (++beginPos < _length)
+		{			
+			if (!strchr(separateCharacters, _chars[beginPos]))
 			{
-				if (separateCharacters[j] == _chars[i])
+				endPos = beginPos;
+				
+				while (++endPos < _length)
 				{
-					needToSplit = true;
-					break;
+					if (strchr(separateCharacters, _chars[endPos]))
+						break;
 				}
-			}
 
-			if (needToSplit || i == _length - 1)
-			{
-				tokens.push_back(Substring(lastPos + 1, i - lastPos));
-				lastPos = i;
+				tokens.push_back(Substring(beginPos, endPos - beginPos));
+				beginPos = endPos;
 			}
 		}
 
 		return tokens;
 	}
 
-	inline ostream& operator<<(ostream& out, const String& str)
+	inline char* String::Chars() const
 	{
-		out << str._chars;
-		return out;
+		char* result = new char[_length + 1];
+		strcpy(result, _chars);
+
+		return result;
 	}
 
-	inline istream& operator>>(istream& in, String& str)
+	inline int String::Length() const
 	{
-		string tmp;
-		in >> tmp;
-		str = tmp;
-
-		return in;
+		return _length;
 	}
 }

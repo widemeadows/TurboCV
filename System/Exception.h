@@ -1,37 +1,41 @@
 #pragma once
 
 #include <exception>
+#include <string>
 using namespace std;
 
 namespace System
 {
-	class String;
-
 	class SystemException : public exception
 	{
 	public:
-		SystemException() : exception() {};
-		SystemException(const String& message) : exception(message) {};
+		SystemException() {};
+		SystemException(const string& message) : _message(message) {};
+
+		virtual const char* what() const { return _message.c_str(); };
+
+	private:
+		string _message;
 	};
 
 	class ArgumentException : public SystemException
 	{
 	public:
 		ArgumentException() : SystemException("Argument Error") {};
-		ArgumentException(const String& message) : SystemException(message) {};
+		ArgumentException(const string& message) : SystemException(message) {};
 	};
 
 	class ArgumentNullException : public ArgumentException
 	{
 	public:
 		ArgumentNullException() : ArgumentException("Argument is Null") {};
-		ArgumentNullException(const String& message) : ArgumentException(message) {};
+		ArgumentNullException(const string& message) : ArgumentException(message) {};
 	};
 
 	class ArgumentOutOfRangeException : public ArgumentException
 	{
 	public:
 		ArgumentOutOfRangeException() : ArgumentException("Argument is Out of Range") {};
-		ArgumentOutOfRangeException(const String& message) : ArgumentException(message) {};
+		ArgumentOutOfRangeException(const string& message) : ArgumentException(message) {};
 	};
 }
