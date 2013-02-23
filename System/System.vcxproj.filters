@@ -24,6 +24,15 @@
     <ClInclude Include="BasicType.h">
       <Filter>头文件</Filter>
     </ClInclude>
+    <ClInclude Include="DirectoryInfo.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="FileSystemInfo.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="FileInfo.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Main.cpp">

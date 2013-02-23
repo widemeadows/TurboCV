@@ -47,6 +47,9 @@ namespace System
         int IndexOf(char value) const;
         int IndexOf(const String& substr) const;
 
+        int LastIndexOf(char value) const;
+        int LastIndexOf(const String& substr) const;
+
         vector<String> Split(char separateCharacter) const;
         vector<String> Split(const char* separateCharacters) const;
 
@@ -256,6 +259,33 @@ namespace System
             return -1;
         else
             return ptr - _chars;
+    }
+
+    inline int String::LastIndexOf(char value) const
+    {
+        char* ptr = strrchr(_chars, value);
+
+        if (!ptr)
+            return -1;
+        else
+            return ptr - _chars;
+    }
+
+    inline int String::LastIndexOf(const String& substr) const
+    {
+        char* prev = NULL;
+        char* cur = _chars;
+        
+        while (cur = strstr(cur, substr._chars))
+        {
+            prev = cur;
+            cur++;
+        }
+
+        if (!prev)
+            return -1;
+        else
+            return prev - _chars;
     }
 
     inline vector<String> String::Split(char separateCharacter) const

@@ -144,7 +144,7 @@ namespace UnitTest
             Assert::AreEqual("", str.Substring(0, 0));
         }
 
-        TEST_METHOD(IndexOfTest)
+        TEST_METHOD(StrSearchTest)
         {
             String str = "Hello World; Hi World.";
 
@@ -157,6 +157,18 @@ namespace UnitTest
             Assert::AreEqual(6, str.IndexOf("World"));
             Assert::AreEqual(21, str.IndexOf("."));
             Assert::AreEqual(-1, str.IndexOf("NotExist"));
+
+            str = "!Oh, Good morning. Good";
+
+            Assert::AreEqual(19, str.LastIndexOf('G'));
+            Assert::AreEqual(3, str.LastIndexOf(','));
+            Assert::AreEqual(0, str.LastIndexOf('!'));
+            Assert::AreEqual(-1, str.LastIndexOf('?'));
+
+            Assert::AreEqual(19, str.LastIndexOf("Good"));
+            Assert::AreEqual(10, str.LastIndexOf("morning"));
+            Assert::AreEqual(0, str.LastIndexOf("!"));
+            Assert::AreEqual(-1, str.LastIndexOf("NotExist"));
         }
 
         TEST_METHOD(SplitTest)
