@@ -15,15 +15,7 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="Main.cpp">
-      <Filter>源文件</Filter>
-    </ClCompile>
-  </ItemGroup>
-  <ItemGroup>
     <ClInclude Include="Morphology.h">
-      <Filter>头文件</Filter>
-    </ClInclude>
-    <ClInclude Include="Basic.h">
       <Filter>头文件</Filter>
     </ClInclude>
     <ClInclude Include="Feature.h">
@@ -35,5 +27,16 @@
     <ClInclude Include="System.Image.h">
       <Filter>头文件</Filter>
     </ClInclude>
+    <ClInclude Include="BOV.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="Util.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="HOG+BOV.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>

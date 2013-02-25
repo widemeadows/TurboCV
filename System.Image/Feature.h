@@ -1,6 +1,8 @@
 #pragma once
 
-#include "System.Image.h"
+#include "Util.h"
+#include "Filter.h"
+#include "Morphology.h"
 #include <cv.h>
 #include <tuple>
 using namespace cv;
@@ -10,21 +12,19 @@ namespace System
 {
     namespace Image
     {
-        typedef vector<double> Descriptor;
-
-        class Feature
+        class Algorithm
         {
         public:
-            void GetFeature(const Mat& sketchImage, bool thinning = false);
+            Feature GetFeature(const Mat& sketchImage, bool thinning = false);
             
         protected:
             static Mat GetBoundingBox(const Mat& sketchImage);
             static Mat Preprocess(const Mat& sketchImage, bool thinning = false);
 
-            virtual vector<Descriptor> ComputeFeature(const Mat& sketchImage) = 0;
+            virtual Feature ComputeFeature(const Mat& sketchImage) = 0;
         };
 
-        inline Mat Feature::GetBoundingBox(const Mat& sketchImage)
+        inline Mat Algorithm::GetBoundingBox(const Mat& sketchImage)
         {
             int minX = sketchImage.cols - 1, maxX = 0,
 		        minY = sketchImage.rows - 1, maxY = 0;
@@ -44,7 +44,7 @@ namespace System
 	        return Mat(sketchImage, Range(minY, maxY + 1), Range(minX, maxX + 1));
         }
 
-        inline Mat Feature::Preprocess(const Mat& sketchImage, bool thinning)
+        inline Mat Algorithm::Preprocess(const Mat& sketchImage, bool thinning)
         {
             Mat revImage = reverse(sketchImage);
 
@@ -60,11 +60,11 @@ namespace System
                 widthPadding, widthPadding, BORDER_CONSTANT, Scalar(0, 0, 0, 0));
 
             Mat scaledImage;
-	        resize(squareImage, scaledImage, Size(112, 112));
+	        resize(squareImage, scaledImage, Size(224, 224));
 
 	        Mat paddedImage;
-	        copyMakeBorder(scaledImage, paddedImage, 8, 8, 8, 8, BORDER_CONSTANT, Scalar(0, 0, 0, 0));
-	        assert(paddedImage.rows == 128 && paddedImage.cols == 128);
+	        copyMakeBorder(scaledImage, paddedImage, 16, 16, 16, 16, BORDER_CONSTANT, Scalar(0, 0, 0, 0));
+	        assert(paddedImage.rows == 256 && paddedImage.cols == 256);
 
 	        Mat finalImage;
 	        if (thinning)
@@ -81,40 +81,38 @@ namespace System
 	        return finalImage;
         }
 
-        inline void Feature::GetFeature(const Mat& sketchImage, bool thinning)
+        inline Feature Algorithm::GetFeature(const Mat& sketchImage, bool thinning)
         {
             Mat image = Preprocess(sketchImage, thinning);
 
-            ComputeFeature(image);
+            return ComputeFeature(image);
         }
 
-
-        class HOG : public Feature
+        class HOG : public Algorithm
         {
         protected:
-            virtual vector<Descriptor> ComputeFeature(const Mat& sketchImage);
+            virtual Feature ComputeFeature(const Mat& sketchImage);
             
         private:
+			vector<Mat> GetOrientChannels(const Mat& sketchImage, int orientNum);
             Descriptor ComputeDescriptor(const vector<Mat>& filteredOrientImages, int centreY, int centreX, 
                 int blockSize, int cellSize);
         };
 
-        inline vector<Descriptor> HOG::ComputeFeature(const Mat& sketchImage)
-        {
-            tuple<Mat, Mat> gradient = ComputeGradient(sketchImage);
+		inline vector<Mat> HOG::GetOrientChannels(const Mat& sketchImage, int orientNum)
+		{
+			tuple<Mat, Mat> gradient = ComputeGradient(sketchImage);
             Mat& powerImage = get<0>(gradient);
             Mat& orientImage = get<1>(gradient);
+            int height = sketchImage.rows, width = sketchImage.cols;
+			double orientBinSize = CV_PI / orientNum;
 
-            int orientNum = 4;
-
-            int height = powerImage.rows, width = powerImage.cols;
-	        Mat* orientImages = new Mat[orientNum];
-	        double orientBinSize = CV_PI / orientNum;
-
+	        vector<Mat> orientChannels;
 	        for (int i = 0; i < orientNum; i++)
-		        orientImages[i] = Mat::zeros(height, width, CV_64F);
+		        orientChannels.push_back(Mat::zeros(height, width, CV_64F));
 
 	        for (int i = 0; i < height; i++)
+			{
 		        for (int j = 0; j < width; j++)
 		        {
 			        int o = orientImage.at<double>(i, j) / orientBinSize;
@@ -126,7 +124,8 @@ namespace System
 			        for (int k = -1; k <= 1; k++)
 			        {
 				        int newO = o + k;
-				        double oRatio = 1 - abs((newO + 0.5) * orientBinSize - orientImage.at<double>(i, j)) / orientBinSize;
+				        double oRatio = 1 - abs((newO + 0.5) * orientBinSize - 
+							orientImage.at<double>(i, j)) / orientBinSize;
 				        if (oRatio < 0)
 					        oRatio = 0;
 			
@@ -135,78 +134,90 @@ namespace System
 				        if (newO == orientNum)
 					        newO = 0;
 
-				        orientImages[newO].at<double>(i, j) += powerImage.at<double>(i, j) * oRatio;
+				        orientChannels[newO].at<double>(i, j) += powerImage.at<double>(i, j) * oRatio;
 			        }
 		        }
+			}
 
-                int blockSize = 92;
-                int spacialNum = 4;
+			return orientChannels;
+		}
 
-	            int cellSize = blockSize / spacialNum, kernelSize = cellSize * 2 + 1;
-	            Mat tentKernel(kernelSize, kernelSize, CV_64F);
-	            for (int i = 0; i < kernelSize; i++)
-		            for (int j = 0; j < kernelSize; j++)
-		            {
-			            double ratio = 1 - sqrt((i - cellSize) * (i - cellSize) + (j - cellSize) * (j - cellSize)) / cellSize;
-			            if (ratio < 0)
-				            ratio = 0;
-			            tentKernel.at<double>(i, j) = ratio;
-		            }
-
-	        vector<Mat> filteredOrientBinImages(orientNum);
-	        for (int i = 0; i < orientNum; i++)
-		        filter2D(orientImages[i], filteredOrientBinImages[i], -1, tentKernel);
-
-            int sampleNum = 28;
-	        vector<Descriptor> feature;
-	        int heightStep = height / sampleNum, widthStep = width / sampleNum;
-	        for (int i = heightStep / 2; i < height; i += heightStep)
-		        for (int j = widthStep / 2; j < width; j += widthStep)
-		        {
-			        Descriptor desc = ComputeDescriptor(filteredOrientBinImages, i, j, blockSize, cellSize);
-                    feature.push_back(desc);
-		        }
-
-	        delete[] orientImages;
-
-	        return feature;
-        }
-
-        inline Descriptor HOG::ComputeDescriptor(const vector<Mat>& filteredOrientImages, 
+        inline Descriptor HOG::ComputeDescriptor(const vector<Mat>& filteredOrientChannels, 
             int centreY, int centreX, int blockSize, int cellSize)
         {
-	        int height = filteredOrientImages[0].rows, 
-		        width = filteredOrientImages[0].cols;
+	        int height = filteredOrientChannels[0].rows, 
+		        width = filteredOrientChannels[0].cols;
 	        int expectedTop = centreY - blockSize / 2,
 		        expectedLeft = centreX - blockSize / 2,
 		        cellHalfSize = cellSize / 2,
-                spacialNum = blockSize / cellSize,
-                orientNum = filteredOrientImages.size();
-	        int dims[] = { spacialNum, spacialNum, orientNum };
+                cellNum = blockSize / cellSize,
+                orientNum = filteredOrientChannels.size();
+	        int dims[] = { cellNum, cellNum, orientNum };
 	        Mat hist(3, dims, CV_64F);
 
-	        for (int i = 0; i < spacialNum; i++)
-		        for (int j = 0; j < spacialNum; j++)
+	        for (int i = 0; i < cellNum; i++)
+			{
+		        for (int j = 0; j < cellNum; j++)
+				{
 			        for (int k = 0; k < orientNum; k++)
 			        {
-				        int r = expectedTop + i * blockSize + cellHalfSize,
-					        c = expectedLeft + j * blockSize + cellHalfSize;
+				        int r = expectedTop + i * cellSize + cellHalfSize,
+					        c = expectedLeft + j * cellSize + cellHalfSize;
 
 				        if (r < 0 || r >= height || c < 0 || c >= width)
 					        hist.at<double>(i, j, k) = 0;
 				        else
-					        hist.at<double>(i, j, k) = filteredOrientImages[k].at<double>(r, c);
+					        hist.at<double>(i, j, k) = filteredOrientChannels[k].at<double>(r, c);
 			        }
+				}
+			}
 
 	        Descriptor desc;
-	        for (int i = 0; i < spacialNum; i++)
-		        for (int j = 0; j < spacialNum; j++)
+	        for (int i = 0; i < cellNum; i++)
+		        for (int j = 0; j < cellNum; j++)
 			        for (int k = 0; k < orientNum; k++)
 				        desc.push_back(hist.at<double>(i, j, k));
 
 	        NormTwoNormalize(desc);
-
 	        return desc;
+        }
+
+		inline Feature HOG::ComputeFeature(const Mat& sketchImage)
+        {
+            int orientNum = 4, cellNum = 4, blockSize = 92, sampleNum = 28;
+	        int cellSize = blockSize / cellNum, kernelSize = cellSize * 2 + 1;
+
+	        Mat tentKernel(kernelSize, kernelSize, CV_64F);
+	        for (int i = 0; i < kernelSize; i++)
+			{
+		        for (int j = 0; j < kernelSize; j++)
+		        {
+			        double ratio = 1 - sqrt((i - cellSize) * (i - cellSize) + 
+						(j - cellSize) * (j - cellSize)) / cellSize;
+			        if (ratio < 0)
+				        ratio = 0;
+			        tentKernel.at<double>(i, j) = ratio;
+		        }
+			}
+
+			vector<Mat> orientChannels = GetOrientChannels(sketchImage, orientNum);
+	        vector<Mat> filteredOrientChannels(orientNum);
+	        for (int i = 0; i < orientNum; i++)
+		        filter2D(orientChannels[i], filteredOrientChannels[i], -1, tentKernel);
+
+	        Feature feature;
+			int height = sketchImage.rows, width = sketchImage.cols;
+	        int heightStep = height / sampleNum, widthStep = width / sampleNum;
+	        for (int i = heightStep / 2; i < height; i += heightStep)
+			{
+		        for (int j = widthStep / 2; j < width; j += widthStep)
+		        {
+			        Descriptor desc = ComputeDescriptor(filteredOrientChannels, i, j, blockSize, cellSize);
+                    feature.push_back(desc);
+		        }
+			}
+
+	        return feature;
         }
     }
 }
