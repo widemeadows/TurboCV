@@ -38,6 +38,18 @@ namespace System
 		}
 
 		template<typename T>
+		inline double NormOneDistance(const vector<T>& u, const vector<T>& v)
+		{
+			assert(u.size() == v.size());
+
+			double distance = 0;
+			for (int i = u.size() - 1; i >= 0; i--)
+				distance += abs(u[i] - v[i]);
+
+			return distance;
+		}
+
+		template<typename T>
 		inline double GaussianDistance(const vector<T>& u, const vector<T>& v, double sigma)
 		{
 			assert(u.size() == v.size());
@@ -84,7 +96,6 @@ namespace System
 		{
 			assert(cardNum >= pickUpNum);
 			vector<int> result;
-			srand(1);
 
 			if (cardNum != pickUpNum)
 			{

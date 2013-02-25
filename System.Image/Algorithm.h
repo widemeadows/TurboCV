@@ -32,7 +32,7 @@ namespace System
 	        for (int i = 0; i < sketchImage.rows; i++)
 		        for (int j = 0; j < sketchImage.cols; j++)
 		        {
-			        if (!sketchImage.at<uchar>(i, j))
+			        if (sketchImage.at<uchar>(i, j))
 			        {
 				        minX = min(minX, j);
 				        maxX = max(maxX, j);
@@ -46,7 +46,9 @@ namespace System
 
         inline Mat Algorithm::Preprocess(const Mat& sketchImage, bool thinning)
         {
-            Mat boundingBox = GetBoundingBox(sketchImage);
+			Mat revImage = reverse(sketchImage);
+
+            Mat boundingBox = GetBoundingBox(revImage);
 
             Mat squareImage;
 	        int widthPadding = 0, heightPadding = 0;
@@ -55,23 +57,23 @@ namespace System
 	        else
 		        widthPadding = (boundingBox.rows - boundingBox.cols) / 2;
 	        copyMakeBorder(boundingBox, squareImage, heightPadding, heightPadding, 
-                widthPadding, widthPadding, BORDER_CONSTANT, Scalar(255, 255, 255, 255));
+                widthPadding, widthPadding, BORDER_CONSTANT, Scalar(0, 0, 0, 0));
 
             Mat scaledImage;
 	        resize(squareImage, scaledImage, Size(224, 224));
 
 	        Mat paddedImage;
-	        copyMakeBorder(scaledImage, paddedImage, 16, 16, 16, 16, BORDER_CONSTANT, Scalar(255, 255, 255, 255));
+	        copyMakeBorder(scaledImage, paddedImage, 16, 16, 16, 16, BORDER_CONSTANT, Scalar(0, 0, 0, 0));
 	        assert(paddedImage.rows == 256 && paddedImage.cols == 256);
 
 	        Mat finalImage;
 	        if (thinning)
 	        {
-		        Mat binary, thinned;
+		        Mat binaryImage, thinnedImage;
 
-                threshold(paddedImage, binary, 200, 1, CV_THRESH_BINARY_INV);
-                thin(binary, thinned);
-                threshold(thinned, finalImage, 0.5, 255, CV_THRESH_BINARY_INV);
+                threshold(paddedImage, binaryImage, 54, 1, CV_THRESH_BINARY);
+                thin(binaryImage, thinnedImage);
+                threshold(thinnedImage, finalImage, 0.5, 255, CV_THRESH_BINARY);
 	        }
 	        else
 		        finalImage = paddedImage;

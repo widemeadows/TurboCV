@@ -7,6 +7,7 @@ namespace System
 {
     namespace Image
     {
+		// Assume: Edgels are 1 and Background is 0.
         inline void thin(InputArray input, OutputArray output, int iterations = 100) 
         {
             assert(input.type() == CV_8U);
