@@ -141,14 +141,15 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="BOV.h" />
-    <ClInclude Include="Feature.h" />
+    <ClInclude Include="Algorithm.h" />
+    <ClInclude Include="EdgeLink.h" />
     <ClInclude Include="Util.h" />
     <ClInclude Include="Filter.h" />
     <ClInclude Include="Morphology.h" />
     <ClInclude Include="System.Image.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="HOG+BOV.cpp" />
+    <ClCompile Include="Main.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

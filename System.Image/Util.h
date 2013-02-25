@@ -1,7 +1,12 @@
 #pragma once
 
+#include "../System/System.h"
 #include <cv.h>
+#include <highgui.h>
+#include <tuple>
+#include <algorithm>
 using namespace cv;
+using namespace std;
 
 namespace System
 {
@@ -30,6 +35,18 @@ namespace System
 		inline T min(T u, T v)
 		{
 			return u < v ? u : v;
+		}
+
+		template<typename T>
+		inline double GaussianDistance(const vector<T>& u, const vector<T>& v, double sigma)
+		{
+			assert(u.size() == v.size());
+
+			double distance = 0;
+			for (int i = u.size() - 1; i >= 0; i--)
+				distance += (u[i] - v[i]) * (u[i] - v[i]);
+
+			return exp(-distance / (2 * sigma * sigma));
 		}
 
 		template<typename T>
@@ -67,6 +84,7 @@ namespace System
 		{
 			assert(cardNum >= pickUpNum);
 			vector<int> result;
+			srand(1);
 
 			if (cardNum != pickUpNum)
 			{
@@ -97,15 +115,69 @@ namespace System
 		}
 
 		template<typename T>
-		inline double GaussianDistance(const vector<T>& u, const vector<T>& v, double sigma)
+		inline vector<T> RandomPickUp(const vector<T>& vec, int pickUpNum)
 		{
-			assert(u.size() == v.size());
+			int cardNum = vec.size();
+			assert(cardNum >= pickUpNum);
 
-			double distance = 0;
-			for (int i = u.size() - 1; i >= 0; i--)
-				distance += (u[i] - v[i]) * (u[i] - v[i]);
+			vector<T> pickUps;
+			vector<int> randomIndexes = RandomPickUp(cardNum, pickUpNum);
+			int counter = 0;
 
-			return exp(-distance / (2 * sigma * sigma));
+			for (int i = 0; i < cardNum; i++)
+			{
+				if (counter < randomIndexes.size() && randomIndexes[counter] == i)
+				{
+					counter++;
+					pickUps.push_back(vec[i]);
+				}
+			}
+
+			return pickUps;
+		}
+
+		template<typename T>
+		inline tuple<vector<T>, vector<T>> RandomSplit(const vector<T>& vec, int pickUpNum)
+		{
+			int cardNum = vec.size();
+			assert(cardNum >= pickUpNum);
+
+			vector<T> pickUps, others;
+			vector<int> randomIndexes = RandomPickUp(cardNum, pickUpNum);
+			int counter = 0;
+
+			for (int i = 0; i < cardNum; i++)
+			{
+				if (counter < randomIndexes.size() && randomIndexes[counter] == i)
+				{
+					counter++;
+					pickUps.push_back(vec[i]);
+				}
+				else
+					others.push_back(vec[i]);
+			}
+
+			return make_tuple<pickUps, others>;
+		}
+
+		vector<tuple<Mat, int>> GetImages(const System::String& imageSetPath, int imageLoadMode)
+		{
+			System::IO::DirectoryInfo imageSetInfo(imageSetPath);
+
+			vector<System::String> classInfos = imageSetInfo.GetDirectories();
+			sort(classInfos.begin(), classInfos.end());
+
+			vector<tuple<Mat, int>> images;
+			for (int i = 0; i < classInfos.size(); i++)
+			{
+				vector<System::String> fileInfos = System::IO::DirectoryInfo(classInfos[i]).GetFiles();
+				sort(fileInfos.begin(), fileInfos.end());
+		
+				for (int j = 0; j < fileInfos.size(); j++)
+					images.push_back(make_tuple(imread(fileInfos[j], imageLoadMode), i + 1));
+			}
+
+			return images;
 		}
     }
 }

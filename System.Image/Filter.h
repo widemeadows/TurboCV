@@ -28,20 +28,24 @@ namespace System
 	        Mat dx(size, size, CV_64F), dy(size, size, CV_64F);
 
 	        for (int i = 0; i < size; i++)
+			{
                 for (int j = 0; j < size; j++)
 		        {
                     dx.at<double>(i, j) = ComputeGauss(i - halfSize, sigma) * ComputeGaussDeriv(j - halfSize, sigma);
                     dy.at<double>(j, i) = dx.at<double>(i, j);
                     sum += dx.at<double>(i, j) * dx.at<double>(i, j);
 		        }
+			}
 
             root = sqrt(sum);
 	        for (int i = 0; i < size; i++)
+			{
                 for (int j = 0; j < size; j++)
 		        {
                     dx.at<double>(i, j) /= root;
                     dy.at<double>(i, j) /= root;
 		        }
+			}
 
 	        return make_tuple(dx, dy);
         }
@@ -55,6 +59,7 @@ namespace System
 
 	        Mat orientImage(image.rows, image.cols, CV_64F);
 	        for (int i = 0; i < image.rows; i++)
+			{
 		        for (int j = 0; j < image.cols; j++)
 		        {
 			        double orient = atan2(dyImage.at<double>(i, j), dxImage.at<double>(i, j));
@@ -62,8 +67,10 @@ namespace System
 				        orient -= CV_PI;
 			        while (orient < 0)
 				        orient += CV_PI;
+
 			        orientImage.at<double>(i, j) = orient;
 		        }
+			}
 
 	        Mat powerImage(image.rows, image.cols, CV_64F);
 	        for (int i = 0; i < image.rows; i++)

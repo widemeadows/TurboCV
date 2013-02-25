@@ -15,13 +15,13 @@ namespace System
         class Algorithm
         {
         public:
-            Feature GetFeature(const Mat& sketchImage, bool thinning = false);
+            Feature GetFeature(const Mat& sketchImage, bool thinning = false) const;
             
         protected:
             static Mat GetBoundingBox(const Mat& sketchImage);
             static Mat Preprocess(const Mat& sketchImage, bool thinning = false);
 
-            virtual Feature ComputeFeature(const Mat& sketchImage) = 0;
+            virtual Feature ComputeFeature(const Mat& sketchImage) const = 0;
         };
 
         inline Mat Algorithm::GetBoundingBox(const Mat& sketchImage)
@@ -32,7 +32,7 @@ namespace System
 	        for (int i = 0; i < sketchImage.rows; i++)
 		        for (int j = 0; j < sketchImage.cols; j++)
 		        {
-			        if (sketchImage.at<uchar>(i, j))
+			        if (!sketchImage.at<uchar>(i, j))
 			        {
 				        minX = min(minX, j);
 				        maxX = max(maxX, j);
@@ -46,9 +46,7 @@ namespace System
 
         inline Mat Algorithm::Preprocess(const Mat& sketchImage, bool thinning)
         {
-            Mat revImage = reverse(sketchImage);
-
-            Mat boundingBox = GetBoundingBox(revImage);
+            Mat boundingBox = GetBoundingBox(sketchImage);
 
             Mat squareImage;
 	        int widthPadding = 0, heightPadding = 0;
@@ -57,23 +55,23 @@ namespace System
 	        else
 		        widthPadding = (boundingBox.rows - boundingBox.cols) / 2;
 	        copyMakeBorder(boundingBox, squareImage, heightPadding, heightPadding, 
-                widthPadding, widthPadding, BORDER_CONSTANT, Scalar(0, 0, 0, 0));
+                widthPadding, widthPadding, BORDER_CONSTANT, Scalar(255, 255, 255, 255));
 
             Mat scaledImage;
 	        resize(squareImage, scaledImage, Size(224, 224));
 
 	        Mat paddedImage;
-	        copyMakeBorder(scaledImage, paddedImage, 16, 16, 16, 16, BORDER_CONSTANT, Scalar(0, 0, 0, 0));
+	        copyMakeBorder(scaledImage, paddedImage, 16, 16, 16, 16, BORDER_CONSTANT, Scalar(255, 255, 255, 255));
 	        assert(paddedImage.rows == 256 && paddedImage.cols == 256);
 
 	        Mat finalImage;
 	        if (thinning)
 	        {
-		            Mat thre, thinned;
-                    
-                    threshold(paddedImage, thre, 54, 1, CV_THRESH_BINARY);
-                    thin(thre, thinned);
-                    threshold(thinned, finalImage, 0.5, 255, CV_THRESH_BINARY);
+		        Mat binary, thinned;
+
+                threshold(paddedImage, binary, 200, 1, CV_THRESH_BINARY_INV);
+                thin(binary, thinned);
+                threshold(thinned, finalImage, 0.5, 255, CV_THRESH_BINARY_INV);
 	        }
 	        else
 		        finalImage = paddedImage;
@@ -81,25 +79,23 @@ namespace System
 	        return finalImage;
         }
 
-        inline Feature Algorithm::GetFeature(const Mat& sketchImage, bool thinning)
+        inline Feature Algorithm::GetFeature(const Mat& sketchImage, bool thinning) const
         {
-            Mat image = Preprocess(sketchImage, thinning);
-
-            return ComputeFeature(image);
+            return ComputeFeature(Preprocess(sketchImage, thinning));
         }
 
         class HOG : public Algorithm
         {
         protected:
-            virtual Feature ComputeFeature(const Mat& sketchImage);
+            virtual Feature ComputeFeature(const Mat& sketchImage) const;
             
         private:
-			vector<Mat> GetOrientChannels(const Mat& sketchImage, int orientNum);
+			vector<Mat> GetOrientChannels(const Mat& sketchImage, int orientNum) const;
             Descriptor ComputeDescriptor(const vector<Mat>& filteredOrientImages, int centreY, int centreX, 
-                int blockSize, int cellSize);
+                int blockSize, int cellSize) const;
         };
 
-		inline vector<Mat> HOG::GetOrientChannels(const Mat& sketchImage, int orientNum)
+		inline vector<Mat> HOG::GetOrientChannels(const Mat& sketchImage, int orientNum) const
 		{
 			tuple<Mat, Mat> gradient = ComputeGradient(sketchImage);
             Mat& powerImage = get<0>(gradient);
@@ -143,7 +139,7 @@ namespace System
 		}
 
         inline Descriptor HOG::ComputeDescriptor(const vector<Mat>& filteredOrientChannels, 
-            int centreY, int centreX, int blockSize, int cellSize)
+            int centreY, int centreX, int blockSize, int cellSize) const
         {
 	        int height = filteredOrientChannels[0].rows, 
 		        width = filteredOrientChannels[0].cols;
@@ -182,7 +178,7 @@ namespace System
 	        return desc;
         }
 
-		inline Feature HOG::ComputeFeature(const Mat& sketchImage)
+		inline Feature HOG::ComputeFeature(const Mat& sketchImage) const
         {
             int orientNum = 4, cellNum = 4, blockSize = 92, sampleNum = 28;
 	        int cellSize = blockSize / cellNum, kernelSize = cellSize * 2 + 1;
@@ -196,6 +192,7 @@ namespace System
 						(j - cellSize) * (j - cellSize)) / cellSize;
 			        if (ratio < 0)
 				        ratio = 0;
+
 			        tentKernel.at<double>(i, j) = ratio;
 		        }
 			}
@@ -207,7 +204,8 @@ namespace System
 
 	        Feature feature;
 			int height = sketchImage.rows, width = sketchImage.cols;
-	        int heightStep = height / sampleNum, widthStep = width / sampleNum;
+	        int heightStep = (height / sampleNum + 0.5), 
+				widthStep = (width / sampleNum + 0.5);
 	        for (int i = heightStep / 2; i < height; i += heightStep)
 			{
 		        for (int j = widthStep / 2; j < width; j += widthStep)

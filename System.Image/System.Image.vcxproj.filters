@@ -18,9 +18,6 @@
     <ClInclude Include="Morphology.h">
       <Filter>头文件</Filter>
     </ClInclude>
-    <ClInclude Include="Feature.h">
-      <Filter>头文件</Filter>
-    </ClInclude>
     <ClInclude Include="Filter.h">
       <Filter>头文件</Filter>
     </ClInclude>
@@ -33,9 +30,15 @@
     <ClInclude Include="Util.h">
       <Filter>头文件</Filter>
     </ClInclude>
+    <ClInclude Include="Algorithm.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="EdgeLink.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="HOG+BOV.cpp">
+    <ClCompile Include="Main.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
   </ItemGroup>

@@ -1,7 +1,7 @@
 #pragma once
 
 #include "Util.h"
-#include "Feature.h"
+#include "Algorithm.h"
 #include <cv.h>
 using namespace std;
 
@@ -43,7 +43,7 @@ namespace System
 			printf("Descriptor Num: %d, Descriptor Size: %d.\n", 
 				descriptorNum, descriptorSize);
 
-			sampleNum = min((int)allDescriptors.size(), sampleNum);
+			sampleNum = min(descriptorNum, sampleNum);
 			Mat samples(sampleNum, descriptorSize, CV_32F);
 			vector<int> randomIndex = RandomPickUp(descriptorNum, sampleNum);
 
