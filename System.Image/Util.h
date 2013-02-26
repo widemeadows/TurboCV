@@ -32,12 +32,6 @@ namespace System
         }
 
 		template<typename T>
-		inline T min(T u, T v)
-		{
-			return u < v ? u : v;
-		}
-
-		template<typename T>
 		inline double NormOneDistance(const vector<T>& u, const vector<T>& v)
 		{
 			assert(u.size() == v.size());

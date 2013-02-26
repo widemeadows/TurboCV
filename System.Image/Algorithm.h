@@ -48,6 +48,9 @@ namespace System
         {
 			Mat revImage = reverse(sketchImage);
 
+			Mat cleanedImage;
+			clean(revImage, cleanedImage, 3);
+
             Mat boundingBox = GetBoundingBox(revImage);
 
             Mat squareImage;
@@ -93,7 +96,7 @@ namespace System
             
         private:
 			vector<Mat> GetOrientChannels(const Mat& sketchImage, int orientNum) const;
-            Descriptor ComputeDescriptor(const vector<Mat>& filteredOrientImages, int centreY, int centreX, 
+            Descriptor ComputeDescriptor(const vector<Mat>& filteredOrientImages, const Point& centre, 
                 int blockSize, int cellSize) const;
         };
 
@@ -141,12 +144,12 @@ namespace System
 		}
 
         inline Descriptor HOG::ComputeDescriptor(const vector<Mat>& filteredOrientChannels, 
-            int centreY, int centreX, int blockSize, int cellSize) const
+            const Point& centre, int blockSize, int cellSize) const
         {
 	        int height = filteredOrientChannels[0].rows, 
 		        width = filteredOrientChannels[0].cols;
-	        int expectedTop = centreY - blockSize / 2,
-		        expectedLeft = centreX - blockSize / 2,
+	        int expectedTop = centre.y - blockSize / 2,
+		        expectedLeft = centre.x - blockSize / 2,
 		        cellHalfSize = cellSize / 2,
                 cellNum = blockSize / cellSize,
                 orientNum = filteredOrientChannels.size();
@@ -212,7 +215,8 @@ namespace System
 			{
 		        for (int j = widthStep / 2; j < width; j += widthStep)
 		        {
-			        Descriptor desc = ComputeDescriptor(filteredOrientChannels, i, j, blockSize, cellSize);
+			        Descriptor desc = ComputeDescriptor(filteredOrientChannels, 
+						Point(j, i), blockSize, cellSize);
                     feature.push_back(desc);
 		        }
 			}

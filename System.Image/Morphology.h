@@ -1,7 +1,9 @@
 #pragma once
 
 #include <cv.h>
+#include <queue>
 using namespace cv;
+using namespace std;
 
 namespace System
 {
@@ -11,6 +13,7 @@ namespace System
         inline void thin(InputArray input, OutputArray output, int iterations = 100) 
         {
             assert(input.type() == CV_8U);
+
             Mat src = input.getMat();
             src.copyTo(output);
 
@@ -110,5 +113,61 @@ namespace System
 		        }
 	        }
         }
+
+		// Assume: Edgels are 1 and Background is 0.
+		inline void clean(InputArray input, OutputArray output, int points = 1)
+		{
+			assert(input.type() == CV_8U);
+
+            Mat src = input.getMat();
+            src.copyTo(output);
+
+            Mat dst = output.getMat();
+			Mat cur = src.clone();
+
+			static int dy[] = { -1, -1, -1, 0, 0, 1, 1, 1 };
+			static int dx[] = { -1, 0, 1, -1, 1, -1, 0, 1 };
+
+			for (int i = 0; i < cur.rows; i++)
+			{
+				for (int j = 0; j < cur.cols; j++)
+				{
+					if (cur.at<uchar>(i, j))
+					{
+						queue<Point> q;
+						vector<Point> component;
+
+						q.push(Point(j, i));
+						cur.at<uchar>(i, j) = 0;
+
+						while (!q.empty())
+						{
+							Point front = q.front();
+							q.pop();
+							component.push_back(front);
+
+							for (int k = 0; k < 8; k++)
+							{
+								int newY = front.y + dy[k], newX = front.x + dx[k];
+
+								if (newY >= 0 && newY < cur.rows && 
+									newX >= 0 && newX < cur.cols &&
+									cur.at<uchar>(newY, newX))
+								{
+									q.push(Point(newX, newY));
+									cur.at<uchar>(newY, newX) = 0;
+								}
+							}
+						}
+
+						if (component.size() <= points)
+						{
+							for (int k = component.size() - 1; k >= 0; k--)
+								dst.at<uchar>(component[k].y, component[k].x) = 0;
+						}
+					}
+				}
+			}
+		}
     }
 }
