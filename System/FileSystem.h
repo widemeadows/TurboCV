@@ -7,8 +7,6 @@ namespace System
 {
     namespace IO
     {
-        ///////////////////////////////////////////////////////////////////////
-
         class FileSystemInfo
         {
         public:

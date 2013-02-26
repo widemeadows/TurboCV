@@ -99,10 +99,10 @@ namespace System
             virtual Feature ComputeFeature(const Mat& sketchImage) const;
             
         private:
-            vector<Mat> GetOrientChannels(const Mat& sketchImage, int orientNum) const;
+            static vector<Mat> GetOrientChannels(const Mat& sketchImage, int orientNum);
 
-            Descriptor ComputeDescriptor(const vector<Mat>& filteredOrientImages, 
-                const Point& centre, int blockSize, int cellSize) const;
+            static Descriptor ComputeDescriptor(const vector<Mat>& filteredOrientImages, 
+                const Point& centre, int blockSize, int cellSize);
         };
 
         inline Feature HOG::ComputeFeature(const Mat& sketchImage) const
@@ -146,7 +146,7 @@ namespace System
             return feature;
         }
 
-        inline vector<Mat> HOG::GetOrientChannels(const Mat& sketchImage, int orientNum) const
+        inline vector<Mat> HOG::GetOrientChannels(const Mat& sketchImage, int orientNum)
         {
             tuple<Mat, Mat> gradient = ComputeGradient(sketchImage);
             Mat& powerImage = get<0>(gradient);
@@ -191,7 +191,7 @@ namespace System
         }
 
         inline Descriptor HOG::ComputeDescriptor(const vector<Mat>& filteredOrientChannels, 
-            const Point& centre, int blockSize, int cellSize) const
+            const Point& centre, int blockSize, int cellSize)
         {
             int height = filteredOrientChannels[0].rows, 
                 width = filteredOrientChannels[0].cols;
@@ -238,15 +238,22 @@ namespace System
             virtual Feature ComputeFeature(const Mat& sketchImage) const;
             
         private:
-            vector<Point> GetPivots(const vector<Point>& points, int pivotNum) const;
+            static bool compare(const tuple<double, tuple<Point, Point>>& u, 
+                const tuple<double, tuple<Point, Point>>& v);
 
-            Descriptor ComputeDescriptor(const vector<Mat>& filteredOrientImages, 
-                const Point& centre, int blockSize, int cellSize) const;
+            static vector<Point> GetPivots(const vector<Point>& points, int pivotNum);
 
-            
+            static Descriptor ComputeDescriptor(const vector<Mat>& filteredOrientImages, 
+                const Point& centre, int blockSize, int cellSize);
         };
 
-        inline vector<Point> HOOSC::GetPivots(const vector<Point>& points, int pivotNum) const
+        inline bool HOOSC::compare(const tuple<double, tuple<Point, Point>>& u, 
+            const tuple<double, tuple<Point, Point>>& v)
+        {
+            return u < v;
+        }
+
+        inline vector<Point> HOOSC::GetPivots(const vector<Point>& points, int pivotNum)
         {
             int pointNum = points.size();
 	        assert(pointNum >= pivotNum);
@@ -263,7 +270,7 @@ namespace System
 		        }
 		        pivots.insert(points[i]);
 	        }
-	        sort(distances.begin(), distances.end());
+	        sort(distances.begin(), distances.end(), HOOSC::compare);
 
 	        int ptr = 0;
 	        while (pivots.size() > pivotNum)
@@ -282,7 +289,7 @@ namespace System
         }
 
         inline Descriptor HOOSC::ComputeDescriptor(const vector<Mat>& filteredOrientImages, 
-            const Point& centre, int blockSize, int cellSize) const
+            const Point& centre, int blockSize, int cellSize)
         {
 
         }

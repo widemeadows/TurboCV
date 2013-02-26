@@ -19,6 +19,27 @@ namespace System
         const int INF = 2147483647;
         const int MAX_GRAYSCALE = 255;
 
+        bool operator<(const Point& u, const Point& v)
+        {
+            if (u.x < v.x)
+                return true;
+            else if (u.x == v.x)
+                return u.y < v.y;
+            else
+                return false;
+        }
+
+        template<typename T1, typename T2>
+        bool operator<(const tuple<T1, T2>& u, const tuple<T1, T2>& v)
+        {
+            if (get<0>(u) < get<0>(v))
+                return true;
+            else if (get<0>(u) == get<0>(v))
+                return get<1>(u) < get<1>(v);
+            else
+                return false;
+        }
+
         struct PointHash
         {
             size_t operator()(const Point& v) const
