@@ -16,10 +16,10 @@ namespace System
             static vector<Descriptor> GetVisualWords(const vector<Feature>& features, 
                 int clusterNum, int sampleNum = INF);
 
-            static vector<Histogram> BOV::GetFrequencyHistograms(const vector<Feature>& features, 
+            static vector<Histogram> GetFrequencyHistograms(const vector<Feature>& features, 
                 const vector<Descriptor>& words);
 
-            static vector<Histogram> ComputeFrequencyHistogram(const vector<Feature>& features, 
+            static vector<Histogram> GetFrequencyHistogram(const vector<Feature>& features, 
                 int clusterNum, int sampleNum = INF);
         
         private:
@@ -121,7 +121,7 @@ namespace System
             return freqHistograms;
         }
 
-        inline vector<Histogram> BOV::ComputeFrequencyHistogram(const vector<Feature>& features,
+        inline vector<Histogram> BOV::GetFrequencyHistogram(const vector<Feature>& features,
             int clusterNum, int sampleNum)
         {
             return GetFrequencyHistograms(features, GetVisualWords(features, clusterNum, sampleNum));

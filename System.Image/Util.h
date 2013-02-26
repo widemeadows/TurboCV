@@ -19,6 +19,14 @@ namespace System
         const int INF = 2147483647;
         const int MAX_GRAYSCALE = 255;
 
+        struct PointHash
+        {
+            size_t operator()(const Point& v) const
+            {
+                return v.y * 10000000 + v.x;
+            }
+        };
+
         inline Mat reverse(Mat grayScaleImage) 
         {
             assert(grayScaleImage.type() == CV_8U);
@@ -141,7 +149,19 @@ namespace System
             return make_tuple<pickUps, others>;
         }
 
-        vector<tuple<Mat, int>> GetImages(const System::String& imageSetPath, int imageLoadMode)
+        inline vector<Point> GetEdgels(const Mat& sketchImage)
+        {
+	        vector<Point> points;
+
+	        for (int i = 0; i < sketchImage.rows; i++)
+		        for (int j = 0; j < sketchImage.cols; j++)
+			        if (sketchImage.at<uchar>(i, j))
+				        points.push_back(Point(j, i));
+
+	        return points;
+        }
+
+        inline vector<tuple<Mat, int>> GetImages(const System::String& imageSetPath, int imageLoadMode)
         {
             System::IO::DirectoryInfo imageSetInfo(imageSetPath);
 

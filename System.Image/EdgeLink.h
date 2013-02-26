@@ -14,14 +14,6 @@ namespace System
     {
         typedef vector<Point> Edge;
 
-        struct PointHash
-        {
-            size_t operator()(const Point& v) const
-            {
-                return v.y * 10000000 + v.x;
-            }
-        };
-
         enum Status
         {
             NormalPoint,

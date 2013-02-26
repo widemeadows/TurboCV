@@ -71,5 +71,7 @@ namespace System
 
             return make_tuple(powerImage, orientImage);
         }
+
+        
     }
 }

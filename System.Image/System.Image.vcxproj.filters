@@ -36,6 +36,9 @@
     <ClInclude Include="EdgeLink.h">
       <Filter>头文件</Filter>
     </ClInclude>
+    <ClInclude Include="Geometry.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Main.cpp">

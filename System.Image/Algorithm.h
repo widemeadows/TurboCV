@@ -1,10 +1,12 @@
 #pragma once
 
-#include "Util.h"
 #include "Filter.h"
+#include "Geometry.h"
 #include "Morphology.h"
+#include "Util.h"
 #include <cv.h>
 #include <tuple>
+#include <unordered_set>
 using namespace cv;
 using namespace std;
 
@@ -23,6 +25,11 @@ namespace System
 
             virtual Feature ComputeFeature(const Mat& sketchImage) const = 0;
         };
+
+        inline Feature Algorithm::GetFeature(const Mat& sketchImage, bool thinning) const
+        {
+            return ComputeFeature(Preprocess(sketchImage, thinning));
+        }
 
         inline Mat Algorithm::GetBoundingBox(const Mat& sketchImage)
         {
@@ -84,10 +91,7 @@ namespace System
             return finalImage;
         }
 
-        inline Feature Algorithm::GetFeature(const Mat& sketchImage, bool thinning) const
-        {
-            return ComputeFeature(Preprocess(sketchImage, thinning));
-        }
+        ///////////////////////////////////////////////////////////////////////
 
         class HOG : public Algorithm
         {
@@ -96,9 +100,51 @@ namespace System
             
         private:
             vector<Mat> GetOrientChannels(const Mat& sketchImage, int orientNum) const;
-            Descriptor ComputeDescriptor(const vector<Mat>& filteredOrientImages, const Point& centre, 
-                int blockSize, int cellSize) const;
+
+            Descriptor ComputeDescriptor(const vector<Mat>& filteredOrientImages, 
+                const Point& centre, int blockSize, int cellSize) const;
         };
+
+        inline Feature HOG::ComputeFeature(const Mat& sketchImage) const
+        {
+            int orientNum = 4, cellNum = 4, blockSize = 92, sampleNum = 28;
+            int cellSize = blockSize / cellNum, kernelSize = cellSize * 2 + 1;
+
+            Mat tentKernel(kernelSize, kernelSize, CV_64F);
+            for (int i = 0; i < kernelSize; i++)
+            {
+                for (int j = 0; j < kernelSize; j++)
+                {
+                    double ratio = 1 - sqrt((i - cellSize) * (i - cellSize) + 
+                        (j - cellSize) * (j - cellSize)) / cellSize;
+                    if (ratio < 0)
+                        ratio = 0;
+
+                    tentKernel.at<double>(i, j) = ratio;
+                }
+            }
+
+            vector<Mat> orientChannels = GetOrientChannels(sketchImage, orientNum);
+            vector<Mat> filteredOrientChannels(orientNum);
+            for (int i = 0; i < orientNum; i++)
+                filter2D(orientChannels[i], filteredOrientChannels[i], -1, tentKernel);
+
+            Feature feature;
+            int height = sketchImage.rows, width = sketchImage.cols;
+            int heightStep = (height / sampleNum + 0.5), 
+                widthStep = (width / sampleNum + 0.5);
+            for (int i = heightStep / 2; i < height; i += heightStep)
+            {
+                for (int j = widthStep / 2; j < width; j += widthStep)
+                {
+                    Descriptor desc = ComputeDescriptor(filteredOrientChannels, 
+                        Point(j, i), blockSize, cellSize);
+                    feature.push_back(desc);
+                }
+            }
+
+            return feature;
+        }
 
         inline vector<Mat> HOG::GetOrientChannels(const Mat& sketchImage, int orientNum) const
         {
@@ -135,7 +181,8 @@ namespace System
                         if (newO == orientNum)
                             newO = 0;
 
-                        orientChannels[newO].at<double>(i, j) += powerImage.at<double>(i, j) * oRatio;
+                        orientChannels[newO].at<double>(i, j) += 
+                            powerImage.at<double>(i, j) * oRatio;
                     }
                 }
             }
@@ -183,46 +230,7 @@ namespace System
             return desc;
         }
 
-        inline Feature HOG::ComputeFeature(const Mat& sketchImage) const
-        {
-            int orientNum = 4, cellNum = 4, blockSize = 92, sampleNum = 28;
-            int cellSize = blockSize / cellNum, kernelSize = cellSize * 2 + 1;
-
-            Mat tentKernel(kernelSize, kernelSize, CV_64F);
-            for (int i = 0; i < kernelSize; i++)
-            {
-                for (int j = 0; j < kernelSize; j++)
-                {
-                    double ratio = 1 - sqrt((i - cellSize) * (i - cellSize) + 
-                        (j - cellSize) * (j - cellSize)) / cellSize;
-                    if (ratio < 0)
-                        ratio = 0;
-
-                    tentKernel.at<double>(i, j) = ratio;
-                }
-            }
-
-            vector<Mat> orientChannels = GetOrientChannels(sketchImage, orientNum);
-            vector<Mat> filteredOrientChannels(orientNum);
-            for (int i = 0; i < orientNum; i++)
-                filter2D(orientChannels[i], filteredOrientChannels[i], -1, tentKernel);
-
-            Feature feature;
-            int height = sketchImage.rows, width = sketchImage.cols;
-            int heightStep = (height / sampleNum + 0.5), 
-                widthStep = (width / sampleNum + 0.5);
-            for (int i = heightStep / 2; i < height; i += heightStep)
-            {
-                for (int j = widthStep / 2; j < width; j += widthStep)
-                {
-                    Descriptor desc = ComputeDescriptor(filteredOrientChannels, 
-                        Point(j, i), blockSize, cellSize);
-                    feature.push_back(desc);
-                }
-            }
-
-            return feature;
-        }
+        ///////////////////////////////////////////////////////////////////////
 
         class HOOSC : public Algorithm
         {
@@ -230,9 +238,63 @@ namespace System
             virtual Feature ComputeFeature(const Mat& sketchImage) const;
             
         private:
-            vector<Mat> GetOrientChannels(const Mat& sketchImage, int orientNum) const;
-            Descriptor ComputeDescriptor(const vector<Mat>& filteredOrientImages, const Point& centre, 
-                int blockSize, int cellSize) const;
+            vector<Point> GetPivots(const vector<Point>& points, int pivotNum) const;
+
+            Descriptor ComputeDescriptor(const vector<Mat>& filteredOrientImages, 
+                const Point& centre, int blockSize, int cellSize) const;
+
+            
         };
+
+        inline vector<Point> HOOSC::GetPivots(const vector<Point>& points, int pivotNum) const
+        {
+            int pointNum = points.size();
+	        assert(pointNum >= pivotNum);
+
+	        vector<tuple<double, tuple<Point, Point>>> distances;
+	        unordered_set<Point, PointHash> pivots;
+
+	        for (int i = 0; i < pointNum; i++)
+	        {
+		        for (int j = i + 1; j < pointNum; j++)
+		        {
+			        double distance = Geometry::EulerDistance(points[i], points[j]);
+			        distances.push_back(make_tuple(distance, make_tuple(points[i], points[j])));
+		        }
+		        pivots.insert(points[i]);
+	        }
+	        sort(distances.begin(), distances.end());
+
+	        int ptr = 0;
+	        while (pivots.size() > pivotNum)
+	        {
+		        tuple<Point, Point> pointPair = get<1>(distances[ptr++]);
+		        if (pivots.find(get<0>(pointPair)) != pivots.end() &&
+			        pivots.find(get<1>(pointPair)) != pivots.end())
+		        pivots.erase(get<1>(pointPair));
+	        }
+
+	        vector<Point> results;
+	        for (auto pivot : pivots)
+		        results.push_back(pivot);
+
+	        return results;
+        }
+
+        inline Descriptor HOOSC::ComputeDescriptor(const vector<Mat>& filteredOrientImages, 
+            const Point& centre, int blockSize, int cellSize) const
+        {
+
+        }
+
+        inline Feature HOOSC::ComputeFeature(const Mat& sketchImage) const
+        {
+            vector<Point> points = GetEdgels(sketchImage);
+            vector<Point> pivots = GetPivots(points, points.size() * 0.33);
+
+            tuple<Mat, Mat> gradient = ComputeGradient(sketchImage);
+            Mat& powerImage = get<0>(gradient);
+            Mat& orientImage = get<1>(gradient);
+        }
     }
 }
