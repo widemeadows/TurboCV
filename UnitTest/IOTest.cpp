@@ -1,8 +1,7 @@
 #include "stdafx.h"
 #include "CppUnitTest.h"
 #include "../System/String.h"
-#include "../System/FileInfo.h"
-#include "../System/DirectoryInfo.h"
+#include "../System/FileSystem.h"
 #include <algorithm>
 using namespace Microsoft::VisualStudio::CppUnitTestFramework;
 using namespace System;

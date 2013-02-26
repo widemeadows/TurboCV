@@ -126,10 +126,9 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClInclude Include="BasicType.h" />
-    <ClInclude Include="DirectoryInfo.h" />
-    <ClInclude Include="FileInfo.h" />
-    <ClInclude Include="FileSystemInfo.h" />
+    <ClInclude Include="Type.h" />
+    <ClInclude Include="FileSystem.h" />
+    <ClInclude Include="Math.h" />
     <ClInclude Include="String.h" />
     <ClInclude Include="Exception.h" />
     <ClInclude Include="System.h" />

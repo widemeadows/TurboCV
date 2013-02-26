@@ -1,8 +1,7 @@
 #pragma once
 
-#include "BasicType.h"
-#include "DirectoryInfo.h"
+#include "Type.h"
 #include "Exception.h"
-#include "FileInfo.h"
-#include "FileSystemInfo.h"
+#include "FileSystem.h"
+#include "Math.h"
 #include "String.h"
