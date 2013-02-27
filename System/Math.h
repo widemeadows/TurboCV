@@ -11,6 +11,9 @@ namespace System
     public:
         static const double PI;
 
+        template<typename T>
+        static T Sum(const vector<T>& vec);
+
         static double Gauss(double x, double sigma);
 
         static double GaussDeriv(double x, double sigma);
@@ -26,6 +29,17 @@ namespace System
     };
 
     const double Math::PI = 3.1415926535897932384626433832795;
+
+    template <typename T>
+    inline T Math::Sum(const vector<T>& vec)
+    {
+        T sum = 0;
+
+        for (int i = vec.size() - 1; i >= 0; i--)
+            sum += vec[i];
+
+        return sum;
+    }
 
     inline double Math::Gauss(double x, double sigma)
     {

@@ -142,6 +142,7 @@
   <ItemGroup>
     <ClInclude Include="BOV.h" />
     <ClInclude Include="Algorithm.h" />
+    <ClInclude Include="Contour.h" />
     <ClInclude Include="EdgeLink.h" />
     <ClInclude Include="Geometry.h" />
     <ClInclude Include="Util.h" />

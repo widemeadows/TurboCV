@@ -4,7 +4,6 @@
 #include <cv.h>
 #include <highgui.h>
 #include <tuple>
-#include <algorithm>
 using namespace cv;
 using namespace std;
 
@@ -168,18 +167,6 @@ namespace System
             }
 
             return make_tuple<pickUps, others>;
-        }
-
-        inline vector<Point> GetEdgels(const Mat& sketchImage)
-        {
-	        vector<Point> points;
-
-	        for (int i = 0; i < sketchImage.rows; i++)
-		        for (int j = 0; j < sketchImage.cols; j++)
-			        if (sketchImage.at<uchar>(i, j))
-				        points.push_back(Point(j, i));
-
-	        return points;
         }
 
         inline vector<tuple<Mat, int>> GetImages(const System::String& imageSetPath, int imageLoadMode)

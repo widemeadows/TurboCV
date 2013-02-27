@@ -1,5 +1,7 @@
 #pragma once
 
+#include "../System/Math.h"
+#include "Util.h"
 #include <cv.h>
 using namespace cv;
 
@@ -12,7 +14,11 @@ namespace System
         public:
             static double EulerDistance(const Point& u, const Point& v);
 
+            static vector<double> EulerDistance(const Point& u, const vector<Point>& vec);
+
             static double Angle(const Point& start, const Point& end);
+
+            static vector<double> Angle(const Point& start, const vector<Point>& ends);
         };
 
         inline double Geometry::EulerDistance(const Point& u, const Point& v)
@@ -20,11 +26,23 @@ namespace System
             return sqrt((u.x - v.x) * (u.x - v.x) + (u.y - v.y) * (u.y - v.y));
         }
 
+        inline vector<double> Geometry::EulerDistance(const Point& u, const vector<Point>& vec)
+        {
+            vector<double> distances;
+
+            for (int i = 0; i < vec.size(); i++)
+		        distances.push_back(Geometry::EulerDistance(u, vec[i]));
+
+            return distances;
+        }
+
         inline double Geometry::Angle(const Point& start, const Point& end)
         {
 	        double deltaY = end.y - start.y;
 	        double deltaX = end.x - start.x;
-	        assert(deltaX != 0 || deltaY != 0);
+	        
+            if (deltaX == 0 && deltaY == 0)
+                return INF;
 
 	        double angle = atan2(deltaY, deltaX) + CV_PI;
 	        if (angle < 0)
@@ -33,6 +51,16 @@ namespace System
 		        angle = 2 * CV_PI;
 
 	        return angle;
+        }
+
+        inline vector<double> Geometry::Angle(const Point& start, const vector<Point>& ends)
+        {
+            vector<double> angles;
+
+            for (int i = 0; i < ends.size(); i++)
+                angles.push_back(Geometry::Angle(start, ends[i]));
+
+            return angles;
         }
     }
 }

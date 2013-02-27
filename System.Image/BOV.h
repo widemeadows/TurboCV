@@ -95,14 +95,20 @@ namespace System
             const vector<Descriptor>& words)
         {    
             int wordNum = words.size();
+            int descriptorNum = feature.size();
             Histogram freqHistogram(wordNum, 0);
 
-            for (int i = 0; i < feature.size(); i++)
+            for (int i = 0; i < descriptorNum; i++)
             {
                 vector<double> distances = GetDistancesToVisualWords(feature[i], words);
+                NormOneNormalize(distances);
+
                 for (int j = wordNum - 1; j >= 0; j--)
                     freqHistogram[j] += distances[j];
             }
+
+            for (int i = 0; i < wordNum; i++)
+                freqHistogram[i] /= descriptorNum;
 
             return freqHistogram;
         }

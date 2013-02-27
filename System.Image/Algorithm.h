@@ -1,12 +1,13 @@
 #pragma once
 
+#include "../System/Math.h"
+#include "Contour.h"
 #include "Filter.h"
 #include "Geometry.h"
 #include "Morphology.h"
 #include "Util.h"
 #include <cv.h>
 #include <tuple>
-#include <unordered_set>
 using namespace cv;
 using namespace std;
 
@@ -99,8 +100,6 @@ namespace System
             virtual Feature ComputeFeature(const Mat& sketchImage) const;
             
         private:
-            static vector<Mat> GetOrientChannels(const Mat& sketchImage, int orientNum);
-
             static Descriptor ComputeDescriptor(const vector<Mat>& filteredOrientImages, 
                 const Point& centre, int blockSize, int cellSize);
         };
@@ -146,50 +145,6 @@ namespace System
             return feature;
         }
 
-        inline vector<Mat> HOG::GetOrientChannels(const Mat& sketchImage, int orientNum)
-        {
-            tuple<Mat, Mat> gradient = ComputeGradient(sketchImage);
-            Mat& powerImage = get<0>(gradient);
-            Mat& orientImage = get<1>(gradient);
-            int height = sketchImage.rows, width = sketchImage.cols;
-            double orientBinSize = CV_PI / orientNum;
-
-            vector<Mat> orientChannels;
-            for (int i = 0; i < orientNum; i++)
-                orientChannels.push_back(Mat::zeros(height, width, CV_64F));
-
-            for (int i = 0; i < height; i++)
-            {
-                for (int j = 0; j < width; j++)
-                {
-                    int o = orientImage.at<double>(i, j) / orientBinSize;
-                    if (o < 0)
-                        o = 0;
-                    if (o >= orientNum)
-                        o = orientNum - 1;
-
-                    for (int k = -1; k <= 1; k++)
-                    {
-                        int newO = o + k;
-                        double oRatio = 1 - abs((newO + 0.5) * orientBinSize - 
-                            orientImage.at<double>(i, j)) / orientBinSize;
-                        if (oRatio < 0)
-                            oRatio = 0;
-            
-                        if (newO == -1)
-                            newO = orientNum - 1;
-                        if (newO == orientNum)
-                            newO = 0;
-
-                        orientChannels[newO].at<double>(i, j) += 
-                            powerImage.at<double>(i, j) * oRatio;
-                    }
-                }
-            }
-
-            return orientChannels;
-        }
-
         inline Descriptor HOG::ComputeDescriptor(const vector<Mat>& filteredOrientChannels, 
             const Point& centre, int blockSize, int cellSize)
         {
@@ -229,7 +184,7 @@ namespace System
             NormTwoNormalize(desc);
             return desc;
         }
-
+        
         ///////////////////////////////////////////////////////////////////////
 
         class HOOSC : public Algorithm
@@ -238,70 +193,134 @@ namespace System
             virtual Feature ComputeFeature(const Mat& sketchImage) const;
             
         private:
-            static bool compare(const tuple<double, tuple<Point, Point>>& u, 
-                const tuple<double, tuple<Point, Point>>& v);
-
-            static vector<Point> GetPivots(const vector<Point>& points, int pivotNum);
-
-            static Descriptor ComputeDescriptor(const vector<Mat>& filteredOrientImages, 
-                const Point& centre, int blockSize, int cellSize);
+            static Descriptor ComputeDescriptor(const Mat& orientImage,
+                const Point& pivot, const vector<Point>& points,
+                const vector<double>& logDistances, int angleNum, int orientNum);
         };
-
-        inline bool HOOSC::compare(const tuple<double, tuple<Point, Point>>& u, 
-            const tuple<double, tuple<Point, Point>>& v)
-        {
-            return u < v;
-        }
-
-        inline vector<Point> HOOSC::GetPivots(const vector<Point>& points, int pivotNum)
-        {
-            int pointNum = points.size();
-	        assert(pointNum >= pivotNum);
-
-	        vector<tuple<double, tuple<Point, Point>>> distances;
-	        unordered_set<Point, PointHash> pivots;
-
-	        for (int i = 0; i < pointNum; i++)
-	        {
-		        for (int j = i + 1; j < pointNum; j++)
-		        {
-			        double distance = Geometry::EulerDistance(points[i], points[j]);
-			        distances.push_back(make_tuple(distance, make_tuple(points[i], points[j])));
-		        }
-		        pivots.insert(points[i]);
-	        }
-	        sort(distances.begin(), distances.end(), HOOSC::compare);
-
-	        int ptr = 0;
-	        while (pivots.size() > pivotNum)
-	        {
-		        tuple<Point, Point> pointPair = get<1>(distances[ptr++]);
-		        if (pivots.find(get<0>(pointPair)) != pivots.end() &&
-			        pivots.find(get<1>(pointPair)) != pivots.end())
-		        pivots.erase(get<1>(pointPair));
-	        }
-
-	        vector<Point> results;
-	        for (auto pivot : pivots)
-		        results.push_back(pivot);
-
-	        return results;
-        }
-
-        inline Descriptor HOOSC::ComputeDescriptor(const vector<Mat>& filteredOrientImages, 
-            const Point& centre, int blockSize, int cellSize)
-        {
-
-        }
 
         inline Feature HOOSC::ComputeFeature(const Mat& sketchImage) const
         {
-            vector<Point> points = GetEdgels(sketchImage);
-            vector<Point> pivots = GetPivots(points, points.size() * 0.33);
+            vector<Point> points = Contour::GetEdgels(sketchImage);
+            vector<Point> pivots = Contour::GetPivots(points, points.size() * 0.33);
 
-            tuple<Mat, Mat> gradient = ComputeGradient(sketchImage);
+            tuple<Mat, Mat> gradient = GetGradient(sketchImage);
             Mat& powerImage = get<0>(gradient);
             Mat& orientImage = get<1>(gradient);
+
+            Feature feature;
+
+            double tmp[] = { 0, 0.5, 1 };
+            vector<double> logDistances(tmp, tmp + 3);
+            int angleNum = 12, orientNum = 8;
+            for (int i = 0; i < pivots.size(); i++)
+            {
+                Descriptor descriptor = ComputeDescriptor(orientImage, pivots[i], points,
+                    logDistances, angleNum, orientNum);
+                feature.push_back(descriptor);
+            }
+
+            return feature;
         }
+
+        inline Descriptor HOOSC::ComputeDescriptor(const Mat& orientImage,
+            const Point& pivot, const vector<Point>& points,
+            const vector<double>& logDistances, int angleNum, int orientNum)
+        {
+	        int pointNum = points.size();
+            assert(pointNum > 1);
+
+            vector<double> distances = Geometry::EulerDistance(pivot, points);
+            vector<double> angles = Geometry::Angle(pivot, points);
+	        double mean = Math::Sum(distances) / (pointNum - 1); // Except pivot
+	        for (int i = 0; i < pointNum; i++)
+		        distances[i] /= mean;
+
+            int distanceNum = logDistances.size() - 1;
+	        int dims[] = { distanceNum, angleNum, orientNum };
+	        Mat bins(3, dims, CV_64F);
+            bins = Scalar::all(0);
+
+	        double angleStep = 2 * CV_PI / angleNum;
+	        double orientStep = CV_PI / orientNum;
+            double sigma = 10;
+	        for (int i = 0; i < pointNum; i++)
+	        {
+		        if (points[i] == pivot)
+			        continue;
+
+		        for (int j = 0; j < distanceNum; j++)
+		        {
+			        if (distances[i] >= logDistances[j] && distances[i] < logDistances[j + 1])
+			        {
+				        int a = angles[i] / angleStep;
+                        if (a >= angleNum)
+					        a = angleNum - 1;
+
+                        double orient = orientImage.at<double>(points[i].y, points[i].x);
+                        int o = orient / orientStep; 
+				        if (o >= orientNum)
+					        o = orientNum - 1;
+
+				        double value = Math::Gauss(((o + 0.5) * orientStep - orient) * 180 / CV_PI, sigma);
+				        bins.at<double>(j, a, o) += value;
+
+				        break;
+			        }
+		        }
+	        }
+
+            Descriptor descriptor;
+	        for (int i = 0; i < distanceNum; i++)
+	        {
+                vector<double> ring;
+		        for (int j = 0; j < angleNum; j++)
+			        for (int k = 0; k < orientNum; k++)
+				        ring.push_back(bins.at<double>(i, j, k));
+
+		        NormOneNormalize(ring);
+
+                for (auto item : ring)
+                    descriptor.push_back(item);
+	        }
+
+	        return descriptor;
+        }
+        
+        ///////////////////////////////////////////////////////////////////////
+
+        //class SHOG : public Algorithm
+        //{
+        //protected:
+        //    virtual Feature ComputeFeature(const Mat& sketchImage) const;
+        //    
+        //private:
+        //    static Descriptor ComputeDescriptor(const Mat& orientImage,
+        //        const Point& pivot, 
+        //        );
+        //};
+
+        //inline Feature Algorithm::ComputeFeature(const Mat& sketchImage) const
+        //{
+        //    int orientNum = 4;
+
+        //    vector<Point> points = Contour::GetEdgels(sketchImage);
+        //    vector<Point> pivots = Contour::GetPivots(points, points.size() * 0.33);
+
+        //    tuple<Mat, Mat> gradient = GetGradient(sketchImage);
+        //    Mat& powerImage = get<0>(gradient);
+        //    Mat& orientImage = get<1>(gradient);
+        //    vector<Mat> orientChannels = GetOrientChannels(sketchImage, orientNum);
+
+        //    Feature feature;
+
+        //    for (int i = 0; i < pivots.size(); i++)
+        //    {
+        //        Descriptor descriptor = ComputeDescriptor(orientImage, pivots[i], 
+        //            );
+        //        feature.push_back(descriptor);
+        //    }
+
+        //    return feature;
+        //}
     }
 }
