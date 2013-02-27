@@ -12,48 +12,118 @@ namespace System
     class String
     {
     public:
+        // Constructs an empty String object, with a length of zero characters.
         String();
+
+        // Copies the null-terminated character sequence (C-string) pointed by str.
         String(const char* str);
+
+        // Copies the std::string referenced by str.
         String(const string& str);
+
+        // Constructs a copy of str.
         String(const String& str);
 
+        // Destroys this instance.
+        // This method deallocates all the storage capacity allocated by this instance using its allocator.
         ~String()
         {
             delete[] _chars;
         }
 
+        // Assigns the null-terminated character sequence (C-string) to this instance, 
+        // replacing its current contents.
         String& operator=(const char* str);
+
+        // Assigns the std::string to this instance, replacing its current contents.
         String& operator=(const string& str);
+
+        // Assigns another String object to this instance, replacing its current contents.
         String& operator=(const String& str);
 
+        // Returns a newly constructed String object with its value being the concatenation of 
+        // the characters in this instance followed by those of append.
         String operator+(const char* append) const;
+
+        // Returns a newly constructed String object with its value being the concatenation of 
+        // the characters in this instance followed by those of append.
         String operator+(const string& append) const;
+
+        // Returns a newly constructed String object with its value being the concatenation of 
+        // the characters in this instance followed by those of append.
         String operator+(const String& append) const;
+
+        // Returns a newly constructed String object with its value being the concatenation of 
+        // the characters in lhs followed by those of rhs.
         friend String operator+(const char* lhs, const String& rhs);
+
+        // Returns a newly constructed String object with its value being the concatenation of 
+        // the characters in lhs followed by those of rhs.
         friend String operator+(const string& lhs, const String& rhs);
 
+        // Indicates whether this instance is less than str.
         bool operator<(const String& str) const;
+
+        // Indicates whether this instance is equal to str.
         bool operator==(const String& str) const;
 
+        // Converts this instance to a null-terminated character sequence (C-string).
+        // A pointer to an array that contains a null-terminated sequence of characters is returned.
+        // However, different from Chars() method, the pointer just points to an internal structure
+        // of this instance (shadow copy). Therefore, the contents in the array should not be modified.
         operator const char*() const;
+
+        // Converts this instance to an std::string.
         operator string() const;
 
+        // Inserts the sequence of characters that conforms value of str into out.
         friend ostream& operator<<(ostream& out, const String& str);
+
+        // Extracts a String object from the input stream in, storing the sequence in str, 
+        // which is overwritten (the previous value of str is deleted).
         friend istream& operator>>(istream& in, String& str);
 
+        // Returns a newly constructed string object with its value initialized to a copy of 
+        // a substring of this instance. The substring is the portion of this instance that starts 
+        // at character position offset and ends at the end of this instance.
         String Substring(int offset) const;
+
+        // Returns a newly constructed string object with its value initialized to a copy of 
+        // a substring of this instance. The substring is the portion of this instance that starts 
+        // at character position offset and spans length characters.
         String Substring(int offset, int length) const;
 
+        // Searches this instance for the first character that matches the characters specified in its arguments.
+        // If found, the index of the specific character is returned. Otherwise, -1 is returned.
         int IndexOf(char value) const;
+
+        // Searches this instance for the first occurrence of substr.
+        // If found, the index indicated the first occurrence of substr is returned. Otherwise, -1 is returned.
         int IndexOf(const String& substr) const;
 
+        // Searches this instance for the last character that matches the characters specified in its arguments.
+        // If found, the index of the specific character is returned. Otherwise, -1 is returned.
         int LastIndexOf(char value) const;
+
+        // Searches this instance for the last occurrence of substr.
+        // If found, the index indicated the last occurrence of substr is returned. Otherwise, -1 is returned.
         int LastIndexOf(const String& substr) const;
 
+        // Returns a String array that contains the substrings in this instance that are delimited 
+        // by the specific character.
         vector<String> Split(char separateCharacter) const;
+
+        // Returns a String array that contains the substrings in this instance that are delimited 
+        // by elements of a character array.
         vector<String> Split(const char* separateCharacters) const;
 
+        // Returns a pointer to an array that contains a null-terminated sequence of characters 
+        // (i.e., a C-string) representing the current value of this instance.
+        // The array mentioned above is newly allocated (i.e., deep copy), so after using this C-String,
+        // delete[] operation on the returned pointer is required.
         char* Chars() const;
+
+        // Returns the length of this instance, in terms of number of characters.
         int Length() const;
         
     private:
@@ -61,6 +131,7 @@ namespace System
         int _length;
     };
 
+    // Constructs an empty String object, with a length of zero characters.
     inline String::String()
     {
         _length = 0;
@@ -69,6 +140,7 @@ namespace System
         _chars[0] = '\0';
     }
 
+    // Copies the null-terminated character sequence (C-string) pointed by str.
     inline String::String(const char* str)
     {
         if (!str)
@@ -80,6 +152,7 @@ namespace System
         strcpy(_chars, str);
     }
 
+    // Copies the std::string referenced by str.
     inline String::String(const string& str)
     {
         _length = str.length();
@@ -88,6 +161,7 @@ namespace System
         strcpy(_chars, str.c_str());
     }
 
+    // Constructs a copy of str.
     inline String::String(const String& str)
     {
         _length = str._length;
@@ -96,6 +170,8 @@ namespace System
         strcpy(_chars, str._chars);
     }
 
+    // Assigns the null-terminated character sequence (C-string) to this instance, 
+    // replacing its current contents.
     inline String& String::operator=(const char* str)
     {
         if (!str)
@@ -111,6 +187,7 @@ namespace System
         return *this;
     }
 
+    // Assigns the std::string to this instance, replacing its current contents.
     inline String& String::operator=(const string& str)
     {
         _length = str.length();
@@ -123,6 +200,7 @@ namespace System
         return *this;
     }
 
+    // Assigns another String object to this instance, replacing its current contents.
     inline String& String::operator=(const String& str)
     {
         _length = str._length;
@@ -135,6 +213,8 @@ namespace System
         return *this;
     }
 
+    // Returns a newly constructed String object with its value being the concatenation of 
+    // the characters in this instance followed by those of append.
     inline String String::operator+(const char* append) const
     {
         if (!append)
@@ -151,6 +231,8 @@ namespace System
         return result;
     }
 
+    // Returns a newly constructed String object with its value being the concatenation of 
+    // the characters in this instance followed by those of append.
     inline String String::operator+(const string& append) const
     {
         int appendLength = append.length();
@@ -164,6 +246,8 @@ namespace System
         return result;
     }
 
+    // Returns a newly constructed String object with its value being the concatenation of 
+    // the characters in this instance followed by those of append.
     inline String String::operator+(const String& append) const
     {
         int appendLength = append._length;
@@ -177,42 +261,56 @@ namespace System
         return result;
     }
 
+    // Returns a newly constructed String object with its value being the concatenation of 
+    // the characters in lhs followed by those of rhs.
     inline String operator+(const char* lhs, const String& rhs)
     {
         return String(lhs) + rhs;
     }
 
+    // Returns a newly constructed String object with its value being the concatenation of 
+    // the characters in lhs followed by those of rhs.
     inline String operator+(const string& lhs, const String& rhs)
     {
         return String(lhs) + rhs;
     }
 
+    // Indicates whether this instance is less than str.
     inline bool String::operator<(const String& str) const
     {
         return strcmp(_chars, str._chars) < 0;
     }
 
+    // Indicates whether this instance is equal to str.
     inline bool String::operator==(const String& str) const
     {
         return strcmp(_chars, str._chars) == 0;
     }
 
+    // Converts this instance to a null-terminated character sequence (C-string).
+    // A pointer to an array that contains a null-terminated sequence of characters is returned.
+    // However, different from Chars() method, the pointer just points to an internal structure
+    // of this instance (shadow copy). Therefore, the contents in the array should not be modified.
     inline String::operator const char*() const
     {
         return _chars;
     }
 
+    // Converts this instance to an std::string.
     inline String::operator string() const
     {
         return string(_chars); 
     }
 
+    // Inserts the sequence of characters that conforms value of str into out.
     inline ostream& operator<<(ostream& out, const String& str)
     {
         out << str._chars;
         return out;
     }
 
+    // Extracts a String object from the input stream in, storing the sequence in str, 
+    // which is overwritten (the previous value of str is deleted).
     inline istream& operator>>(istream& in, String& str)
     {
         string tmp;
@@ -222,11 +320,17 @@ namespace System
         return in;
     }
 
+    // Returns a newly constructed string object with its value initialized to a copy of 
+    // a substring of this instance. The substring is the portion of this instance that starts 
+    // at character position offset and ends at the end of this instance.
     inline String String::Substring(int offset) const
     {
         return Substring(offset, _length - offset);
     }
 
+    // Returns a newly constructed string object with its value initialized to a copy of 
+    // a substring of this instance. The substring is the portion of this instance that starts 
+    // at character position offset and spans length characters.
     inline String String::Substring(int offset, int length) const
     {
         if (offset < 0 || length < 0 || offset + length > _length)
@@ -241,6 +345,8 @@ namespace System
         return result;
     }
 
+    // Searches this instance for the first character that matches the characters specified in its arguments.
+    // If found, the index of the specific character is returned. Otherwise, -1 is returned.
     inline int String::IndexOf(char value) const
     {
         char* ptr = strchr(_chars, value);
@@ -251,6 +357,8 @@ namespace System
             return ptr - _chars;
     }
 
+    // Searches this instance for the first occurrence of substr.
+    // If found, the index indicated the first occurrence of substr is returned. Otherwise, -1 is returned.
     inline int String::IndexOf(const String& substr) const
     {
         char* ptr = strstr(_chars, substr._chars);
@@ -261,6 +369,8 @@ namespace System
             return ptr - _chars;
     }
 
+    // Searches this instance for the last character that matches the characters specified in its arguments.
+    // If found, the index of the specific character is returned. Otherwise, -1 is returned.
     inline int String::LastIndexOf(char value) const
     {
         char* ptr = strrchr(_chars, value);
@@ -271,6 +381,8 @@ namespace System
             return ptr - _chars;
     }
 
+    // Searches this instance for the last occurrence of substr.
+    // If found, the index indicated the last occurrence of substr is returned. Otherwise, -1 is returned.
     inline int String::LastIndexOf(const String& substr) const
     {
         char* prev = NULL;
@@ -288,12 +400,16 @@ namespace System
             return prev - _chars;
     }
 
+    // Returns a String array that contains the substrings in this instance that are delimited 
+    // by the specific character.
     inline vector<String> String::Split(char separateCharacter) const
     {
         char tmp[] = { separateCharacter };
         return Split(tmp);
     }
 
+    // Returns a String array that contains the substrings in this instance that are delimited 
+    // by elements of a character array.
     inline vector<String> String::Split(const char* separateCharacters) const
     {
         if (!separateCharacters)
@@ -322,6 +438,10 @@ namespace System
         return tokens;
     }
 
+    // Returns a pointer to an array that contains a null-terminated sequence of characters 
+    // (i.e., a C-string) representing the current value of this instance.
+    // The array mentioned above is newly allocated (i.e., deep copy), so after using this C-String,
+    // delete[] operation on the returned pointer is required.
     inline char* String::Chars() const
     {
         char* result = new char[_length + 1];
@@ -330,6 +450,7 @@ namespace System
         return result;
     }
 
+    // Returns the length of this instance, in terms of number of characters.
     inline int String::Length() const
     {
         return _length;

@@ -371,7 +371,7 @@ namespace System
 
             vector<double> distances = Geometry::EulerDistance(pivot, points);
 	        double mean = Math::Sum(distances) / (points.size() - 1); // Except pivot
-            int blockSize = (int)mean;
+            int blockSize = 1.5 * mean;
 
             int height = powerImage.rows, 
                 width = powerImage.cols;
