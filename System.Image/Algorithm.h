@@ -100,9 +100,55 @@ namespace System
             virtual Feature ComputeFeature(const Mat& sketchImage) const;
             
         private:
+            static vector<Mat> GetOrientChannels(const Mat& sketchImage, int orientNum);
+
             static Descriptor ComputeDescriptor(const vector<Mat>& filteredOrientImages, 
                 const Point& centre, int blockSize, int cellSize);
         };
+
+        inline vector<Mat> HOG::GetOrientChannels(const Mat& sketchImage, int orientNum)
+        {
+            tuple<Mat, Mat> gradient = GetGradient(sketchImage);
+            Mat& powerImage = get<0>(gradient);
+            Mat& orientImage = get<1>(gradient);
+            int height = sketchImage.rows, width = sketchImage.cols;
+            double orientBinSize = CV_PI / orientNum;
+
+            vector<Mat> orientChannels;
+            for (int i = 0; i < orientNum; i++)
+                orientChannels.push_back(Mat::zeros(height, width, CV_64F));
+
+            for (int i = 0; i < height; i++)
+            {
+                for (int j = 0; j < width; j++)
+                {
+                    int o = orientImage.at<double>(i, j) / orientBinSize;
+                    if (o < 0)
+                        o = 0;
+                    if (o >= orientNum)
+                        o = orientNum - 1;
+
+                    for (int k = -1; k <= 1; k++)
+                    {
+                        int newO = o + k;
+                        double oRatio = 1 - abs((newO + 0.5) * orientBinSize - 
+                            orientImage.at<double>(i, j)) / orientBinSize;
+                        if (oRatio < 0)
+                            oRatio = 0;
+            
+                        if (newO == -1)
+                            newO = orientNum - 1;
+                        if (newO == orientNum)
+                            newO = 0;
+
+                        orientChannels[newO].at<double>(i, j) += 
+                            powerImage.at<double>(i, j) * oRatio;
+                    }
+                }
+            }
+
+            return orientChannels;
+        }
 
         inline Feature HOG::ComputeFeature(const Mat& sketchImage) const
         {
@@ -288,39 +334,111 @@ namespace System
         
         ///////////////////////////////////////////////////////////////////////
 
-        //class SHOG : public Algorithm
-        //{
-        //protected:
-        //    virtual Feature ComputeFeature(const Mat& sketchImage) const;
-        //    
-        //private:
-        //    static Descriptor ComputeDescriptor(const Mat& orientImage,
-        //        const Point& pivot, 
-        //        );
-        //};
+        class SHOG : public Algorithm
+        {
+        protected:
+            virtual Feature ComputeFeature(const Mat& sketchImage) const;
+            
+        private:
+            static Descriptor ComputeDescriptor(const tuple<Mat, Mat>& gradient,
+                const Point& pivot, const vector<Point>& points, int orientNum, int cellNum);
+        };
 
-        //inline Feature Algorithm::ComputeFeature(const Mat& sketchImage) const
-        //{
-        //    int orientNum = 4;
+        inline Feature SHOG::ComputeFeature(const Mat& sketchImage) const
+        {
+            int orientNum = 4, cellNum = 4;
 
-        //    vector<Point> points = Contour::GetEdgels(sketchImage);
-        //    vector<Point> pivots = Contour::GetPivots(points, points.size() * 0.33);
+            vector<Point> points = Contour::GetEdgels(sketchImage);
+            vector<Point> pivots = Contour::GetPivots(points, points.size() * 0.33);
+            tuple<Mat, Mat> gradient = GetGradient(sketchImage);
 
-        //    tuple<Mat, Mat> gradient = GetGradient(sketchImage);
-        //    Mat& powerImage = get<0>(gradient);
-        //    Mat& orientImage = get<1>(gradient);
-        //    vector<Mat> orientChannels = GetOrientChannels(sketchImage, orientNum);
+            Feature feature;
+            for (int i = 0; i < pivots.size(); i++)
+            {
+                Descriptor descriptor = ComputeDescriptor(gradient, pivots[i], points, 
+                    orientNum, cellNum);
+                feature.push_back(descriptor);
+            }
 
-        //    Feature feature;
+            return feature;
+        }
 
-        //    for (int i = 0; i < pivots.size(); i++)
-        //    {
-        //        Descriptor descriptor = ComputeDescriptor(orientImage, pivots[i], 
-        //            );
-        //        feature.push_back(descriptor);
-        //    }
+        inline Descriptor SHOG::ComputeDescriptor(const tuple<Mat, Mat>& gradient,
+            const Point& pivot, const vector<Point>& points, int orientNum, int cellNum)
+        {
+            const Mat& powerImage = get<0>(gradient);
+            const Mat& orientImage = get<1>(gradient);
 
-        //    return feature;
-        //}
+            vector<double> distances = Geometry::EulerDistance(pivot, points);
+	        double mean = Math::Sum(distances) / (points.size() - 1); // Except pivot
+            int blockSize = (int)mean;
+
+            int height = powerImage.rows, 
+                width = powerImage.cols;
+            int expectedTop = pivot.y - blockSize / 2,
+                expectedLeft = pivot.x - blockSize / 2,
+                expectedBottom = pivot.y + blockSize / 2,
+                expectedRight = pivot.x + blockSize / 2;
+            double cellSize = (double)blockSize / cellNum,
+                   orientBinSize = CV_PI / orientNum;
+            int dims[] = { cellNum, cellNum, orientNum };
+            Mat hist(3, dims, CV_64F);
+            hist = Scalar::all(0);
+
+            for (int i = expectedTop; i < expectedTop + blockSize; i++)
+            {
+                for (int j = expectedLeft; j < expectedLeft + blockSize; j++)
+                {
+                    if (i < 0 || i >= height || j < 0 || j >= width)
+                        continue;
+
+                    int r = (i - expectedTop) / cellSize, 
+                        c = (j - expectedLeft) / cellSize,
+                        o = orientImage.at<double>(i, j) / orientBinSize;
+
+                    for (int u = -1; u <= 1; u++)
+                    {
+                        for (int v = -1; v <= 1; v++)
+                        {
+                            for (int w = -1; w <= 1; w++)
+                            {
+                                int newR = r + u, newC = c + v, newO = o + w;
+                                if (newR < 0 || newR >= cellNum || newC < 0 || newC >= cellNum ||
+                                    newO < -1 || newO > orientNum)
+                                    continue;
+
+                                double dRatio = 1 - abs(Geometry::EulerDistance(
+                                    Point((newC + 0.5) * cellSize, (newR + 0.5) * cellSize),
+                                    Point(j - expectedLeft, i - expectedTop))) / cellSize;
+                                if (dRatio < 0)
+                                    dRatio = 0;
+
+                                double oRatio = 1 - abs((newO + 0.5) * orientBinSize - 
+                                    orientImage.at<double>(i, j)) / orientBinSize;
+                                if (oRatio < 0)
+                                    oRatio = 0;
+
+                                if (newO == -1)
+                                    newO = orientNum - 1;
+                                else if (newO == orientNum)
+                                    newO = 0;
+
+                                hist.at<double>(newR, newC, newO) += powerImage.at<double>(i, j) * 
+                                    dRatio * oRatio;
+                            }
+                        }
+                    }
+                }
+            }
+
+            Descriptor desc;
+            for (int i = 0; i < cellNum; i++)
+                for (int j = 0; j < cellNum; j++)
+                    for (int k = 0; k < orientNum; k++)
+                        desc.push_back(hist.at<double>(i, j, k));
+
+            NormTwoNormalize(desc);
+            return desc;
+        }
     }
 }
