@@ -201,8 +201,8 @@ namespace System
         inline Feature HOOSC::ComputeFeature(const Mat& sketchImage) const
         {
             double tmp[] = { 0, 0.5, 1 };
-            vector<double> logDistances(tmp, tmp + 3);
-            int angleNum = 12, orientNum = 8;
+            vector<double> logDistances(tmp, tmp + sizeof(tmp) / sizeof(double));
+            int angleNum = 9, orientNum = 8;
 
             vector<Point> points = Contour::GetEdgels(sketchImage);
             vector<Point> pivots = Contour::GetPivots(points, points.size() * 0.33);
@@ -280,7 +280,97 @@ namespace System
 		        NormOneNormalize(ring);
 
                 for (auto item : ring)
-                    descriptor.push_back(item);
+                    descriptor.push_back(item / distanceNum);
+	        }
+
+	        return descriptor;
+        }
+
+        ///////////////////////////////////////////////////////////////////////
+
+        class SC : public Algorithm
+        {
+        protected:
+            virtual Feature ComputeFeature(const Mat& sketchImage) const;
+            
+        private:
+            static Descriptor ComputeDescriptor(const Mat& orientImage,
+                const Point& pivot, const vector<Point>& pivots,
+                const vector<double>& logDistances, int angleNum);
+        };
+
+        inline Feature SC::ComputeFeature(const Mat& sketchImage) const
+        {
+            double tmp[] = { 0, 0.125, 0.25, 0.5, 1, 2 };
+            vector<double> logDistances(tmp, tmp + sizeof(tmp) / sizeof(double));
+            int angleNum = 12;
+
+            vector<Point> points = Contour::GetEdgels(sketchImage);
+            vector<Point> pivots = Contour::GetPivots(points, points.size() * 0.33);
+
+            tuple<Mat, Mat> gradient = Gradient::GetGradient(sketchImage);
+            Mat& powerImage = get<0>(gradient);
+            Mat& orientImage = get<1>(gradient);
+
+            Feature feature;
+            for (int i = 0; i < pivots.size(); i++)
+            {
+                Descriptor descriptor = ComputeDescriptor(orientImage, pivots[i], pivots,
+                    logDistances, angleNum);
+                feature.push_back(descriptor);
+            }
+
+            return feature;
+        }
+
+        inline Descriptor SC::ComputeDescriptor(const Mat& orientImage,
+                const Point& pivot, const vector<Point>& pivots,
+                const vector<double>& logDistances, int angleNum)
+        {
+            int pivotNum = pivots.size();
+            assert(pivotNum > 1);
+
+            vector<double> distances = Geometry::EulerDistance(pivot, pivots);
+            vector<double> angles = Geometry::Angle(pivot, pivots);
+	        double mean = Math::Sum(distances) / (pivotNum - 1); // Except pivot
+	        for (int i = 0; i < pivotNum; i++)
+		        distances[i] /= mean;
+
+            int distanceNum = logDistances.size() - 1;
+	        Mat bins = Mat::zeros(distanceNum, angleNum, CV_64F);
+
+	        double angleStep = 2 * CV_PI / angleNum;
+	        for (int i = 0; i < pivotNum; i++)
+	        {
+		        if (pivots[i] == pivot)
+			        continue;
+
+		        for (int j = 0; j < distanceNum; j++)
+		        {
+			        if (distances[i] >= logDistances[j] && distances[i] < logDistances[j + 1])
+			        {
+				        int a = angles[i] / angleStep;
+                        if (a >= angleNum)
+					        a = angleNum - 1;
+
+				        bins.at<double>(j, a)++;
+
+				        break;
+			        }
+		        }
+	        }
+
+            Descriptor descriptor;
+	        for (int i = 0; i < distanceNum; i++)
+	        {
+                vector<double> ring;
+		        for (int j = 0; j < angleNum; j++)
+				    ring.push_back(bins.at<double>(i, j));
+
+		        NormOneNormalize(ring);
+
+                for (auto item : ring)
+                    descriptor.push_back(item / distanceNum);
 	        }
 
 	        return descriptor;
@@ -322,7 +412,7 @@ namespace System
         {
             vector<double> distances = Geometry::EulerDistance(pivot, points);
 	        double mean = Math::Sum(distances) / (points.size() - 1); // Except pivot
-            int blockSize = 1.3 * mean;
+            int blockSize = 1.5 * mean;
 
             int height = orientChannels[0].rows, 
                 width = orientChannels[0].cols,
@@ -394,8 +484,8 @@ namespace System
         inline Feature RHOOSC::ComputeFeature(const Mat& sketchImage) const
         {
             double tmp[] = { 0, 0.5, 1 };
-            vector<double> logDistances(tmp, tmp + 3);
-            int angleNum = 12, orientNum = 8, sampleNum = 28;
+            vector<double> logDistances(tmp, tmp + sizeof(tmp) / sizeof(double));
+            int angleNum = 4, orientNum = 8, sampleNum = 28;
 
             Mat orientImage = get<1>(Gradient::GetGradient(sketchImage));
             vector<Point> points = Contour::GetEdgels(sketchImage); 
@@ -425,7 +515,7 @@ namespace System
 
             vector<double> distances = Geometry::EulerDistance(centre, points);
             vector<double> angles = Geometry::Angle(centre, points);
-	        double mean = 92; //Math::Sum(distances) / (pointNum - 1); // Except pivot
+	        double mean = Math::Sum(distances) / (pointNum - 1); // Except pivot
 	        for (int i = 0; i < pointNum; i++)
 		        distances[i] /= mean;
 
