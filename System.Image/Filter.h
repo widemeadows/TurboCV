@@ -11,7 +11,17 @@ namespace System
 {
     namespace Image
     {
-        inline tuple<Mat, Mat> GetGradientKernel(double sigma, double epsilon)
+        class Gradient
+        {
+        public:
+            static tuple<Mat, Mat> GetGradientKernel(double sigma, double epsilon);
+
+            static tuple<Mat, Mat> Gradient::GetGradient(const Mat& image);
+
+            static vector<Mat> Gradient::GetOrientChannels(const Mat& sketchImage, int orientNum);
+        };
+
+        inline tuple<Mat, Mat> Gradient::GetGradientKernel(double sigma, double epsilon)
         {
             double halfSize = ceil(sigma * sqrt(-2 * log(sqrt(2 * CV_PI) * sigma * epsilon)));
             double size = halfSize * 2 + 1;
@@ -41,7 +51,7 @@ namespace System
             return make_tuple(dx, dy);
         }
 
-        inline tuple<Mat, Mat> GetGradient(const Mat& image)
+        inline tuple<Mat, Mat> Gradient::GetGradient(const Mat& image)
         {
             tuple<Mat, Mat> kernel = GetGradientKernel(1.0, 1e-2);
             Mat dxImage, dyImage;
@@ -70,6 +80,50 @@ namespace System
                         dxImage.at<double>(i, j) * dxImage.at<double>(i, j));
 
             return make_tuple(powerImage, orientImage);
+        }
+
+        inline vector<Mat> Gradient::GetOrientChannels(const Mat& sketchImage, int orientNum)
+        {
+            tuple<Mat, Mat> gradient = GetGradient(sketchImage);
+            Mat& powerImage = get<0>(gradient);
+            Mat& orientImage = get<1>(gradient);
+            int height = sketchImage.rows, width = sketchImage.cols;
+            double orientBinSize = CV_PI / orientNum;
+
+            vector<Mat> orientChannels;
+            for (int i = 0; i < orientNum; i++)
+                orientChannels.push_back(Mat::zeros(height, width, CV_64F));
+
+            for (int i = 0; i < height; i++)
+            {
+                for (int j = 0; j < width; j++)
+                {
+                    int o = orientImage.at<double>(i, j) / orientBinSize;
+                    if (o < 0)
+                        o = 0;
+                    if (o >= orientNum)
+                        o = orientNum - 1;
+
+                    for (int k = -1; k <= 1; k++)
+                    {
+                        int newO = o + k;
+                        double oRatio = 1 - abs((newO + 0.5) * orientBinSize - 
+                            orientImage.at<double>(i, j)) / orientBinSize;
+                        if (oRatio < 0)
+                            oRatio = 0;
+            
+                        if (newO == -1)
+                            newO = orientNum - 1;
+                        if (newO == orientNum)
+                            newO = 0;
+
+                        orientChannels[newO].at<double>(i, j) += 
+                            powerImage.at<double>(i, j) * oRatio;
+                    }
+                }
+            }
+
+            return orientChannels;
         }
     }
 }

@@ -16,6 +16,7 @@ namespace System
         typedef vector<Descriptor> Feature;
 
         const int INF = 2147483647;
+        const double EPS = 1e-14;
         const int MAX_GRAYSCALE = 255;
 
         bool operator<(const Point& u, const Point& v)
