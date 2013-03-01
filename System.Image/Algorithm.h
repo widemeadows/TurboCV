@@ -657,5 +657,109 @@ namespace System
 
 	        return descriptor;
         }
+
+        ///////////////////////////////////////////////////////////////////////
+
+        class ASHOG : public Algorithm
+        {
+        protected:
+            virtual Feature GetFeature(const Mat& sketchImage) const;
+            
+        private:
+            static Descriptor GetDescriptor(const vector<Mat>& orientChannels, 
+                const Point& pivot, int blockSize, int cellNum);
+        };
+
+        inline Feature ASHOG::GetFeature(const Mat& sketchImage) const
+        {
+            int orientNum = 4, cellNum = 4;
+
+            vector<Point> points = Contour::GetEdgels(sketchImage);
+            vector<Point> pivots = Contour::GetPivots(points, points.size() * 0.33);
+            vector<tuple<Mat, double>> DOGPyramid = GetDOGPyramid(sketchImage, 0.7, 1.2, 15);
+            vector<Mat> orientChannels = Gradient::GetOrientChannels(sketchImage, orientNum);
+
+            Feature feature;
+            for (int i = 0; i < pivots.size(); i++)
+            {
+                for (int j = 1; j < DOGPyramid.size() - 1; j++)
+                {
+                    for (int k = 1; k < DOGPyramid.size() - 1; k++)
+                    {
+                        double a = get<0>(DOGPyramid[k]).at<double>(pivots[i].y, pivots[i].x),
+                            b = get<0>(DOGPyramid[k - 1]).at<double>(pivots[i].y, pivots[i].x),
+                            c = get<0>(DOGPyramid[k + 1]).at<double>(pivots[i].y, pivots[i].x);
+
+                        if (a > b && a > c)
+                        {
+                            Descriptor descriptor = GetDescriptor(orientChannels, pivots[i],
+                                get<1>(DOGPyramid[k]) * 2, cellNum);
+                            feature.push_back(descriptor);
+                            double mean = Math::Sum(Geometry::EulerDistance(pivots[i], points)) / (points.size() - 1);
+                        }
+                    }
+                }
+            }
+
+            return feature;
+        }
+
+        inline Descriptor ASHOG::GetDescriptor(const vector<Mat>& orientChannels, const Point& pivot, 
+            int blockSize, int cellNum)
+        {
+            int height = orientChannels[0].rows, 
+                width = orientChannels[0].cols,
+                orientNum = orientChannels.size();
+            int expectedTop = pivot.y - blockSize / 2,
+                expectedLeft = pivot.x - blockSize / 2;
+            double cellSize = (double)blockSize / cellNum;
+            int dims[] = { cellNum, cellNum, orientNum };
+            Mat hist(3, dims, CV_64F);
+            hist = Scalar::all(0);
+
+            for (int i = expectedTop; i < expectedTop + blockSize; i++)
+            {
+                for (int j = expectedLeft; j < expectedLeft + blockSize; j++)
+                {
+                    if (i < 0 || i >= height || j < 0 || j >= width)
+                        continue;
+
+                    for (int k = 0; k < orientNum; k++)
+                    {
+                        if (abs(orientChannels[k].at<double>(i, j)) < EPS)
+                            continue;
+
+                        int r = (i - expectedTop) / cellSize, c = (j - expectedLeft) / cellSize;
+
+                        for (int u = -1; u <= 1; u++)
+                        {
+                            for (int v = -1; v <= 1; v++)
+                            {
+                                int newR = r + u, newC = c + v;
+                                if (newR < 0 || newR >= cellNum || newC < 0 || newC >= cellNum)
+                                    continue;
+
+                                double dRatio = 1 - abs(Geometry::EulerDistance(
+                                    Point((newC + 0.5) * cellSize, (newR + 0.5) * cellSize),
+                                    Point(j - expectedLeft, i - expectedTop))) / cellSize;
+                                if (dRatio < 0)
+                                    dRatio = 0;
+
+                                hist.at<double>(newR, newC, k) += orientChannels[k].at<double>(i, j) * dRatio;
+                            }
+                        }
+                    }                    
+                }
+            }
+
+            Descriptor desc;
+            for (int i = 0; i < cellNum; i++)
+                for (int j = 0; j < cellNum; j++)
+                    for (int k = 0; k < orientNum; k++)
+                        desc.push_back(hist.at<double>(i, j, k));
+
+            NormTwoNormalize(desc);
+            return desc;
+        }
     }
 }
