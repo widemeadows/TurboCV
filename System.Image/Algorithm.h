@@ -18,18 +18,26 @@ namespace System
         class Algorithm
         {
         public:
-            Feature GetFeature(const Mat& sketchImage, bool thinning = false) const;
+            static Mat Preprocess(const Mat& sketchImage, bool thinning = false);
+
+            Feature GetFeatureWithPreprocess(const Mat& sketchImage, bool thinning = false) const;
+
+            Feature GetFeatureWithoutPreprocess(const Mat& sketchImage) const;
             
         protected:
             static Mat GetBoundingBox(const Mat& sketchImage);
-            static Mat Preprocess(const Mat& sketchImage, bool thinning = false);
 
-            virtual Feature ComputeFeature(const Mat& sketchImage) const = 0;
+            virtual Feature GetFeature(const Mat& sketchImage) const = 0;
         };
 
-        inline Feature Algorithm::GetFeature(const Mat& sketchImage, bool thinning) const
+        inline Feature Algorithm::GetFeatureWithPreprocess(const Mat& sketchImage, bool thinning) const
         {
-            return ComputeFeature(Preprocess(sketchImage, thinning));
+            return GetFeature(Preprocess(sketchImage, thinning));
+        }
+
+        inline Feature Algorithm::GetFeatureWithoutPreprocess(const Mat& sketchImage) const
+        {
+            return GetFeature(sketchImage);
         }
 
         inline Mat Algorithm::GetBoundingBox(const Mat& sketchImage)
@@ -97,14 +105,14 @@ namespace System
         class HOG : public Algorithm
         {
         protected:
-            virtual Feature ComputeFeature(const Mat& sketchImage) const;
+            virtual Feature GetFeature(const Mat& sketchImage) const;
             
         private:
-            static Descriptor ComputeDescriptor(const vector<Mat>& filteredOrientImages, 
+            static Descriptor GetDescriptor(const vector<Mat>& filteredOrientImages, 
                 const Point& centre, int blockSize, int cellSize);
         };
 
-        inline Feature HOG::ComputeFeature(const Mat& sketchImage) const
+        inline Feature HOG::GetFeature(const Mat& sketchImage) const
         {
             int orientNum = 4, cellNum = 4, blockSize = 92, sampleNum = 28;
             int cellSize = blockSize / cellNum, kernelSize = cellSize * 2 + 1;
@@ -130,13 +138,12 @@ namespace System
 
             Feature feature;
             int height = sketchImage.rows, width = sketchImage.cols;
-            int heightStep = (height / sampleNum + 0.5), 
-                widthStep = (width / sampleNum + 0.5);
+            int heightStep = height / sampleNum, widthStep = width / sampleNum;
             for (int i = heightStep / 2; i < height; i += heightStep)
             {
                 for (int j = widthStep / 2; j < width; j += widthStep)
                 {
-                    Descriptor desc = ComputeDescriptor(filteredOrientChannels, 
+                    Descriptor desc = GetDescriptor(filteredOrientChannels, 
                         Point(j, i), blockSize, cellSize);
                     feature.push_back(desc);
                 }
@@ -145,7 +152,7 @@ namespace System
             return feature;
         }
 
-        inline Descriptor HOG::ComputeDescriptor(const vector<Mat>& filteredOrientChannels, 
+        inline Descriptor HOG::GetDescriptor(const vector<Mat>& filteredOrientChannels, 
             const Point& centre, int blockSize, int cellSize)
         {
             int height = filteredOrientChannels[0].rows, 
@@ -190,15 +197,15 @@ namespace System
         class HOOSC : public Algorithm
         {
         protected:
-            virtual Feature ComputeFeature(const Mat& sketchImage) const;
+            virtual Feature GetFeature(const Mat& sketchImage) const;
             
         private:
-            static Descriptor ComputeDescriptor(const Mat& orientImage,
+            static Descriptor GetDescriptor(const Mat& orientImage,
                 const Point& pivot, const vector<Point>& points,
                 const vector<double>& logDistances, int angleNum, int orientNum);
         };
 
-        inline Feature HOOSC::ComputeFeature(const Mat& sketchImage) const
+        inline Feature HOOSC::GetFeature(const Mat& sketchImage) const
         {
             double tmp[] = { 0, 0.5, 1 };
             vector<double> logDistances(tmp, tmp + sizeof(tmp) / sizeof(double));
@@ -214,7 +221,7 @@ namespace System
             Feature feature;
             for (int i = 0; i < pivots.size(); i++)
             {
-                Descriptor descriptor = ComputeDescriptor(orientImage, pivots[i], points,
+                Descriptor descriptor = GetDescriptor(orientImage, pivots[i], points,
                     logDistances, angleNum, orientNum);
                 feature.push_back(descriptor);
             }
@@ -222,7 +229,7 @@ namespace System
             return feature;
         }
 
-        inline Descriptor HOOSC::ComputeDescriptor(const Mat& orientImage,
+        inline Descriptor HOOSC::GetDescriptor(const Mat& orientImage,
             const Point& pivot, const vector<Point>& points,
             const vector<double>& logDistances, int angleNum, int orientNum)
         {
@@ -291,15 +298,14 @@ namespace System
         class SC : public Algorithm
         {
         protected:
-            virtual Feature ComputeFeature(const Mat& sketchImage) const;
+            virtual Feature GetFeature(const Mat& sketchImage) const;
             
         private:
-            static Descriptor ComputeDescriptor(const Mat& orientImage,
-                const Point& pivot, const vector<Point>& pivots,
+            static Descriptor GetDescriptor(const Point& pivot, const vector<Point>& pivots,
                 const vector<double>& logDistances, int angleNum);
         };
 
-        inline Feature SC::ComputeFeature(const Mat& sketchImage) const
+        inline Feature SC::GetFeature(const Mat& sketchImage) const
         {
             double tmp[] = { 0, 0.125, 0.25, 0.5, 1, 2 };
             vector<double> logDistances(tmp, tmp + sizeof(tmp) / sizeof(double));
@@ -308,23 +314,17 @@ namespace System
             vector<Point> points = Contour::GetEdgels(sketchImage);
             vector<Point> pivots = Contour::GetPivots(points, points.size() * 0.33);
 
-            tuple<Mat, Mat> gradient = Gradient::GetGradient(sketchImage);
-            Mat& powerImage = get<0>(gradient);
-            Mat& orientImage = get<1>(gradient);
-
             Feature feature;
             for (int i = 0; i < pivots.size(); i++)
             {
-                Descriptor descriptor = ComputeDescriptor(orientImage, pivots[i], pivots,
-                    logDistances, angleNum);
+                Descriptor descriptor = GetDescriptor(pivots[i], pivots, logDistances, angleNum);
                 feature.push_back(descriptor);
             }
 
             return feature;
         }
 
-        inline Descriptor SC::ComputeDescriptor(const Mat& orientImage,
-                const Point& pivot, const vector<Point>& pivots,
+        inline Descriptor SC::GetDescriptor(const Point& pivot, const vector<Point>& pivots,
                 const vector<double>& logDistances, int angleNum)
         {
             int pivotNum = pivots.size();
@@ -381,14 +381,14 @@ namespace System
         class SHOG : public Algorithm
         {
         protected:
-            virtual Feature ComputeFeature(const Mat& sketchImage) const;
+            virtual Feature GetFeature(const Mat& sketchImage) const;
             
         private:
-            static Descriptor ComputeDescriptor(const vector<Mat>& orientChannels,
+            static Descriptor GetDescriptor(const vector<Mat>& orientChannels,
                 const Point& pivot, const vector<Point>& points, int cellNum);
         };
 
-        inline Feature SHOG::ComputeFeature(const Mat& sketchImage) const
+        inline Feature SHOG::GetFeature(const Mat& sketchImage) const
         {
             int orientNum = 4, cellNum = 4;
 
@@ -399,7 +399,7 @@ namespace System
             Feature feature;
             for (int i = 0; i < pivots.size(); i++)
             {
-                Descriptor descriptor = ComputeDescriptor(orientChannels, pivots[i], 
+                Descriptor descriptor = GetDescriptor(orientChannels, pivots[i], 
                     points, cellNum);
                 feature.push_back(descriptor);
             }
@@ -407,7 +407,7 @@ namespace System
             return feature;
         }
 
-        inline Descriptor SHOG::ComputeDescriptor(const vector<Mat>& orientChannels,
+        inline Descriptor SHOG::GetDescriptor(const vector<Mat>& orientChannels,
             const Point& pivot, const vector<Point>& points, int cellNum)
         {
             vector<double> distances = Geometry::EulerDistance(pivot, points);
@@ -474,31 +474,30 @@ namespace System
         class RHOOSC : public Algorithm
         {
         protected:
-            virtual Feature ComputeFeature(const Mat& sketchImage) const;
+            virtual Feature GetFeature(const Mat& sketchImage) const;
             
         private:
-            static Descriptor ComputeDescriptor(const Mat& orientImage, const Point& centre, 
+            static Descriptor GetDescriptor(const Mat& orientImage, const Point& centre, 
                 const vector<Point>& points, const vector<double>& logDistances, int angleNum, int orientNum);
         };
 
-        inline Feature RHOOSC::ComputeFeature(const Mat& sketchImage) const
+        inline Feature RHOOSC::GetFeature(const Mat& sketchImage) const
         {
             double tmp[] = { 0, 0.5, 1 };
             vector<double> logDistances(tmp, tmp + sizeof(tmp) / sizeof(double));
-            int angleNum = 4, orientNum = 8, sampleNum = 28;
+            int angleNum = 9, orientNum = 8, sampleNum = 28;
 
             Mat orientImage = get<1>(Gradient::GetGradient(sketchImage));
             vector<Point> points = Contour::GetEdgels(sketchImage); 
 
             Feature feature;
             int height = sketchImage.rows, width = sketchImage.cols;
-            int heightStep = (height / sampleNum + 0.5), 
-                widthStep = (width / sampleNum + 0.5);
+            int heightStep = height / sampleNum, widthStep = width / sampleNum;
             for (int i = heightStep / 2; i < height; i += heightStep)
             {
                 for (int j = widthStep / 2; j < width; j += widthStep)
                 {
-                    Descriptor desc = ComputeDescriptor(orientImage, Point(j, i), points,
+                    Descriptor desc = GetDescriptor(orientImage, Point(j, i), points,
                         logDistances, angleNum, orientNum);
                     feature.push_back(desc);
                 }
@@ -507,7 +506,7 @@ namespace System
             return feature;
         }
 
-        inline Descriptor RHOOSC::ComputeDescriptor(const Mat& orientImage, const Point& centre,
+        inline Descriptor RHOOSC::GetDescriptor(const Mat& orientImage, const Point& centre,
             const vector<Point>& points, const vector<double>& logDistances, int angleNum, int orientNum)
         {
             int pointNum = points.size();
@@ -565,6 +564,95 @@ namespace System
 
                 for (auto item : ring)
                     descriptor.push_back(item);
+	        }
+
+	        return descriptor;
+        }
+
+        ///////////////////////////////////////////////////////////////////////
+
+        class RSC : public Algorithm
+        {
+        protected:
+            virtual Feature GetFeature(const Mat& sketchImage) const;
+            
+        private:
+            static Descriptor GetDescriptor(const Point& centre, const vector<Point>& points, 
+                const vector<double>& logDistances, int angleNum);
+        };
+
+        inline Feature RSC::GetFeature(const Mat& sketchImage) const
+        {
+            double tmp[] = { 0, 0.125, 0.25, 0.5, 1, 2 };
+            vector<double> logDistances(tmp, tmp + sizeof(tmp) / sizeof(double));
+            int angleNum = 12, sampleNum = 28;
+
+            Mat orientImage = get<1>(Gradient::GetGradient(sketchImage));
+            vector<Point> points = Contour::GetEdgels(sketchImage); 
+
+            Feature feature;
+            int height = sketchImage.rows, width = sketchImage.cols;
+            int heightStep = height / sampleNum, widthStep = width / sampleNum;
+            for (int i = heightStep / 2; i < height; i += heightStep)
+            {
+                for (int j = widthStep / 2; j < width; j += widthStep)
+                {
+                    Descriptor desc = GetDescriptor(Point(j, i), points, logDistances, angleNum);
+                    feature.push_back(desc);
+                }
+            }
+
+            return feature;
+        }
+
+        inline Descriptor RSC::GetDescriptor(const Point& centre, const vector<Point>& points, 
+            const vector<double>& logDistances, int angleNum)
+        {
+            int pointNum = points.size();
+            assert(pointNum > 1);
+
+            vector<double> distances = Geometry::EulerDistance(centre, points);
+            vector<double> angles = Geometry::Angle(centre, points);
+	        double mean = Math::Sum(distances) / (pointNum - 1); // Except pivot
+	        for (int i = 0; i < pointNum; i++)
+		        distances[i] /= mean;
+
+            int distanceNum = logDistances.size() - 1;
+	        Mat bins = Mat::zeros(distanceNum, angleNum, CV_64F);
+
+	        double angleStep = 2 * CV_PI / angleNum;
+            double sigma = 10;
+	        for (int i = 0; i < pointNum; i++)
+	        {
+		        if (points[i] == centre)
+			        continue;
+
+		        for (int j = 0; j < distanceNum; j++)
+		        {
+			        if (distances[i] >= logDistances[j] && distances[i] < logDistances[j + 1])
+			        {
+				        int a = angles[i] / angleStep;
+                        if (a >= angleNum)
+					        a = angleNum - 1;
+
+				        bins.at<double>(j, a)++;
+
+				        break;
+			        }
+		        }
+	        }
+
+            Descriptor descriptor;
+	        for (int i = 0; i < distanceNum; i++)
+	        {
+                vector<double> ring;
+		        for (int j = 0; j < angleNum; j++)
+				    ring.push_back(bins.at<double>(i, j));
+
+		        NormOneNormalize(ring);
+
+                for (auto item : ring)
+                    descriptor.push_back(item / distanceNum);
 	        }
 
 	        return descriptor;
