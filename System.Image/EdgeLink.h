@@ -21,6 +21,7 @@ namespace System
             NoPoint,
         };
 
+        // Assume: Background is 0.
         // The values are ordered from the top-left point going anti-clockwise around the pixel.
         template<typename T>
         inline vector<T> GetNeighbourValues(const Mat& image, const Point& centre)
@@ -203,7 +204,7 @@ namespace System
                 Point start = edge.front();
                 Point end = edge.back();
 
-                if (abs(start.y - end.y) <= 1 && abs(start.x - end.x) <= 2)
+                if (abs(start.y - end.y) <= 1 && abs(start.x - end.x) <= 1)
                     edge.push_back(start);
             }
 

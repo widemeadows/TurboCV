@@ -672,31 +672,34 @@ namespace System
 
         inline Feature ASHOG::GetFeature(const Mat& sketchImage) const
         {
-            int orientNum = 4, cellNum = 4;
+            int orientNum = 4, cellNum = 4, scaleNum = 15;
+            double sigmaInit = 0.7, sigmaStep = 1.2;
+            
+            vector<double> sigmas;
+            sigmas.push_back(sigmaInit);
+            for (int i = 1; i < scaleNum; i++)
+                sigmas.push_back(sigmas[i - 1] * sigmaStep);
 
             vector<Point> points = Contour::GetEdgels(sketchImage);
             vector<Point> pivots = Contour::GetPivots(points, points.size() * 0.33);
-            vector<tuple<Mat, double>> DOGPyramid = GetDOGPyramid(sketchImage, 0.7, 1.2, 15);
             vector<Mat> orientChannels = Gradient::GetOrientChannels(sketchImage, orientNum);
-
+            vector<Mat> pyramid = GetLoGPyramid(sketchImage, sigmas);
+            for (int i = 0; i < scaleNum; i++)
+                pyramid[i] = abs(pyramid[i]) * (sigmas[i] * sigmas[i]);
+            
             Feature feature;
             for (int i = 0; i < pivots.size(); i++)
             {
-                for (int j = 1; j < DOGPyramid.size() - 1; j++)
+                for (int j = 0; j < scaleNum; j++)
                 {
-                    for (int k = 1; k < DOGPyramid.size() - 1; k++)
-                    {
-                        double a = get<0>(DOGPyramid[k]).at<double>(pivots[i].y, pivots[i].x),
-                            b = get<0>(DOGPyramid[k - 1]).at<double>(pivots[i].y, pivots[i].x),
-                            c = get<0>(DOGPyramid[k + 1]).at<double>(pivots[i].y, pivots[i].x);
+                    double prev = j > 0 ? pyramid[j - 1].at<double>(pivots[i].y, pivots[i].x) : 0;
+                    double curr = pyramid[j].at<double>(pivots[i].y, pivots[i].x);
+                    double next = j < scaleNum - 1 ? pyramid[j + 1].at<double>(pivots[i].y, pivots[i].x) : 0;
 
-                        if (a > b && a > c)
-                        {
-                            Descriptor descriptor = GetDescriptor(orientChannels, pivots[i],
-                                get<1>(DOGPyramid[k]) * 2, cellNum);
-                            feature.push_back(descriptor);
-                            double mean = Math::Sum(Geometry::EulerDistance(pivots[i], points)) / (points.size() - 1);
-                        }
+                    if (curr > next && curr > prev)
+                    {
+                        Descriptor descriptor = GetDescriptor(orientChannels, pivots[i], sigmas[j] * 6, cellNum);
+                        feature.push_back(descriptor);
                     }
                 }
             }
