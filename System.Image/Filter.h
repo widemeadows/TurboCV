@@ -126,6 +126,61 @@ namespace System
             return orientChannels;
         }
 
+        // http://homepages.inf.ed.ac.uk/rbf/HIPR2/log.htm
+        inline Mat getLoGKernel(int ksize, double sigma, int ktype = CV_64F)
+        {
+            CV_Assert(ksize > 0 && ksize % 2 != 0);
+            CV_Assert(ktype == CV_64F || ktype == CV_32F);
+
+            int halfSize = ksize / 2;
+            Mat kernel(ksize, ksize, ktype);
+
+            double scale = -1 / (CV_PI * pow(sigma, 4));
+            for (int i = 0; i < ksize; i++)
+            {
+                for (int j = i; j < ksize; j++)
+                {
+                    double y = i - halfSize, x = j - halfSize;
+                    double tmp = -(x * x + y * y) / (2 * sigma * sigma);
+                    double value = scale * (1 + tmp) * exp(tmp);
+
+                    if (ktype == CV_64F)
+                    {
+                        kernel.at<double>(i, j) = value;
+                        kernel.at<double>(j, i) = kernel.at<double>(i, j);
+                    }
+                    else
+                    {
+                        kernel.at<float>(i, j) = (float)value;
+                        kernel.at<float>(j, i) = kernel.at<float>(i, j);
+                    }
+                }
+            }
+
+            return kernel;
+        }
+
+        inline vector<Mat> GetLoGPyramid(const Mat& image, const vector<double>& sigmas)
+        {
+            int sigmaNum = sigmas.size();
+            vector<Mat> levels(sigmaNum);
+
+            for (int i = 0; i < sigmaNum; i++)
+            {
+                CV_Assert(sigmas[i] >= 0);
+
+                int ksize = sigmas[i] * 6 + 1;
+                if (ksize % 2 == 0)
+                    ksize++;
+
+                Mat kernel = getLoGKernel(ksize, sigmas[i], CV_64F);
+                filter2D(image, levels[i], CV_64F, kernel);
+                levels[i] = (sigmas[i] * sigmas[i]) * abs(levels[i]);
+            }
+
+            return levels;
+        }
+
         inline vector<tuple<Mat, double>> GetDOGPyramid(const Mat& base, double sigmaInit, 
             double sigmaStep, int levels)
         {

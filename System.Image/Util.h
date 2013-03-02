@@ -189,5 +189,45 @@ namespace System
 
             return images;
         }
+
+        inline void imshow(const Mat& image, bool scale = true)
+        {
+            double maximum = 1e-14, minimum = 1e14;
+            int type = image.type();
+            Mat tmp(image.size(), CV_64F);
+
+            for (int i = 0; i < image.rows; i++)
+            {
+                for (int j = 0; j < image.cols; j++)
+                {
+                    double value;
+
+                    if (type == CV_8U)
+                        value = image.at<uchar>(i, j);
+                    else if (type == CV_64F)
+                        value = image.at<double>(i, j);
+                    else if (type == CV_32S)
+                        value = image.at<int>(i, j);
+                    else if (type == CV_8S)
+                        value = image.at<char>(i, j);
+                    else if (type == CV_32F)
+                        value = image.at<float>(i, j);
+
+                    maximum = max(value, maximum);
+                    minimum = min(value, minimum);
+                    tmp.at<double>(i, j) = value;
+                }
+            }
+
+            if (maximum > minimum)
+            {
+                for (int i = 0; i < tmp.rows; i++)
+                    for (int j = 0; j < tmp.cols; j++)
+                        tmp.at<double>(i, j) = (tmp.at<double>(i, j) - minimum) / 
+                            (maximum - minimum);
+            }
+
+            imshow("OpenCV", tmp);
+        }
     }
 }

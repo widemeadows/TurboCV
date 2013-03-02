@@ -196,10 +196,24 @@ int main()
     // BSC("oracles_png", "bsc_oracles_data");
     // BHOOSC("oracles_png", "bhoosc_oracles_data");
     // BSHOG("oracles_png", "bshog_oracles_data");
-    BRHOOSC("oracles_png", "brhoosc_oracles_data");
+    // BRHOOSC("oracles_png", "brhoosc_oracles_data");
     // BRSC("oracles_png", "brsc_oracles_data");
 
     //BASHOG("oracles_png", "bashog_oracles_data");
+
+    Mat image = System::Image::Algorithm::Preprocess(imread("00001.png", CV_LOAD_IMAGE_GRAYSCALE), true);
+
+    vector<double> sigmas;
+    sigmas.push_back(0.7);
+    for (int i = 1; i <= 14; i++)
+        sigmas.push_back(sigmas[i - 1] * 1.2);
+
+    vector<Mat> pyramid = GetLoGPyramid(image, sigmas);
+    for (int i = 0; i < pyramid.size(); i++)
+    {
+        imshow(pyramid[i]);
+        waitKey(0);
+    }
 
     // ASHOG().GetFeatureWithPreprocess(imread("00001.png", CV_LOAD_IMAGE_GRAYSCALE), true);
 }
