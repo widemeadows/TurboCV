@@ -89,15 +89,16 @@ namespace System
 
                 if (newY >= 0 && newY < edgeFlags.rows && newX >= 0 && newX < edgeFlags.cols)
                 {
-                    // Chech whether it is a junction that hasn't been marked 
+                    // Chech whether it is a junction/endpoint that hasn't been marked 
                     // as part of the current edge.
-                    if (junctions.find(Point(newX, newY)) != junctions.end() &&
+                    if ((junctions.find(Point(newX, newY)) != junctions.end() ||
+                        endpoints.find(Point(newX, newY)) != endpoints.end()) &&
                         edgeFlags.at<int>(newY, newX) != -edgeNo)
                         return make_tuple(LastPoint, Point(newX, newY));
                 }
             }
 
-            // If we get here there were no junction points. Search through neighbours
+            // If we get here there were no junctions/endpoints. Search through neighbours
             // and return first connected edge point that itself has less than two
             // neighbours connected back to our current edge. This prevents occasional
             // erroneous doubling back onto the wrong segment.
@@ -132,8 +133,8 @@ namespace System
             }
 
             // If we get here (and 'flag' is true) there was no connected edge point
-            // that had less than two connections to our current edge, but there was one
-            // with more. Use the point we remembered above.
+            // that had less than two connections to our current edge, but there was
+            // one with more. Use the point we recorded above.
             if (flag)
                 return make_tuple(NormalPoint, record);
             
@@ -159,7 +160,7 @@ namespace System
                 edge.push_back(nextPoint);
                 edgeFlags.at<int>(nextPoint.y, nextPoint.x) = -edgeNo;
 
-                if (status == LastPoint) // hit a junction
+                if (status == LastPoint) // hit a junction/endpoint
                     status = NoPoint;
                 else
                 {
@@ -170,8 +171,9 @@ namespace System
             }
 
             // Now track from original point in the opposite direction - but only if
-            // the starting point was not a junction.
-            if (junctions.find(start) == junctions.end())
+            // the starting point was not a junction/endpoint.
+            if (junctions.find(start) == junctions.end() && 
+                endpoints.find(start) == endpoints.end())
             {
                 reverse(edge.begin(), edge.end());
 
@@ -228,7 +230,6 @@ namespace System
             binaryImage.convertTo(edgeFlags, CV_32S);
 
             vector<Edge> edgeList;
-
             for (int i = 0; i < edgeFlags.rows; i++)
             {
                 for (int j = 0; j < edgeFlags.cols; j++)

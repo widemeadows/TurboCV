@@ -201,19 +201,30 @@ int main()
 
     // BASHOG("oracles_png", "bashog_oracles_data");
 
-    //Mat image = System::Image::Algorithm::Preprocess(imread("00001.png", CV_LOAD_IMAGE_GRAYSCALE), true);
-
-    //vector<double> sigmas;
-    //sigmas.push_back(0.7);
-    //for (int i = 1; i <= 14; i++)
-    //    sigmas.push_back(sigmas[i - 1] * 1.2);
-
-    //vector<Mat> pyramid = GetLoGPyramid(image, sigmas);
-    //for (int i = 0; i < pyramid.size(); i++)
-    //{
-    //    imshow(pyramid[i]);
-    //    waitKey(0);
-    //}
-
     // Feature feature = ASHOG().GetFeatureWithPreprocess(imread("00001.png", CV_LOAD_IMAGE_GRAYSCALE), true);
+
+    Mat image = imread("00003.png", CV_LOAD_IMAGE_GRAYSCALE);
+    image = System::Image::Algorithm::Preprocess(image, true);
+    
+    Mat thre, color;
+    threshold(image, thre, 128, 1, CV_THRESH_BINARY);
+    vector<Edge> edges = EdgeLink(thre);
+
+    cvtColor(image, color, CV_GRAY2BGR);
+
+    for (auto edge : edges)
+    {
+        for (auto point : edge)
+        {
+            circle(color, point, 1, Scalar(255, 0 ,0));
+        }
+
+        imshow("win", color);
+        waitKey(0);
+
+        for (auto point : edge)
+        {
+            circle(color, point, 1, Scalar(255, 255, 255));
+        }
+    }
 }
