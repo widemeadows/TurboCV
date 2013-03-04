@@ -240,15 +240,16 @@ Mat GetBoundingBox(const Mat& sketchImage)
 
 int main()
 {
-    // BHOOSC("oracles_png", "bhoosc_oracles_data");
-    // BSC("oracles_png", "bsc_oracles_data");
-    // BSHOG("oracles_png", "bshog_oracles_data");
-    // BRHOOSC("oracles_png", "brhoosc_oracles_data");
-    // BRSC("oracles_png", "brsc_oracles_data");
-    // BASHOG("oracles_png", "bashog_oracles_data");
-    // BGabor("oracles_png", "bgabor_oracles_data");
+    BHOG("oracles_png", "bhog_oracles_data");
+    BHOOSC("oracles_png", "bhoosc_oracles_data");
+    BSC("oracles_png", "bsc_oracles_data");
+    BSHOG("oracles_png", "bshog_oracles_data");
+    BRHOOSC("oracles_png", "brhoosc_oracles_data");
+    BRSC("oracles_png", "brsc_oracles_data");
+    BASHOG("oracles_png", "bashog_oracles_data");
+    BGabor("oracles_png", "bgabor_oracles_data");
 
-    Mat sketchImage = imread("00006.png", CV_LOAD_IMAGE_GRAYSCALE);
+    /*Mat sketchImage = imread("00006.png", CV_LOAD_IMAGE_GRAYSCALE);
     
     Mat revImage = reverse(sketchImage);
 
@@ -293,7 +294,7 @@ int main()
         circle(color, corners[i], 3, Scalar(0, 255, 255));
 
     imshow("win", color);
-    waitKey(0);
+    waitKey(0);*/
 
     //vector<Edge> edges = EdgeLink(thre);
 
