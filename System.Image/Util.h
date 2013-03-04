@@ -11,8 +11,8 @@ namespace System
 {
     namespace Image
     {
-        typedef vector<double> Histogram;
-        typedef vector<double> Descriptor;
+        typedef vector<float> Histogram;
+        typedef vector<float> Descriptor;
         typedef vector<Descriptor> Feature;
 
         const int INF = 2147483647;

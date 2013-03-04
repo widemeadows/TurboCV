@@ -16,7 +16,7 @@ namespace System
         public:
             static tuple<Mat, Mat> GetGradientKernel(double sigma, double epsilon);
 
-            static tuple<Mat, Mat> Gradient::GetGradient(const Mat& image);
+            static tuple<Mat, Mat> Gradient::GetGradient(const Mat& image, double sigma = 1.0);
 
             static vector<Mat> Gradient::GetOrientChannels(const Mat& sketchImage, int orientNum);
         };
@@ -51,9 +51,9 @@ namespace System
             return make_tuple(dx, dy);
         }
 
-        inline tuple<Mat, Mat> Gradient::GetGradient(const Mat& image)
+        inline tuple<Mat, Mat> Gradient::GetGradient(const Mat& image, double sigma)
         {
-            tuple<Mat, Mat> kernel = GetGradientKernel(1.0, 1e-2);
+            tuple<Mat, Mat> kernel = GetGradientKernel(sigma, 1e-2);
             Mat dxImage, dyImage;
             filter2D(image, dxImage, CV_64F, get<0>(kernel));
             filter2D(image, dyImage, CV_64F, get<1>(kernel));
@@ -157,7 +157,10 @@ namespace System
                 }
             }
 
-            return kernel;
+            Mat normalizedKernel;
+            normalize(kernel, normalizedKernel, 1, 0, NORM_L1);
+
+            return normalizedKernel;
         }
 
         inline vector<Mat> GetLoGPyramid(const Mat& image, const vector<double>& sigmas)
@@ -175,7 +178,7 @@ namespace System
 
                 Mat kernel = getLoGKernel(ksize, sigmas[i], CV_64F);
                 filter2D(image, LoGPyramid[i], CV_64F, kernel);
-                LoGPyramid[i] = (sigmas[i] * sigmas[i]) * abs(LoGPyramid[i]);
+                LoGPyramid[i] = abs(LoGPyramid[i]);
             }
 
             return LoGPyramid;
