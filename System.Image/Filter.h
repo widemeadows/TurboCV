@@ -163,7 +163,7 @@ namespace System
         inline vector<Mat> GetLoGPyramid(const Mat& image, const vector<double>& sigmas)
         {
             int sigmaNum = sigmas.size();
-            vector<Mat> levels(sigmaNum);
+            vector<Mat> LoGPyramid(sigmaNum);
 
             for (int i = 0; i < sigmaNum; i++)
             {
@@ -174,70 +174,36 @@ namespace System
                     ksize++;
 
                 Mat kernel = getLoGKernel(ksize, sigmas[i], CV_64F);
-                filter2D(image, levels[i], CV_64F, kernel);
-                levels[i] = (sigmas[i] * sigmas[i]) * abs(levels[i]);
+                filter2D(image, LoGPyramid[i], CV_64F, kernel);
+                LoGPyramid[i] = (sigmas[i] * sigmas[i]) * abs(LoGPyramid[i]);
             }
 
-            return levels;
+            return LoGPyramid;
         }
 
-        inline vector<tuple<Mat, double>> GetDOGPyramid(const Mat& base, double sigmaInit, 
-            double sigmaStep, int levels)
+        inline vector<Mat> GetDoGPyramid(const Mat& image, const vector<double>& sigmas)
         {
-            Mat* GaussianPyramid = new Mat[levels + 3];
-            double* sigmas = new double[levels + 3];
+            int sigmaNum = sigmas.size();
+            vector<Mat> GaussianPyramid(sigmaNum + 1);
 
-            sigmas[0] = 0;
-            sigmas[1] = sigmaInit;
-            for (int i = 2; i < levels + 3; i++)
-                sigmas[i] = sigmas[i - 1] * sigmaStep;
-
-            base.convertTo(GaussianPyramid[0], CV_64F);
-            for (int i = 1; i < levels + 3; i++)
+            image.convertTo(GaussianPyramid[0], CV_64F);
+            for (int i = 0; i < sigmaNum; i++)
             {
-                int kernelSize = sigmas[i] * 6;
-                if (kernelSize % 2 == 0)
-                    kernelSize++;
+                CV_Assert(sigmas[i] >= 0);
 
-                Mat kernel = getGaussianKernel(kernelSize, sigmas[i], CV_64F);
-                sepFilter2D(base, GaussianPyramid[i], CV_64F, kernel, kernel);
+                int ksize = sigmas[i] * 6;
+                if (ksize % 2 == 0)
+                    ksize++;
+
+                Mat kernel = getGaussianKernel(ksize, sigmas[i], CV_64F);
+                sepFilter2D(image, GaussianPyramid[i + 1], CV_64F, kernel, kernel);
             }
 
-            vector<tuple<Mat, double>> result;
-            for (int i = 1; i < levels + 3; i++)
-            {
-                Mat diff;
-                absdiff(GaussianPyramid[i], GaussianPyramid[i - 1], diff);
-                result.push_back(make_tuple(diff, sigmas[i] * 3));
-            }
+            vector<Mat> DoGPyramid;
+            for (int i = 1; i <= sigmaNum; i++)
+                DoGPyramid[i - 1] = GaussianPyramid[i] - GaussianPyramid[i - 1];
 
-            //for (int i = 0; i < levels + 2; i++)
-            //{
-            //    double maxi = -1e14, mini = 1e14;
-
-            //    for (int j = 0; j < GaussianPyramid[i].rows; j++)
-            //        for (int k = 0; k < GaussianPyramid[i].cols; k++)
-            //        {
-            //            if (abs(get<0>(result[i]).at<double>(j, k)) > maxi)
-            //                maxi = abs(get<0>(result[i]).at<double>(j, k));
-            //            if (abs(get<0>(result[i]).at<double>(j, k)) < mini)
-            //                mini = abs(get<0>(result[i]).at<double>(j, k));
-            //        }
-
-            //    Mat tmp(get<0>(result[i]).rows, get<0>(result[i]).cols, CV_64F);
-            //    for (int j = 0; j < tmp.rows; j++)
-            //        for (int k = 0; k < tmp.cols; k++)
-            //        {
-            //            tmp.at<double>(j, k) = (abs(get<0>(result[i]).at<double>(j, k)) - mini) / (maxi - mini);
-            //        }
-
-            //    imshow("win", tmp);
-            //    waitKey(0);
-            //}
-
-            delete[] sigmas;
-            delete[] GaussianPyramid;
-            return result;
+            return DoGPyramid;
         }
     }
 }
