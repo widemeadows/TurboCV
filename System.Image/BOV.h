@@ -46,7 +46,8 @@ namespace System
 
             sampleNum = min(descriptorNum, sampleNum);
             Mat samples(sampleNum, descriptorSize, CV_32F);
-            vector<int> randomIndex = RandomPickUp(descriptorNum, sampleNum);
+            vector<int> randomIndex = RandomPermutate(descriptorNum, sampleNum);
+            sort(randomIndex.begin(), randomIndex.end());
 
             int counter = 0;
             for (int i = 0; i < randomIndex.size(); i++)
@@ -119,7 +120,6 @@ namespace System
             int imageNum = features.size();
             vector<Histogram> freqHistograms(imageNum);
 
-            printf("Compute Frequency Histograms...\n");
             #pragma omp parallel for
             for (int i = 0; i < imageNum; i++)
                 freqHistograms[i] = GetFrequencyHistogram(features[i], words);

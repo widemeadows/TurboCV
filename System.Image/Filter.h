@@ -135,7 +135,7 @@ namespace System
             int halfSize = ksize / 2;
             Mat kernel(ksize, ksize, ktype);
 
-            double scale = -1 / (CV_PI);
+            double scale = -1 / (CV_PI * pow(sigma, 4));
             for (int i = 0; i < ksize; i++)
             {
                 for (int j = i; j < ksize; j++)
@@ -157,10 +157,7 @@ namespace System
                 }
             }
 
-            Mat normalizedKernel;
-            normalize(kernel, normalizedKernel, 1, 0, NORM_L1);
-
-            return normalizedKernel;
+            return kernel;
         }
 
         inline vector<Mat> GetLoGPyramid(const Mat& image, const vector<double>& sigmas)
@@ -178,7 +175,7 @@ namespace System
 
                 Mat kernel = getLoGKernel(ksize, sigmas[i], CV_64F);
                 filter2D(image, LoGPyramid[i], CV_64F, kernel);
-                LoGPyramid[i] = abs(LoGPyramid[i]);
+                LoGPyramid[i] = abs(LoGPyramid[i]) * pow(sigmas[i], 4); // pow(sigmas[i], 4) normalizes the integral
             }
 
             return LoGPyramid;

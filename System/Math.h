@@ -26,6 +26,12 @@ namespace System
 
         template<typename T>
         static double GaussianDistance(const vector<T>& u, const vector<T>& v, double sigma);
+
+        template<typename T>
+        static double Mean(const vector<T>& vec);
+
+        template<typename T>
+        static double StandardDeviation(const vector<T>& vec);
     };
 
     const double Math::PI = 3.1415926535897932384626433832795;
@@ -85,5 +91,27 @@ namespace System
             distance += (u[i] - v[i]) * (u[i] - v[i]);
 
         return exp(-distance / (2 * sigma * sigma));
+    }
+
+    template<typename T>
+    inline double Math::Mean(const vector<T>& vec)
+    {
+        assert(vec.size() > 0);
+
+        return Sum(vec) / vec.size();
+    }
+
+    template<typename T>
+    inline double Math::StandardDeviation(const vector<T>& vec)
+    {
+        assert(vec.size() > 0);
+
+        double mean = Mean(vec);
+
+        double squareSum = 0;
+        for (int i = 0; i < vec.size(); i++)
+            squareSum += vec[i] * vec[i];
+
+        return sqrt((squareSum - vec.size() * mean * mean) / vec.size());
     }
 }

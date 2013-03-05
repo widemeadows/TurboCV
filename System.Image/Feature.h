@@ -294,7 +294,7 @@ namespace System
 		        NormOneNormalize(ring.begin(), ring.end());
 
                 for (auto item : ring)
-                    descriptor.push_back(item / distanceNum);
+                    descriptor.push_back(item);
 	        }
 
 	        return descriptor;
