@@ -135,7 +135,7 @@ namespace System
             int halfSize = ksize / 2;
             Mat kernel(ksize, ksize, ktype);
 
-            double scale = -1 / (CV_PI * pow(sigma, 4));
+            double scale = -1 / (CV_PI);
             for (int i = 0; i < ksize; i++)
             {
                 for (int j = i; j < ksize; j++)
@@ -194,7 +194,7 @@ namespace System
             {
                 CV_Assert(sigmas[i] >= 0);
 
-                int ksize = sigmas[i] * 6;
+                int ksize = sigmas[i] * 6 + 1;
                 if (ksize % 2 == 0)
                     ksize++;
 

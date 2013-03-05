@@ -1,11 +1,12 @@
 #pragma once
 
+#include "../System/String.h"
 #include "../System/Math.h"
 #include "Contour.h"
 #include "Filter.h"
 #include "Geometry.h"
+#include "Info.h"
 #include "Morphology.h"
-#include "Util.h"
 #include <cv.h>
 #include <tuple>
 using namespace cv;
@@ -15,32 +16,34 @@ namespace System
 {
     namespace Image
     {
-        class Algorithm
+        class Feature
         {
         public:
             static Mat Preprocess(const Mat& sketchImage, bool thinning = false);
 
-            Feature GetFeatureWithPreprocess(const Mat& sketchImage, bool thinning = false) const;
+            FeatureInfo<double> GetFeatureWithPreprocess(const Mat& sketchImage, bool thinning = false) const;
 
-            Feature GetFeatureWithoutPreprocess(const Mat& sketchImage) const;
+            FeatureInfo<double> GetFeatureWithoutPreprocess(const Mat& sketchImage) const;
+
+            virtual String GetName() const = 0;
             
         protected:
             static Mat GetBoundingBox(const Mat& sketchImage);
 
-            virtual Feature GetFeature(const Mat& sketchImage) const = 0;
+            virtual FeatureInfo<double> GetFeature(const Mat& sketchImage) const = 0;
         };
 
-        inline Feature Algorithm::GetFeatureWithPreprocess(const Mat& sketchImage, bool thinning) const
+        inline FeatureInfo<double> Feature::GetFeatureWithPreprocess(const Mat& sketchImage, bool thinning) const
         {
             return GetFeature(Preprocess(sketchImage, thinning));
         }
 
-        inline Feature Algorithm::GetFeatureWithoutPreprocess(const Mat& sketchImage) const
+        inline FeatureInfo<double> Feature::GetFeatureWithoutPreprocess(const Mat& sketchImage) const
         {
             return GetFeature(sketchImage);
         }
 
-        inline Mat Algorithm::GetBoundingBox(const Mat& sketchImage)
+        inline Mat Feature::GetBoundingBox(const Mat& sketchImage)
         {
             int minX = sketchImage.cols - 1, maxX = 0,
                 minY = sketchImage.rows - 1, maxY = 0;
@@ -60,7 +63,7 @@ namespace System
             return Mat(sketchImage, Range(minY, maxY + 1), Range(minX, maxX + 1));
         }
 
-        inline Mat Algorithm::Preprocess(const Mat& sketchImage, bool thinning)
+        inline Mat Feature::Preprocess(const Mat& sketchImage, bool thinning)
         {
             Mat revImage = reverse(sketchImage);
 
@@ -102,17 +105,19 @@ namespace System
 
         ///////////////////////////////////////////////////////////////////////
 
-        class HOG : public Algorithm
+        class HOG : public Feature
         {
         protected:
-            virtual Feature GetFeature(const Mat& sketchImage) const;
+            virtual FeatureInfo<double> GetFeature(const Mat& sketchImage) const;
             
+            virtual String GetName() const { return "hog"; };
+
         private:
-            static Descriptor GetDescriptor(const vector<Mat>& filteredOrientImages, 
+            static DescriptorInfo<double> GetDescriptor(const vector<Mat>& filteredOrientImages, 
                 const Point& centre, int blockSize, int cellNum);
         };
 
-        inline Feature HOG::GetFeature(const Mat& sketchImage) const
+        inline FeatureInfo<double> HOG::GetFeature(const Mat& sketchImage) const
         {
             int orientNum = 4, cellNum = 4, blockSize = 92, sampleNum = 28;
             int cellSize = blockSize / cellNum, kernelSize = cellSize * 2 + 1;
@@ -136,14 +141,14 @@ namespace System
             for (int i = 0; i < orientNum; i++)
                 filter2D(orientChannels[i], filteredOrientChannels[i], -1, tentKernel);
 
-            Feature feature;
+            FeatureInfo<double> feature;
             int height = sketchImage.rows, width = sketchImage.cols;
             int heightStep = height / sampleNum, widthStep = width / sampleNum;
             for (int i = heightStep / 2; i < height; i += heightStep)
             {
                 for (int j = widthStep / 2; j < width; j += widthStep)
                 {
-                    Descriptor desc = GetDescriptor(filteredOrientChannels, 
+                    DescriptorInfo<double> desc = GetDescriptor(filteredOrientChannels, 
                         Point(j, i), blockSize, cellNum);
                     feature.push_back(desc);
                 }
@@ -152,7 +157,7 @@ namespace System
             return feature;
         }
 
-        inline Descriptor HOG::GetDescriptor(const vector<Mat>& filteredOrientChannels, 
+        inline DescriptorInfo<double> HOG::GetDescriptor(const vector<Mat>& filteredOrientChannels, 
             const Point& centre, int blockSize, int cellNum)
         {
             int height = filteredOrientChannels[0].rows, 
@@ -182,30 +187,32 @@ namespace System
                 }
             }
 
-            Descriptor desc;
+            DescriptorInfo<double> desc;
             for (int i = 0; i < cellNum; i++)
                 for (int j = 0; j < cellNum; j++)
                     for (int k = 0; k < orientNum; k++)
                         desc.push_back(hist.at<double>(i, j, k));
 
-            NormTwoNormalize(desc);
+            NormTwoNormalize(desc.begin(), desc.end());
             return desc;
         }
         
         ///////////////////////////////////////////////////////////////////////
 
-        class HOOSC : public Algorithm
+        class HOOSC : public Feature
         {
         protected:
-            virtual Feature GetFeature(const Mat& sketchImage) const;
+            virtual FeatureInfo<double> GetFeature(const Mat& sketchImage) const;
             
+            virtual String GetName() const { return "hoosc"; };
+
         private:
-            static Descriptor GetDescriptor(const Mat& orientImage,
+            static DescriptorInfo<double> GetDescriptor(const Mat& orientImage,
                 const Point& pivot, const vector<Point>& points,
                 const vector<double>& logDistances, int angleNum, int orientNum);
         };
 
-        inline Feature HOOSC::GetFeature(const Mat& sketchImage) const
+        inline FeatureInfo<double> HOOSC::GetFeature(const Mat& sketchImage) const
         {
             double tmp[] = { 0, 0.5, 1 };
             vector<double> logDistances(tmp, tmp + sizeof(tmp) / sizeof(double));
@@ -218,10 +225,10 @@ namespace System
             Mat& powerImage = get<0>(gradient);
             Mat& orientImage = get<1>(gradient);
 
-            Feature feature;
+            FeatureInfo<double> feature;
             for (int i = 0; i < pivots.size(); i++)
             {
-                Descriptor descriptor = GetDescriptor(orientImage, pivots[i], points,
+                DescriptorInfo<double> descriptor = GetDescriptor(orientImage, pivots[i], points,
                     logDistances, angleNum, orientNum);
                 feature.push_back(descriptor);
             }
@@ -229,7 +236,7 @@ namespace System
             return feature;
         }
 
-        inline Descriptor HOOSC::GetDescriptor(const Mat& orientImage,
+        inline DescriptorInfo<double> HOOSC::GetDescriptor(const Mat& orientImage,
             const Point& pivot, const vector<Point>& points,
             const vector<double>& logDistances, int angleNum, int orientNum)
         {
@@ -276,7 +283,7 @@ namespace System
 		        }
 	        }
 
-            Descriptor descriptor;
+            DescriptorInfo<double> descriptor;
 	        for (int i = 0; i < distanceNum; i++)
 	        {
                 vector<double> ring;
@@ -284,7 +291,7 @@ namespace System
 			        for (int k = 0; k < orientNum; k++)
 				        ring.push_back(bins.at<double>(i, j, k));
 
-		        NormOneNormalize(ring);
+		        NormOneNormalize(ring.begin(), ring.end());
 
                 for (auto item : ring)
                     descriptor.push_back(item / distanceNum);
@@ -295,17 +302,19 @@ namespace System
 
         ///////////////////////////////////////////////////////////////////////
 
-        class SC : public Algorithm
+        class SC : public Feature
         {
         protected:
-            virtual Feature GetFeature(const Mat& sketchImage) const;
+            virtual FeatureInfo<double> GetFeature(const Mat& sketchImage) const;
             
+            virtual String GetName() const { return "sc"; };
+
         private:
-            static Descriptor GetDescriptor(const Point& pivot, const vector<Point>& pivots,
+            static DescriptorInfo<double> GetDescriptor(const Point& pivot, const vector<Point>& pivots,
                 const vector<double>& logDistances, int angleNum);
         };
 
-        inline Feature SC::GetFeature(const Mat& sketchImage) const
+        inline FeatureInfo<double> SC::GetFeature(const Mat& sketchImage) const
         {
             double tmp[] = { 0, 0.125, 0.25, 0.5, 1, 2 };
             vector<double> logDistances(tmp, tmp + sizeof(tmp) / sizeof(double));
@@ -314,17 +323,18 @@ namespace System
             vector<Point> points = Contour::GetEdgels(sketchImage);
             vector<Point> pivots = Contour::GetPivots(points, points.size() * 0.33);
 
-            Feature feature;
+            FeatureInfo<double> feature;
             for (int i = 0; i < pivots.size(); i++)
             {
-                Descriptor descriptor = GetDescriptor(pivots[i], pivots, logDistances, angleNum);
+                DescriptorInfo<double> descriptor = GetDescriptor(pivots[i], pivots, 
+                    logDistances, angleNum);
                 feature.push_back(descriptor);
             }
 
             return feature;
         }
 
-        inline Descriptor SC::GetDescriptor(const Point& pivot, const vector<Point>& pivots,
+        inline DescriptorInfo<double> SC::GetDescriptor(const Point& pivot, const vector<Point>& pivots,
                 const vector<double>& logDistances, int angleNum)
         {
             int pivotNum = pivots.size();
@@ -360,14 +370,14 @@ namespace System
 		        }
 	        }
 
-            Descriptor descriptor;
+            DescriptorInfo<double> descriptor;
 	        for (int i = 0; i < distanceNum; i++)
 	        {
                 vector<double> ring;
 		        for (int j = 0; j < angleNum; j++)
 				    ring.push_back(bins.at<double>(i, j));
 
-		        NormOneNormalize(ring);
+		        NormOneNormalize(ring.begin(), ring.end());
 
                 for (auto item : ring)
                     descriptor.push_back(item / distanceNum);
@@ -378,17 +388,19 @@ namespace System
         
         ///////////////////////////////////////////////////////////////////////
 
-        class SHOG : public Algorithm
+        class SHOG : public Feature
         {
         protected:
-            virtual Feature GetFeature(const Mat& sketchImage) const;
+            virtual FeatureInfo<double> GetFeature(const Mat& sketchImage) const;
             
+            virtual String GetName() const { return "shog"; };
+
         private:
-            static Descriptor GetDescriptor(const vector<Mat>& orientChannels,
+            static DescriptorInfo<double> GetDescriptor(const vector<Mat>& orientChannels,
                 const Point& pivot, const vector<Point>& points, int cellNum);
         };
 
-        inline Feature SHOG::GetFeature(const Mat& sketchImage) const
+        inline FeatureInfo<double> SHOG::GetFeature(const Mat& sketchImage) const
         {
             int orientNum = 4, cellNum = 4;
 
@@ -396,10 +408,10 @@ namespace System
             vector<Point> pivots = Contour::GetPivots(points, points.size() * 0.33);
             vector<Mat> orientChannels = Gradient::GetOrientChannels(sketchImage, orientNum);
 
-            Feature feature;
+            FeatureInfo<double> feature;
             for (int i = 0; i < pivots.size(); i++)
             {
-                Descriptor descriptor = GetDescriptor(orientChannels, pivots[i], 
+                DescriptorInfo<double> descriptor = GetDescriptor(orientChannels, pivots[i], 
                     points, cellNum);
                 feature.push_back(descriptor);
             }
@@ -407,7 +419,7 @@ namespace System
             return feature;
         }
 
-        inline Descriptor SHOG::GetDescriptor(const vector<Mat>& orientChannels,
+        inline DescriptorInfo<double> SHOG::GetDescriptor(const vector<Mat>& orientChannels,
             const Point& pivot, const vector<Point>& points, int cellNum)
         {
             vector<double> distances = Geometry::EulerDistance(pivot, points);
@@ -459,30 +471,32 @@ namespace System
                 }
             }
 
-            Descriptor desc;
+            DescriptorInfo<double> desc;
             for (int i = 0; i < cellNum; i++)
                 for (int j = 0; j < cellNum; j++)
                     for (int k = 0; k < orientNum; k++)
                         desc.push_back(hist.at<double>(i, j, k));
 
-            NormTwoNormalize(desc);
+            NormTwoNormalize(desc.begin(), desc.end());
             return desc;
         }
 
         ///////////////////////////////////////////////////////////////////////
 
-        class RHOOSC : public Algorithm
+        class RHOOSC : public Feature
         {
         protected:
-            virtual Feature GetFeature(const Mat& sketchImage) const;
+            virtual FeatureInfo<double> GetFeature(const Mat& sketchImage) const;
             
+            virtual String GetName() const { return "rhoosc"; };
+
         private:
-            static Descriptor GetDescriptor(const Mat& orientImage, 
+            static DescriptorInfo<double> GetDescriptor(const Mat& orientImage, 
                 const Point& centre, const vector<Point>& points, 
                 const vector<double>& logDistances, int angleNum, int orientNum);
         };
 
-        inline Feature RHOOSC::GetFeature(const Mat& sketchImage) const
+        inline FeatureInfo<double> RHOOSC::GetFeature(const Mat& sketchImage) const
         {
             double tmp[] = { 0, 0.5, 1 };
             vector<double> logDistances(tmp, tmp + sizeof(tmp) / sizeof(double));
@@ -491,14 +505,14 @@ namespace System
             Mat orientImage = get<1>(Gradient::GetGradient(sketchImage));
             vector<Point> points = Contour::GetEdgels(sketchImage); 
 
-            Feature feature;
+            FeatureInfo<double> feature;
             int height = sketchImage.rows, width = sketchImage.cols;
             int heightStep = height / sampleNum, widthStep = width / sampleNum;
             for (int i = heightStep / 2; i < height; i += heightStep)
             {
                 for (int j = widthStep / 2; j < width; j += widthStep)
                 {
-                    Descriptor desc = GetDescriptor(orientImage, Point(j, i), points,
+                    DescriptorInfo<double> desc = GetDescriptor(orientImage, Point(j, i), points,
                         logDistances, angleNum, orientNum);
                     feature.push_back(desc);
                 }
@@ -507,7 +521,7 @@ namespace System
             return feature;
         }
 
-        inline Descriptor RHOOSC::GetDescriptor(const Mat& orientImage, 
+        inline DescriptorInfo<double> RHOOSC::GetDescriptor(const Mat& orientImage, 
             const Point& centre, const vector<Point>& points, 
             const vector<double>& logDistances, int angleNum, int orientNum)
         {
@@ -554,7 +568,7 @@ namespace System
 		        }
 	        }
 
-            Descriptor descriptor;
+            DescriptorInfo<double> descriptor;
 	        for (int i = 0; i < distanceNum; i++)
 	        {
                 vector<double> ring;
@@ -562,7 +576,7 @@ namespace System
 			        for (int k = 0; k < orientNum; k++)
 				        ring.push_back(bins.at<double>(i, j, k));
 
-		        NormOneNormalize(ring);
+		        NormOneNormalize(ring.begin(), ring.end());
 
                 for (auto item : ring)
                     descriptor.push_back(item);
@@ -573,17 +587,19 @@ namespace System
 
         ///////////////////////////////////////////////////////////////////////
 
-        class RSC : public Algorithm
+        class RSC : public Feature
         {
         protected:
-            virtual Feature GetFeature(const Mat& sketchImage) const;
+            virtual FeatureInfo<double> GetFeature(const Mat& sketchImage) const;
+
+            virtual String GetName() const { return "rsc"; };
             
         private:
-            static Descriptor GetDescriptor(const Point& centre, const vector<Point>& pivots, 
-                const vector<double>& logDistances, int angleNum);
+            static DescriptorInfo<double> GetDescriptor(const Point& centre, 
+                const vector<Point>& pivots, const vector<double>& logDistances, int angleNum);
         };
 
-        inline Feature RSC::GetFeature(const Mat& sketchImage) const
+        inline FeatureInfo<double> RSC::GetFeature(const Mat& sketchImage) const
         {
             double tmp[] = { 0, 0.125, 0.25, 0.5, 1, 2 };
             vector<double> logDistances(tmp, tmp + sizeof(tmp) / sizeof(double));
@@ -593,14 +609,14 @@ namespace System
             vector<Point> points = Contour::GetEdgels(sketchImage); 
             vector<Point> pivots = Contour::GetPivots(points, points.size() * 0.33);
 
-            Feature feature;
+            FeatureInfo<double> feature;
             int height = sketchImage.rows, width = sketchImage.cols;
             int heightStep = height / sampleNum, widthStep = width / sampleNum;
             for (int i = heightStep / 2; i < height; i += heightStep)
             {
                 for (int j = widthStep / 2; j < width; j += widthStep)
                 {
-                    Descriptor desc = GetDescriptor(Point(j, i), pivots, logDistances, angleNum);
+                    DescriptorInfo<double> desc = GetDescriptor(Point(j, i), pivots, logDistances, angleNum);
                     feature.push_back(desc);
                 }
             }
@@ -608,8 +624,8 @@ namespace System
             return feature;
         }
 
-        inline Descriptor RSC::GetDescriptor(const Point& centre, const vector<Point>& pivots, 
-            const vector<double>& logDistances, int angleNum)
+        inline DescriptorInfo<double> RSC::GetDescriptor(const Point& centre, 
+            const vector<Point>& pivots, const vector<double>& logDistances, int angleNum)
         {
             int pivotNum = pivots.size();
             assert(pivotNum > 1);
@@ -645,14 +661,14 @@ namespace System
 		        }
 	        }
 
-            Descriptor descriptor;
+            DescriptorInfo<double> descriptor;
 	        for (int i = 0; i < distanceNum; i++)
 	        {
                 vector<double> ring;
 		        for (int j = 0; j < angleNum; j++)
 				    ring.push_back(bins.at<double>(i, j));
 
-		        NormOneNormalize(ring);
+		        NormOneNormalize(ring.begin(), ring.end());
 
                 for (auto item : ring)
                     descriptor.push_back(item);
@@ -663,17 +679,19 @@ namespace System
 
         ///////////////////////////////////////////////////////////////////////
 
-        class ASHOG : public Algorithm
+        class ASHOG : public Feature
         {
         protected:
-            virtual Feature GetFeature(const Mat& sketchImage) const;
+            virtual FeatureInfo<double> GetFeature(const Mat& sketchImage) const;
+
+            virtual String GetName() const { return "ashog"; };
             
         private:
-            static Descriptor GetDescriptor(const vector<Mat>& orientChannels, 
+            static DescriptorInfo<double> GetDescriptor(const vector<Mat>& orientChannels, 
                 const Point& pivot, int blockSize, int cellNum);
         };
 
-        inline Feature ASHOG::GetFeature(const Mat& sketchImage) const
+        inline FeatureInfo<double> ASHOG::GetFeature(const Mat& sketchImage) const
         {
             int orientNum = 4, cellNum = 4, scaleNum = 15;
             double sigmaInit = 0.7, sigmaStep = 1.2;
@@ -688,7 +706,7 @@ namespace System
             vector<Mat> orientChannels = Gradient::GetOrientChannels(sketchImage, orientNum);
             vector<Mat> pyramid = GetLoGPyramid(sketchImage, sigmas);
             
-            Feature feature;
+            FeatureInfo<double> feature;
             for (int i = 0; i < pivots.size(); i++)
             {
                 for (int j = 0; j < scaleNum; j++)
@@ -699,7 +717,8 @@ namespace System
 
                     if (curr > next && curr > prev)
                     {
-                        Descriptor descriptor = GetDescriptor(orientChannels, pivots[i], sigmas[j] * 6, cellNum);
+                        DescriptorInfo<double> descriptor = GetDescriptor(orientChannels, 
+                            pivots[i], sigmas[j] * 6, cellNum);
                         feature.push_back(descriptor);
                     }
                 }
@@ -708,8 +727,8 @@ namespace System
             return feature;
         }
 
-        inline Descriptor ASHOG::GetDescriptor(const vector<Mat>& orientChannels, const Point& pivot, 
-            int blockSize, int cellNum)
+        inline DescriptorInfo<double> ASHOG::GetDescriptor(const vector<Mat>& orientChannels, 
+            const Point& pivot, int blockSize, int cellNum)
         {
             int height = orientChannels[0].rows, 
                 width = orientChannels[0].cols,
@@ -756,29 +775,31 @@ namespace System
                 }
             }
 
-            Descriptor desc;
+            DescriptorInfo<double> desc;
             for (int i = 0; i < cellNum; i++)
                 for (int j = 0; j < cellNum; j++)
                     for (int k = 0; k < orientNum; k++)
                         desc.push_back(hist.at<double>(i, j, k));
 
-            NormTwoNormalize(desc);
+            NormTwoNormalize(desc.begin(), desc.end());
             return desc;
         }
 
         ///////////////////////////////////////////////////////////////////////
 
-        class Gabor : public Algorithm
+        class Gabor : public Feature
         {
         protected:
-            virtual Feature GetFeature(const Mat& sketchImage) const;
+            virtual FeatureInfo<double> GetFeature(const Mat& sketchImage) const;
+
+            virtual String GetName() const { return "gabor"; };
             
         private:
-            static Descriptor GetDescriptor(const vector<Mat>& gaborResponses, 
+            static DescriptorInfo<double> GetDescriptor(const vector<Mat>& gaborResponses, 
                 const Point& centre, int blockSize, int cellNum);
         };
 
-        inline Feature Gabor::GetFeature(const Mat& sketchImage) const
+        inline FeatureInfo<double> Gabor::GetFeature(const Mat& sketchImage) const
         {
             int sampleNum = 28, blockSize = 92, cellNum = 4;
             int tmp[] = { 8, 8, 8, 8 };
@@ -805,14 +826,14 @@ namespace System
                 }
             }
 
-            Feature feature;
+            FeatureInfo<double> feature;
             int height = sketchImage.rows, width = sketchImage.cols;
             int heightStep = height / sampleNum, widthStep = width / sampleNum;
             for (int i = heightStep / 2; i < height; i += heightStep)
             {
 		        for (int j = widthStep / 2; j < width; j += widthStep)
 		        {
-			        Descriptor descriptor = GetDescriptor(gaborResponses,
+			        DescriptorInfo<double> descriptor = GetDescriptor(gaborResponses,
                         Point(j, i), blockSize, cellNum);
                     feature.push_back(descriptor);
 		        }
@@ -821,7 +842,7 @@ namespace System
             return feature;
         }
 
-        inline Descriptor Gabor::GetDescriptor(const vector<Mat>& gaborResponses, 
+        inline DescriptorInfo<double> Gabor::GetDescriptor(const vector<Mat>& gaborResponses, 
                 const Point& centre, int blockSize, int cellNum)
         {
             assert(gaborResponses.size() > 0);
@@ -832,7 +853,7 @@ namespace System
                 expectedLeft = centre.x - blockSize / 2,
                 cellSize = blockSize / cellNum;
 
-            Descriptor descriptor;
+            DescriptorInfo<double> desc;
             for (int i = 0; i < gaborResponses.size(); i++)
             {
                 vector<double> cells(cellNum * cellNum);
@@ -851,11 +872,11 @@ namespace System
                 }
 
                 for (int j = 0; j < cells.size(); j++)
-                    descriptor.push_back(cells[i]);
+                    desc.push_back(cells[i]);
             }
 
-            NormTwoNormalize(descriptor);
-            return descriptor;
+            NormTwoNormalize(desc.begin(), desc.end());
+            return desc;
         }
     }
 }

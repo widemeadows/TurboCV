@@ -30,9 +30,6 @@
     <ClInclude Include="Util.h">
       <Filter>头文件</Filter>
     </ClInclude>
-    <ClInclude Include="Algorithm.h">
-      <Filter>头文件</Filter>
-    </ClInclude>
     <ClInclude Include="EdgeLink.h">
       <Filter>头文件</Filter>
     </ClInclude>
@@ -42,10 +39,11 @@
     <ClInclude Include="Contour.h">
       <Filter>头文件</Filter>
     </ClInclude>
-  </ItemGroup>
-  <ItemGroup>
-    <ClCompile Include="Main.cpp">
-      <Filter>源文件</Filter>
-    </ClCompile>
+    <ClInclude Include="Info.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="Feature.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

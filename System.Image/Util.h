@@ -11,9 +11,7 @@ namespace System
 {
     namespace Image
     {
-        typedef vector<float> Histogram;
-        typedef vector<float> Descriptor;
-        typedef vector<Descriptor> Feature;
+        typedef vector<double> Histogram;
 
         const int INF = 2147483647;
         const double EPS = 1e-14;
@@ -60,34 +58,48 @@ namespace System
             return result;
         }
 
-        template<typename T>
-        inline void NormOneNormalize(vector<T>& vec)
+        template<typename RandomAccessIterator>
+        inline void NormOneNormalize(const RandomAccessIterator& begin, const RandomAccessIterator& end)
         {
             double sum = 0;
+            RandomAccessIterator curr = begin;
 
-            for (T item : vec)
-                sum += item;
+            do
+            {
+                sum += *curr;     
+            } while (++curr != end);
 
             if (sum != 0)
-                for (int i = vec.size() - 1; i >= 0; i--)
-                    vec[i] /= sum;
+            {
+                curr = begin;
+
+                do
+                {
+                    *curr /= sum;
+                } while (++curr != end);
+            }
         }
 
-        template<typename T>
-        inline void NormTwoNormalize(vector<T>& vec)
+        template<typename RandomAccessIterator>
+        inline void NormTwoNormalize(const RandomAccessIterator& begin, const RandomAccessIterator& end)
         {
             double sum = 0;
+            RandomAccessIterator curr = begin;
 
-            for (T item : vec)
-                sum += item * item;
+            do
+            {
+                sum += (*curr) * (*curr);     
+            } while (++curr != end);
 
             if (sum != 0)
             {
                 double root = sqrt(sum);
-                for (int i = vec.size() - 1; i >= 0; i--)
+                curr = begin;
+                
+                do
                 {
-                    vec[i] /= root;
-                }
+                    *curr /= root;
+                } while (++curr != end);
             }
         }
 
@@ -168,26 +180,6 @@ namespace System
             }
 
             return make_tuple<pickUps, others>;
-        }
-
-        inline vector<tuple<Mat, int>> GetImages(const System::String& imageSetPath, int imageLoadMode)
-        {
-            System::IO::DirectoryInfo imageSetInfo(imageSetPath);
-
-            vector<System::String> classInfos = imageSetInfo.GetDirectories();
-            sort(classInfos.begin(), classInfos.end());
-
-            vector<tuple<Mat, int>> images;
-            for (int i = 0; i < classInfos.size(); i++)
-            {
-                vector<System::String> fileInfos = System::IO::DirectoryInfo(classInfos[i]).GetFiles();
-                sort(fileInfos.begin(), fileInfos.end());
-        
-                for (int j = 0; j < fileInfos.size(); j++)
-                    images.push_back(make_tuple(imread(fileInfos[j], imageLoadMode), i + 1));
-            }
-
-            return images;
         }
 
         inline void imshow(const Mat& image, bool scale = true)
