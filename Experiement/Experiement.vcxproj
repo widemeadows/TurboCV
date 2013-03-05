@@ -121,6 +121,7 @@
       <OpenMP>GenerateParallelCode</OpenMP>
       <Cpp0xSupport>false</Cpp0xSupport>
       <UseIntelOptimizedHeaders>false</UseIntelOptimizedHeaders>
+      <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
     </ClCompile>
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>

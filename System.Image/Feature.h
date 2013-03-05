@@ -878,5 +878,136 @@ namespace System
             NormTwoNormalize(desc.begin(), desc.end());
             return desc;
         }
+
+        ///////////////////////////////////////////////////////////////////////
+
+        class GIST : public Feature
+        {
+        protected:
+            virtual FeatureInfo<double> GetFeature(const Mat& sketchImage) const;
+
+            virtual String GetName() const { return "gist"; };
+
+        private:
+            static vector<Mat> GetGaborsInFreqDomain(const Size& size, const vector<int>& orientNumPerScale);
+        };
+
+        inline FeatureInfo<double> GIST::GetFeature(const Mat& sketchImage) const
+        {
+            int blockNum = 4;
+            int tmp[] = { 8, 8, 8, 8 };
+            vector<int> orientNumPerScale(tmp, tmp + sizeof(tmp) / sizeof(int));
+
+            vector<Mat> gaborsInFreqDomain = GetGaborsInFreqDomain(sketchImage.size(), orientNumPerScale);
+            
+            Mat dftInReal, dftOutComplex, dftOutPlanes[2];
+	        sketchImage.convertTo(dftInReal, CV_64FC1);
+	        dft(dftInReal, dftOutComplex, DFT_COMPLEX_OUTPUT);
+	        split(dftOutComplex, dftOutPlanes);
+
+            DescriptorInfo<double> descriptor;
+	        for (int i = 0; i < gaborsInFreqDomain.size(); i++)
+	        {
+		        Mat idftInPlanes[] = { Mat::zeros(sketchImage.size(), CV_64F), Mat::zeros(sketchImage.size(), CV_64F) };
+		        for (int j = 0; j < sketchImage.rows; j++)
+			        for (int k = 0; k < sketchImage.cols; k++)
+			        {
+				        idftInPlanes[0].at<double>(j, k) = dftOutPlanes[0].at<double>(j, k) *
+					        gaborsInFreqDomain[i].at<double>(j, k);
+				        idftInPlanes[1].at<double>(j, k) = dftOutPlanes[1].at<double>(j, k) *
+					        gaborsInFreqDomain[i].at<double>(j, k);
+			        }
+
+		        Mat idftInComplex, idftOutComplex, idftOutPlanes[2];
+		        merge(idftInPlanes, 2, idftInComplex);
+		        idft(idftInComplex, idftOutComplex, DFT_SCALE);
+		        split(idftOutComplex, idftOutPlanes);
+
+		        Mat finalImage;
+		        magnitude(idftOutPlanes[0], idftOutPlanes[1], finalImage);
+
+                int blockHeight = finalImage.rows / blockNum, blockWidth = finalImage.cols / blockNum;
+		        for (int j = 0; j < blockNum; j++)
+                {
+                    for (int k = 0; k < blockNum; k++)
+                    {
+                        double sum = 0;
+			            for (int r = 0; r < blockHeight; r++)
+				            for (int c = 0; c < blockWidth; c++)
+					            sum += finalImage.at<double>(j * blockHeight + r, k * blockWidth + c);
+
+                        descriptor.push_back(sum / (blockWidth * blockHeight));
+                    }
+                }
+	        }
+
+            FeatureInfo<double> feature;
+            feature.push_back(descriptor);
+            return feature;
+        }
+    
+        inline vector<Mat> GIST::GetGaborsInFreqDomain(const Size& size, const vector<int>& orientNumPerScale)
+        {
+            int height = size.height, width = size.width;
+
+            int filterNum = 0;
+	        for (int i = orientNumPerScale.size() - 1; i >= 0; i--)
+		        filterNum += orientNumPerScale[i];
+
+	        Mat param(filterNum, 4, CV_64F);
+	        int l = 0;
+	        for (int i = 0; i < orientNumPerScale.size(); i++)
+		        for (int j = 0; j < orientNumPerScale[i]; j++)
+		        {
+			        param.at<double>(l, 0) = 0.35;
+			        param.at<double>(l, 1) = 0.3 / pow(1.85, i);
+			        param.at<double>(l, 2) = 16 * pow(orientNumPerScale[i], 2) / pow(32, 2);
+			        param.at<double>(l, 3) = CV_PI / orientNumPerScale[i] * j;
+			        l++;
+		        }
+
+	        Mat fx(size, CV_64F);
+	        Mat fy(size, CV_64F);
+	        Mat fp(size, CV_64F);
+	        Mat fo(size, CV_64F);
+	        for (int i = 0; i < height; i++)
+		        for (int j = 0; j < width; j++)
+		        {
+			        fx.at<double>(i, j) = j - width / 2.0;
+			        fy.at<double>(i, j) = i - height / 2.0;
+			        fp.at<double>(i, j) = sqrt(fx.at<double>(i, j) * fx.at<double>(i, j) + fy.at<double>(i, j) * fy.at<double>(i, j));
+			        fo.at<double>(i, j) = atan2(fy.at<double>(i, j), fx.at<double>(i, j));
+		        }
+
+            fp = FFTShift(fp);
+            fo = FFTShift(fo);
+
+            vector<Mat> gaborsInFreqDomain;
+	        for (int i = 0; i < filterNum; i++)
+	        {
+		        Mat gaborInFreqDomain(size, CV_64F);
+
+		        for (int j = 0; j < height; j++)
+			        for (int k = 0; k < width; k++)
+			        {
+				        double tmp = fo.at<double>(j, k) + param.at<double>(i, 3);
+
+				        while (tmp < -CV_PI)
+					        tmp += 2 * CV_PI;
+				        while (tmp > CV_PI)
+					        tmp -= 2 * CV_PI;
+
+				        gaborInFreqDomain.at<double>(j, k) = exp(-10.0 * param.at<double>(i, 0) * 
+					        (fp.at<double>(j, k) / height / param.at<double>(i, 1) - 1) * 
+					        (fp.at<double>(j, k) / width / param.at<double>(i, 1) - 1) - 
+					        2.0 * param.at<double>(i, 2) * CV_PI * tmp * tmp);
+
+			        }
+
+		        gaborsInFreqDomain.push_back(gaborInFreqDomain);
+	        }
+
+            return gaborsInFreqDomain;
+        }
     }
 }
