@@ -81,12 +81,14 @@ void ExtractGlobalFeature(const System::String& imageSetPath, const Feature& fea
         vector<double> data;
         for (int j = 0; j < trainingSet[i][0].size(); j++)
             data.push_back(trainingSet[i][0][j]);
+        trainingData.push_back(data);
     }
     for (int i = 0; i < evaluationSet.size(); i++)
     {
         vector<double> data;
         for (int j = 0; j < evaluationSet[i][0].size(); j++)
             data.push_back(evaluationSet[i][0][j]);
+        evaluationData.push_back(data);
     }
 
     vector<int> trainingLabels, evaluationLabels;
@@ -266,5 +268,22 @@ int main()
     //ExtractLocalFeature("oracles_png", Gabor(), 500);
     //CrossValidation("oracles_png", Gabor(), 500);
 
-    ExtractGlobalFeature("oracles_png", GIST());
+    //ExtractGlobalFeature("oracles_png", GIST());
+
+    Mat image = imread("00001.png", CV_LOAD_IMAGE_GRAYSCALE);
+    image = Feature::Preprocess(image, true);
+
+    imshow(image);
+    waitKey(0);
+    Mat tmpImage;
+
+    Mat kernel = getGaussianKernel(5, 0.5, CV_64F);
+    sepFilter2D(image, tmpImage, CV_64F, kernel, kernel);
+
+    for (int i = 0; i < tmpImage.rows; i++)
+        for (int j = 0; j < tmpImage.cols; j++)
+            tmpImage.at<double>(i, j) = tmpImage.at<double>(i, j) > 0 ? tmpImage.at<double>(i, j) : 0;
+
+    imshow(tmpImage);
+    waitKey(0);
 }
