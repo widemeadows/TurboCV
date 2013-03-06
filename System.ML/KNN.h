@@ -16,6 +16,33 @@ namespace System
         class KNN
         {
         public:
+            static pair<vector<vector<double>>, vector<vector<bool>>> Evaluate(
+                const vector<vector<double>>& trainingSet,
+                const vector<int>& trainingLabels,
+                const vector<vector<double>>& evaluationSet,
+                const vector<int>& evaluationLabels)
+            {
+                assert(trainingSet.size() == trainingLabels.size());
+                assert(evaluationSet.size() == evaluationSet.size());
+
+		        vector<vector<double>> distanceMatrix(evaluationSet.size());
+                vector<vector<bool>> relevantMatrix(evaluationSet.size());
+
+                #pragma omp parallel for
+                for (int i = 0; i < evaluationSet.size(); i++)
+                {
+                    for (int j = 0; j < trainingSet.size(); j++)
+		            {
+                        distanceMatrix[i].push_back(Math::NormOneDistance(
+                            evaluationSet[i], trainingSet[j]));
+
+                        relevantMatrix[i].push_back(evaluationLabels[i] == trainingLabels[j]);
+		            }
+                }
+
+                return make_pair(distanceMatrix, relevantMatrix);
+            }
+
             pair<double, map<int, double>> Evaluate(
                 const vector<vector<double>>& trainingSet,
                 const vector<int>& trainingLabels,
@@ -29,8 +56,7 @@ namespace System
 		        Train(trainingSet, trainingLabels);
 		        vector<int> predict = Predict(evaluationSet, K);
 
-                int evaluationNum = evaluationSet.size(), classNum = _dataNumPerClass.size();
-		        int correctNum = 0;
+                int evaluationNum = evaluationSet.size(), correctNum = 0;
                 unordered_map<int, int> evaluationNumPerClass, correctNumPerClass;
 		        for (int i = 0; i < evaluationNum; i++)
 		        {
