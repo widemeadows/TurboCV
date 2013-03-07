@@ -148,27 +148,27 @@ namespace UnitTest
         {
             String str = "Hello World; Hi World.";
 
-            Assert::AreEqual(0, str.IndexOf('H'));
-            Assert::AreEqual(14, str.IndexOf('i'));
-            Assert::AreEqual(21, str.IndexOf('.'));
-            Assert::AreEqual(-1, str.IndexOf('!'));
+            Assert::AreEqual(0ULL, str.IndexOf('H'));
+            Assert::AreEqual(14ULL, str.IndexOf('i'));
+            Assert::AreEqual(21ULL, str.IndexOf('.'));
+            Assert::AreEqual((size_t)-1, str.IndexOf('!'));
 
-            Assert::AreEqual(0, str.IndexOf("Hello"));
-            Assert::AreEqual(6, str.IndexOf("World"));
-            Assert::AreEqual(21, str.IndexOf("."));
-            Assert::AreEqual(-1, str.IndexOf("NotExist"));
+            Assert::AreEqual(0ULL, str.IndexOf("Hello"));
+            Assert::AreEqual(6ULL, str.IndexOf("World"));
+            Assert::AreEqual(21ULL, str.IndexOf("."));
+            Assert::AreEqual((size_t)-1, str.IndexOf("NotExist"));
 
             str = "!Oh, Good morning. Good";
 
-            Assert::AreEqual(19, str.LastIndexOf('G'));
-            Assert::AreEqual(3, str.LastIndexOf(','));
-            Assert::AreEqual(0, str.LastIndexOf('!'));
-            Assert::AreEqual(-1, str.LastIndexOf('?'));
+            Assert::AreEqual(19ULL, str.LastIndexOf('G'));
+            Assert::AreEqual(3ULL, str.LastIndexOf(','));
+            Assert::AreEqual(0ULL, str.LastIndexOf('!'));
+            Assert::AreEqual((size_t)-1, str.LastIndexOf('?'));
 
-            Assert::AreEqual(19, str.LastIndexOf("Good"));
-            Assert::AreEqual(10, str.LastIndexOf("morning"));
-            Assert::AreEqual(0, str.LastIndexOf("!"));
-            Assert::AreEqual(-1, str.LastIndexOf("NotExist"));
+            Assert::AreEqual(19ULL, str.LastIndexOf("Good"));
+            Assert::AreEqual(10ULL, str.LastIndexOf("morning"));
+            Assert::AreEqual(0ULL, str.LastIndexOf("!"));
+            Assert::AreEqual((size_t)-1, str.LastIndexOf("NotExist"));
         }
 
         TEST_METHOD(SplitTest)

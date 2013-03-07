@@ -98,7 +98,7 @@ namespace System
             {
                 for (int j = 0; j < width; j++)
                 {
-                    int o = orientImage.at<double>(i, j) / orientBinSize;
+                    int o = (int)(orientImage.at<double>(i, j) / orientBinSize);
                     if (o < 0)
                         o = 0;
                     if (o >= orientNum)
@@ -169,7 +169,7 @@ namespace System
             {
                 CV_Assert(sigmas[i] >= 0);
 
-                int ksize = sigmas[i] * 6 + 1;
+                int ksize = (int)(sigmas[i] * 6 + 1);
                 if (ksize % 2 == 0)
                     ksize++;
 
@@ -191,7 +191,7 @@ namespace System
             {
                 CV_Assert(sigmas[i] >= 0);
 
-                int ksize = sigmas[i] * 6 + 1;
+                int ksize = (int)(sigmas[i] * 6 + 1);
                 if (ksize % 2 == 0)
                     ksize++;
 

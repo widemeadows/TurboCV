@@ -2,6 +2,7 @@
 
 #include <cassert>
 #include <cmath>
+#include <vector>
 using namespace std;
 
 namespace System
@@ -41,8 +42,8 @@ namespace System
     {
         T sum = 0;
 
-        for (int i = vec.size() - 1; i >= 0; i--)
-            sum += vec[i];
+        for (T item : vec)
+            sum += item;
 
         return sum;
     }
@@ -63,7 +64,7 @@ namespace System
         assert(u.size() == v.size());
 
         double distance = 0;
-        for (int i = u.size() - 1; i >= 0; i--)
+        for (size_t i = 0; i < u.size(); i++)
             distance += abs(u[i] - v[i]);
 
         return distance;
@@ -75,7 +76,7 @@ namespace System
         assert(u.size() == v.size());
 
         double distance = 0;
-        for (int i = u.size() - 1; i >= 0; i--)
+        for (size_t i = 0; i < u.size(); i++)
             distance += (u[i] - v[i]) * (u[i] - v[i]);
 
         return sqrt(distance);
@@ -87,7 +88,7 @@ namespace System
         assert(u.size() == v.size());
 
         double distance = 0;
-        for (int i = u.size() - 1; i >= 0; i--)
+        for (size_t i = 0; i < u.size(); i++)
             distance += (u[i] - v[i]) * (u[i] - v[i]);
 
         return exp(-distance / (2 * sigma * sigma));
@@ -109,8 +110,8 @@ namespace System
         double mean = Mean(vec);
 
         double squareSum = 0;
-        for (int i = 0; i < vec.size(); i++)
-            squareSum += vec[i] * vec[i];
+        for (auto item : vec)
+            squareSum += (double)item * (double)item;
 
         return sqrt((squareSum - vec.size() * mean * mean) / vec.size());
     }

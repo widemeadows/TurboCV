@@ -39,8 +39,8 @@ namespace System
                     allDescriptors.push_back(features[i][j]);
 
             assert(allDescriptors.size() > 0);
-            int descriptorNum = allDescriptors.size(),
-                descriptorSize = allDescriptors[0].size();
+            int descriptorNum = (int)allDescriptors.size(),
+                descriptorSize = (int)allDescriptors[0].size();
             printf("Descriptor Num: %d, Descriptor Size: %d.\n", 
                 descriptorNum, descriptorSize);
 
@@ -82,7 +82,7 @@ namespace System
         {
             assert(words.size() > 0 && descriptor.size() == words[0].size());
 
-            int wordNum = words.size();
+            int wordNum = (int)words.size();
             vector<double> distances;
 
             for (int i = 0; i < wordNum; i++)
@@ -117,7 +117,7 @@ namespace System
         inline vector<Histogram> BOV::GetFrequencyHistograms(const vector<FeatureInfo<float>>& features, 
             const vector<DescriptorInfo<float>>& words)
         {
-            int imageNum = features.size();
+            int imageNum = (int)features.size();
             vector<Histogram> freqHistograms(imageNum);
 
             #pragma omp parallel for

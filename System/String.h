@@ -95,19 +95,19 @@ namespace System
 
         // Searches this instance for the first character that matches the characters specified in its arguments.
         // If found, the index of the specific character is returned. Otherwise, -1 is returned.
-        int IndexOf(char value) const;
+        size_t IndexOf(char value) const;
 
         // Searches this instance for the first occurrence of substr.
         // If found, the index indicated the first occurrence of substr is returned. Otherwise, -1 is returned.
-        int IndexOf(const String& substr) const;
+        size_t IndexOf(const String& substr) const;
 
         // Searches this instance for the last character that matches the characters specified in its arguments.
         // If found, the index of the specific character is returned. Otherwise, -1 is returned.
-        int LastIndexOf(char value) const;
+        size_t LastIndexOf(char value) const;
 
         // Searches this instance for the last occurrence of substr.
         // If found, the index indicated the last occurrence of substr is returned. Otherwise, -1 is returned.
-        int LastIndexOf(const String& substr) const;
+        size_t LastIndexOf(const String& substr) const;
 
         // Returns a String array that contains the substrings in this instance that are delimited 
         // by the specific character.
@@ -124,11 +124,11 @@ namespace System
         char* Chars() const;
 
         // Returns the length of this instance, in terms of number of characters.
-        int Length() const;
+        size_t Length() const;
         
     private:
         char* _chars;
-        int _length;
+        size_t _length;
     };
 
     // Constructs an empty String object, with a length of zero characters.
@@ -220,7 +220,7 @@ namespace System
         if (!append)
             throw ArgumentNullException();
 
-        int appendLength = strlen(append);
+        size_t appendLength = strlen(append);
         String result;
 
         result._length = _length + appendLength;
@@ -235,7 +235,7 @@ namespace System
     // the characters in this instance followed by those of append.
     inline String String::operator+(const string& append) const
     {
-        int appendLength = append.length();
+        size_t appendLength = append.length();
         String result;
 
         result._length = _length + appendLength;
@@ -250,7 +250,7 @@ namespace System
     // the characters in this instance followed by those of append.
     inline String String::operator+(const String& append) const
     {
-        int appendLength = append._length;
+        size_t appendLength = append._length;
         String result;
 
         result._length = _length + appendLength;
@@ -347,7 +347,7 @@ namespace System
 
     // Searches this instance for the first character that matches the characters specified in its arguments.
     // If found, the index of the specific character is returned. Otherwise, -1 is returned.
-    inline int String::IndexOf(char value) const
+    inline size_t String::IndexOf(char value) const
     {
         char* ptr = strchr(_chars, value);
 
@@ -359,7 +359,7 @@ namespace System
 
     // Searches this instance for the first occurrence of substr.
     // If found, the index indicated the first occurrence of substr is returned. Otherwise, -1 is returned.
-    inline int String::IndexOf(const String& substr) const
+    inline size_t String::IndexOf(const String& substr) const
     {
         char* ptr = strstr(_chars, substr._chars);
 
@@ -371,7 +371,7 @@ namespace System
 
     // Searches this instance for the last character that matches the characters specified in its arguments.
     // If found, the index of the specific character is returned. Otherwise, -1 is returned.
-    inline int String::LastIndexOf(char value) const
+    inline size_t String::LastIndexOf(char value) const
     {
         char* ptr = strrchr(_chars, value);
 
@@ -383,7 +383,7 @@ namespace System
 
     // Searches this instance for the last occurrence of substr.
     // If found, the index indicated the last occurrence of substr is returned. Otherwise, -1 is returned.
-    inline int String::LastIndexOf(const String& substr) const
+    inline size_t String::LastIndexOf(const String& substr) const
     {
         char* prev = NULL;
         char* cur = _chars;
@@ -451,7 +451,7 @@ namespace System
     }
 
     // Returns the length of this instance, in terms of number of characters.
-    inline int String::Length() const
+    inline size_t String::Length() const
     {
         return _length;
     }

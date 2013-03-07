@@ -56,7 +56,7 @@ namespace System
 		        Train(trainingSet, trainingLabels);
 		        vector<int> predict = Predict(evaluationSet, K);
 
-                int evaluationNum = evaluationSet.size(), correctNum = 0;
+                int evaluationNum = (int)evaluationSet.size(), correctNum = 0;
                 unordered_map<int, int> evaluationNumPerClass, correctNumPerClass;
 		        for (int i = 0; i < evaluationNum; i++)
 		        {
@@ -82,7 +82,7 @@ namespace System
             void Train(const vector<vector<double>>& data, const vector<int>& labels)
 	        {
                 assert(data.size() == labels.size() && data.size() > 0);
-                int dataNum = data.size();
+                int dataNum = (int)data.size();
 
 		        _labels = labels;
 
@@ -112,7 +112,7 @@ namespace System
         private:
             int predictOneSample(const vector<double>& sample, int K)
 	        {
-                int dataNum = _data.size();
+                int dataNum = (int)_data.size();
 		        vector<pair<double, int>> distances(dataNum);
 
 		        for (int i = 0; i < dataNum; i++)

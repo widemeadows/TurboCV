@@ -6,23 +6,23 @@ using namespace std;
 
 namespace System
 {
-    inline vector<int> RandomPermutate(int cardNum, int pickUpNum)
+    inline vector<int> RandomPermutate(size_t cardNum, size_t pickUpNum)
     {
         assert(cardNum >= pickUpNum);
         vector<int> result;
 
         int* cards = new int[cardNum];
-        for (int i = 0; i < cardNum; i++)
+        for (size_t i = 0; i < cardNum; i++)
             cards[i] = i;
 
-        for (int i = 0; i < pickUpNum; i++)
+        for (size_t i = 0; i < pickUpNum; i++)
         {
-            int index = (double)rand() * (cardNum - i - 1) / RAND_MAX + i;
+            int index = (int)((double)rand() * (cardNum - i - 1) / RAND_MAX + i);
             assert(index >= 0 && index < cardNum);
             swap(cards[i], cards[index]);
         }
 
-        for (int i = 0; i < pickUpNum; i++)
+        for (size_t i = 0; i < pickUpNum; i++)
             result.push_back(cards[i]);
 
         delete[] cards;
@@ -36,9 +36,9 @@ namespace System
         sort(indexes.begin(), indexes.end());
 
         vector<T> pickUps;
-        int cardNum = vec.size(), counter = 0;
+        size_t cardNum = vec.size(), counter = 0;
 
-        for (int i = 0; i < cardNum; i++)
+        for (size_t i = 0; i < cardNum; i++)
         {
             if (counter < indexes.size() && indexes[counter] == i)
             {
@@ -51,16 +51,16 @@ namespace System
     }
 
     template<typename T>
-    inline tuple<vector<T>, vector<T>, vector<int>> Divide(
-        const vector<T>& vec, const vector<int>& pickUpIndexes)
+    inline tuple<vector<T>, vector<T>, vector<int>> Divide(const vector<T>& vec, 
+        const vector<int>& pickUpIndexes)
     {
         vector<int> indexes = pickUpIndexes;
         sort(indexes.begin(), indexes.end());
 
         vector<T> pickUps, others;
-        int cardNum = vec.size(), counter = 0;
+        size_t cardNum = vec.size(), counter = 0;
 
-        for (int i = 0; i < cardNum; i++)
+        for (size_t i = 0; i < cardNum; i++)
         {
             if (counter < indexes.size() && indexes[counter] == i)
             {
@@ -75,9 +75,9 @@ namespace System
     }
 
     template<typename T>
-    inline vector<T> RandomPickUp(const vector<T>& vec, int pickUpNum)
+    inline vector<T> RandomPickUp(const vector<T>& vec, size_t pickUpNum)
     {
-        int cardNum = vec.size();
+        size_t cardNum = vec.size();
         assert(cardNum >= pickUpNum);
 
         return PickUp(vec, RandomPermutate(cardNum, pickUpNum));
@@ -85,21 +85,21 @@ namespace System
 
     template<typename T>
     inline vector<tuple<vector<T>, vector<T>, vector<int>>> RandomSplit(
-        const vector<T>& vec, int fold)
+        const vector<T>& vec, size_t fold)
     {
-        int cardNum = vec.size();
+        size_t cardNum = vec.size();
         assert(cardNum >= fold);
 
         vector<int> permutation = RandomPermutate(cardNum, cardNum);
 
         vector<tuple<vector<T>, vector<T>, vector<int>>> result;
-        for (int i = 0; i < fold; i++)
+        for (size_t i = 0; i < fold; i++)
         {
             vector<int> subsetIndexes;
-            int begin = cardNum / fold * i,
+            size_t begin = cardNum / fold * i,
                 end = (i != fold - 1) ? cardNum / fold * (i + 1) : cardNum;
 
-            for (int j = begin; j < end; j++)
+            for (size_t j = begin; j < end; j++)
                 subsetIndexes.push_back(permutation[j]);
                 
             result.push_back(Divide(vec, subsetIndexes));

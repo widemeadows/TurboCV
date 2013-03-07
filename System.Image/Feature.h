@@ -219,7 +219,7 @@ namespace System
             int angleNum = 9, orientNum = 8;
 
             vector<Point> points = Contour::GetEdgels(sketchImage);
-            vector<Point> pivots = Contour::GetPivots(points, points.size() * 0.33);
+            vector<Point> pivots = Contour::GetPivots(points, (int)(points.size() * 0.33));
 
             tuple<Mat, Mat> gradient = Gradient::GetGradient(sketchImage);
             Mat& powerImage = get<0>(gradient);
@@ -266,12 +266,12 @@ namespace System
 		        {
 			        if (distances[i] >= logDistances[j] && distances[i] < logDistances[j + 1])
 			        {
-				        int a = angles[i] / angleStep;
+				        int a = (int)(angles[i] / angleStep);
                         if (a >= angleNum)
 					        a = angleNum - 1;
 
                         double orient = orientImage.at<double>(points[i].y, points[i].x);
-                        int o = orient / orientStep; 
+                        int o = (int)(orient / orientStep); 
 				        if (o >= orientNum)
 					        o = orientNum - 1;
 
@@ -321,7 +321,7 @@ namespace System
             int angleNum = 12;
 
             vector<Point> points = Contour::GetEdgels(sketchImage);
-            vector<Point> pivots = Contour::GetPivots(points, points.size() * 0.33);
+            vector<Point> pivots = Contour::GetPivots(points, (int)(points.size() * 0.33));
 
             FeatureInfo<double> feature;
             for (int i = 0; i < pivots.size(); i++)
@@ -359,7 +359,7 @@ namespace System
 		        {
 			        if (distances[i] >= logDistances[j] && distances[i] < logDistances[j + 1])
 			        {
-				        int a = angles[i] / angleStep;
+				        int a = (int)(angles[i] / angleStep);
                         if (a >= angleNum)
 					        a = angleNum - 1;
 
@@ -405,7 +405,7 @@ namespace System
             int orientNum = 4, cellNum = 4;
 
             vector<Point> points = Contour::GetEdgels(sketchImage);
-            vector<Point> pivots = Contour::GetPivots(points, points.size() * 0.33);
+            vector<Point> pivots = Contour::GetPivots(points, (int)(points.size() * 0.33));
             vector<Mat> orientChannels = Gradient::GetOrientChannels(sketchImage, orientNum);
 
             FeatureInfo<double> feature;
@@ -424,7 +424,7 @@ namespace System
         {
             vector<double> distances = Geometry::EulerDistance(pivot, points);
 	        double mean = Math::Sum(distances) / (points.size() - 1); // Except pivot
-            int blockSize = 1.5 * mean;
+            int blockSize = (int)(1.5 * mean);
 
             int height = orientChannels[0].rows, 
                 width = orientChannels[0].cols,
@@ -551,12 +551,12 @@ namespace System
 		        {
 			        if (distances[i] >= logDistances[j] && distances[i] < logDistances[j + 1])
 			        {
-				        int a = angles[i] / angleStep;
+				        int a = (int)(angles[i] / angleStep);
                         if (a >= angleNum)
 					        a = angleNum - 1;
 
                         double orient = orientImage.at<double>(points[i].y, points[i].x);
-                        int o = orient / orientStep; 
+                        int o = (int)(orient / orientStep); 
 				        if (o >= orientNum)
 					        o = orientNum - 1;
 
@@ -607,7 +607,7 @@ namespace System
 
             Mat orientImage = get<1>(Gradient::GetGradient(sketchImage));
             vector<Point> points = Contour::GetEdgels(sketchImage); 
-            vector<Point> pivots = Contour::GetPivots(points, points.size() * 0.33);
+            vector<Point> pivots = Contour::GetPivots(points, (int)(points.size() * 0.33));
 
             FeatureInfo<double> feature;
             int height = sketchImage.rows, width = sketchImage.cols;
@@ -650,7 +650,7 @@ namespace System
 		        {
 			        if (distances[i] >= logDistances[j] && distances[i] < logDistances[j + 1])
 			        {
-				        int a = angles[i] / angleStep;
+				        int a = (int)(angles[i] / angleStep);
                         if (a >= angleNum)
 					        a = angleNum - 1;
 
@@ -702,7 +702,7 @@ namespace System
                 sigmas.push_back(sigmas[i - 1] * sigmaStep);
 
             vector<Point> points = Contour::GetEdgels(sketchImage);
-            vector<Point> pivots = Contour::GetPivots(points, points.size() * 0.33);
+            vector<Point> pivots = Contour::GetPivots(points, (int)(points.size() * 0.33));
             vector<Mat> orientChannels = Gradient::GetOrientChannels(sketchImage, orientNum);
             vector<Mat> pyramid = GetLoGPyramid(sketchImage, sigmas);
             
@@ -732,7 +732,7 @@ namespace System
         {
             int height = orientChannels[0].rows, 
                 width = orientChannels[0].cols,
-                orientNum = orientChannels.size();
+                orientNum = (int)orientChannels.size();
             int expectedTop = pivot.y - blockSize / 2,
                 expectedLeft = pivot.x - blockSize / 2;
             double cellSize = (double)blockSize / cellNum;
@@ -752,7 +752,8 @@ namespace System
                         if (abs(orientChannels[k].at<double>(i, j)) < EPS)
                             continue;
 
-                        int r = (i - expectedTop) / cellSize, c = (j - expectedLeft) / cellSize;
+                        int r = (int)((i - expectedTop) / cellSize), 
+                            c = (int)((j - expectedLeft) / cellSize);
 
                         for (int u = -1; u <= 1; u++)
                         {
@@ -810,7 +811,7 @@ namespace System
             {
                 double sigma = pow(1.8, i + 1), lambda = sigma * 1.7;
 
-                int ksize = sigma * 6 + 1;
+                int ksize = (int)(sigma * 6 + 1);
                 if (ksize % 2 == 0)
                     ksize++;
 
