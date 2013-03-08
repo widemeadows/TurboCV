@@ -498,7 +498,7 @@ namespace System
 
         inline FeatureInfo<double> RHOOSC::GetFeature(const Mat& sketchImage) const
         {
-            double tmp[] = { 0, 0.5, 1 };
+            double tmp[] = { 0, 0.5, 1, 2 };
             vector<double> logDistances(tmp, tmp + sizeof(tmp) / sizeof(double));
             int angleNum = 9, orientNum = 8, sampleNum = 28;
 

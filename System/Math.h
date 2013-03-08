@@ -99,7 +99,7 @@ namespace System
     {
         assert(vec.size() > 0);
 
-        return Sum(vec) / vec.size();
+        return Sum(vec) / (double)vec.size();
     }
 
     template<typename T>

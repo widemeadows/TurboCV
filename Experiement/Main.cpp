@@ -5,7 +5,8 @@ using namespace System;
 using namespace System::Image;
 using namespace System::ML;
 
-inline vector<tuple<Mat, int>> GetImages(const System::String& imageSetPath, int imageLoadMode)
+inline vector<tuple<Mat, int>> GetImages(const System::String& imageSetPath, 
+    int imageLoadMode = CV_LOAD_IMAGE_GRAYSCALE)
 {
     System::IO::DirectoryInfo imageSetInfo(imageSetPath);
 
@@ -172,13 +173,13 @@ void LocalFeatureCrossValidation(const System::String& imageSetPath, const Featu
     for (int i = 0; i < imageNum; i++)
         Convert(feature.GetFeatureWithPreprocess(get<0>(images[i]), true), features[i]);
     
-    /*System::String savePath = feature.GetName() + "_oracles_knn.out";
-    FILE* file = fopen(savePath, "w");*/
+    System::String savePath = feature.GetName() + "_oracles_knn.out";
+    FILE* file = fopen(savePath, "w");
 
     vector<tuple<vector<FeatureInfo<float>>, vector<FeatureInfo<float>>, vector<int>>> pass = 
         RandomSplit(features, fold);
     vector<vector<double>> DRs(features.size()), FPRs(features.size());
-    //vector<double> passResult;
+    vector<double> passResult;
     for (int i = 0; i < fold; i++)
     {
         vector<FeatureInfo<float>>& evaluationSet = get<0>(pass[i]);
@@ -205,12 +206,12 @@ void LocalFeatureCrossValidation(const System::String& imageSetPath, const Featu
         }
 
         KNN knn;
-        /*pair<double, map<int, double>> precisions = 
+        pair<double, map<int, double>> precisions = 
             knn.Evaluate(trainingHistograms, trainingLabels, evaluationHistograms, evaluationLabels, 4);
        
         passResult.push_back(precisions.first);
         fprintf(file, "Fold %d: %f\n", i + 1, precisions.first);
-        printf("Fold %d: %f\n", i + 1, precisions.first);*/
+        printf("Fold %d: %f\n", i + 1, precisions.first);
 
         pair<vector<vector<double>>, vector<vector<bool>>> matrix =
             knn.Evaluate(trainingHistograms, trainingLabels, evaluationHistograms, evaluationLabels);
@@ -225,14 +226,14 @@ void LocalFeatureCrossValidation(const System::String& imageSetPath, const Featu
         }
     }
 
-    /*fprintf(file, "Average: %f, Standard Deviation: %f\n", Math::Mean(passResult), 
+    fprintf(file, "Average: %f, Standard Deviation: %f\n", Math::Mean(passResult), 
         Math::StandardDeviation(passResult));
     printf("Average: %f, Standard Deviation: %f\n", Math::Mean(passResult), 
         Math::StandardDeviation(passResult));
-    fclose(file);*/
+    fclose(file);
 
-    System::String savePath = feature.GetName() + "_oracles_roc";
-    FILE* file = fopen(savePath, "w");
+    savePath = feature.GetName() + "_oracles_roc";
+    file = fopen(savePath, "w");
     for (int i = 0; i < DRs.size(); i++)
     {
         for (int j = 0; j < DRs[i].size(); j++)
@@ -347,24 +348,24 @@ void GlobalFeatureCrossValidation(const System::String& imageSetPath, const Feat
 int main()
 {
     //ExtractLocalFeature("oracles_png", HOG(), 500);
-    LocalFeatureCrossValidation("oracles_png", HOG(), 500);
-    printf("\n");
+    //LocalFeatureCrossValidation("oracles_png", HOG(), 500);
+    //printf("\n");
 
     //ExtractLocalFeature("oracles_png", HOOSC(), 1000);
-    LocalFeatureCrossValidation("oracles_png", HOOSC(), 1000);
-    printf("\n");
+    //LocalFeatureCrossValidation("oracles_png", HOOSC(), 1000);
+    //printf("\n");
 
     //ExtractLocalFeature("oracles_png", SC(), 1000);
-    LocalFeatureCrossValidation("oracles_png", SC(), 1000);
-    printf("\n");
+    //LocalFeatureCrossValidation("oracles_png", SC(), 1000);
+    //printf("\n");
 
-    ////ExtractLocalFeature("oracles_png", SHOG(), 500);
+    //ExtractLocalFeature("oracles_png", SHOG(), 500);
     //LocalFeatureCrossValidation("oracles_png", SHOG(), 500);
     //printf("\n");
 
-    ////ExtractLocalFeature("oracles_png", RHOOSC(), 1000);
-    //LocalFeatureCrossValidation("oracles_png", RHOOSC(), 1000);
-    //printf("\n");
+    //ExtractLocalFeature("oracles_png", RHOOSC(), 1000);
+    LocalFeatureCrossValidation("oracles_png", RHOOSC(), 1000);
+    printf("\n");
 
     ////ExtractLocalFeature("oracles_png", RSC(), 1000);
     //LocalFeatureCrossValidation("oracles_png", RSC(), 1000);
@@ -374,11 +375,75 @@ int main()
     //LocalFeatureCrossValidation("oracles_png", ASHOG(), 1000);
     //printf("\n");
 
-    ////ExtractLocalFeature("oracles_png", Gabor(), 500);
-    ////LocalFeatureCrossValidation("oracles_png", Gabor(), 500);
-    ////printf("\n");
+    //ExtractLocalFeature("oracles_png", Gabor(), 500);
+    //LocalFeatureCrossValidation("oracles_png", Gabor(), 500);
+    //printf("\n");
 
-    ////ExtractGlobalFeature("oracles_png", GIST());
+    //ExtractGlobalFeature("oracles_png", GIST());
     //GlobalFeatureCrossValidation("oracles_png", GIST());
     //printf("\n");
+
+    //vector<int> width, height;
+    //vector<tuple<Mat, int>> result = GetImages("oracles_png");
+
+    //for (auto item : result)
+    //{
+    //    Mat& image = get<0>(item);
+    //    width.push_back(image.cols);
+    //    height.push_back(image.rows);
+    //}
+
+    //printf("Width -- Average: %f, STD: %f\n", Math::Mean(width), Math::StandardDeviation(width));
+    //printf("Height -- Average: %f, STD: %f\n", Math::Mean(height), Math::StandardDeviation(height));
+
+
+
+    /*FILE* file = fopen("confusion_matrix", "r");
+    vector<int> knn_result(20039), true_result(20039);
+    int tmp;
+    unordered_map<int, int> dataNumPerClass;
+
+    for (int i = 0; i < 20039; i++)
+    {
+        fscanf(file, "%d", &tmp);
+        tmp--;
+        knn_result[i] = tmp;
+    }
+
+    for (int i = 0; i < 20039; i++)
+    {
+        fscanf(file, "%d", &tmp);
+        tmp--;
+        true_result[i] = tmp;
+
+        dataNumPerClass[tmp]++;
+    }
+
+    fclose(file);
+
+    int classNum = dataNumPerClass.size();
+    printf("Class Num: %d\n", classNum);
+
+    vector<vector<double>> matrix(classNum);
+    for (int i = 0; i < classNum; i++)
+        matrix[i] = vector<double>(classNum);
+
+    for (int i = 0; i < 20039; i++)
+        matrix[true_result[i]][knn_result[i]]++;
+
+    for (int i = 0; i < classNum; i++)
+    {
+        int num = dataNumPerClass[i];
+        for (int j = 0; j < classNum; j++)
+            matrix[i][j] /= num;
+    }
+
+    file = fopen("matrix", "w");
+    for (int i = 0; i < classNum; i++)
+    {
+        for (int j = 0; j < classNum; j++)
+            fprintf(file, "%f ", matrix[i][j]);
+        fprintf(file, "\n");
+    }
+    fclose(file);*/
 }
