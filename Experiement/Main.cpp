@@ -363,9 +363,9 @@ int main()
     //LocalFeatureCrossValidation("oracles_png", SHOG(), 500);
     //printf("\n");
 
-    //ExtractLocalFeature("oracles_png", RHOOSC(), 1000);
-    LocalFeatureCrossValidation("oracles_png", RHOOSC(), 1000);
-    printf("\n");
+    ExtractLocalFeature("oracles_png", RHOOSC(), 1000);
+    //LocalFeatureCrossValidation("oracles_png", RHOOSC(), 1000);
+    //printf("\n");
 
     ////ExtractLocalFeature("oracles_png", RSC(), 1000);
     //LocalFeatureCrossValidation("oracles_png", RSC(), 1000);
