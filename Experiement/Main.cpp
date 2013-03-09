@@ -260,13 +260,13 @@ void GlobalFeatureCrossValidation(const System::String& imageSetPath, const Feat
     for (int i = 0; i < imageNum; i++)
         Convert(feature.GetFeatureWithPreprocess(get<0>(images[i]), true), features[i]);
     
-    /*System::String savePath = feature.GetName() + "_oracles_knn.out";
-    FILE* file = fopen(savePath, "w");*/
+    System::String savePath = feature.GetName() + "_oracles_knn.out";
+    FILE* file = fopen(savePath, "w");
 
     vector<tuple<vector<FeatureInfo<float>>, vector<FeatureInfo<float>>, vector<size_t>>> pass = 
         RandomSplit(features, fold);
     vector<vector<double>> DRs(features.size()), FPRs(features.size());
-    //vector<double> passResult;
+    vector<double> passResult;
     for (int i = 0; i < fold; i++)
     {
         vector<FeatureInfo<float>>& evaluationSet = get<0>(pass[i]);
@@ -303,12 +303,12 @@ void GlobalFeatureCrossValidation(const System::String& imageSetPath, const Feat
         }
 
         KNN knn;
-        /*pair<double, map<int, double>> precisions = 
+        pair<double, map<int, double>> precisions = 
             knn.Evaluate(trainingData, trainingLabels, evaluationData, evaluationLabels, 4);
         
         passResult.push_back(precisions.first);
         fprintf(file, "Fold %d: %f\n", i + 1, precisions.first);
-        printf("Fold %d: %f\n", i + 1, precisions.first);*/
+        printf("Fold %d: %f\n", i + 1, precisions.first);
 
         pair<vector<vector<double>>, vector<vector<bool>>> matrix =
             knn.Evaluate(trainingData, trainingLabels, evaluationData, evaluationLabels);
@@ -323,15 +323,15 @@ void GlobalFeatureCrossValidation(const System::String& imageSetPath, const Feat
         }
     }
 
-    /*fprintf(file, "Average: %f, Standard Deviation: %f\n", Math::Mean(passResult), 
+    fprintf(file, "Average: %f, Standard Deviation: %f\n", Math::Mean(passResult), 
         Math::StandardDeviation(passResult));
     printf("Average: %f, Standard Deviation: %f\n", Math::Mean(passResult), 
         Math::StandardDeviation(passResult));
 
-    fclose(file);*/
+    fclose(file);
 
-    System::String savePath = feature.GetName() + "_oracles_roc";
-    FILE* file = fopen(savePath, "w");
+    savePath = feature.GetName() + "_oracles_roc";
+    file = fopen(savePath, "w");
     for (int i = 0; i < DRs.size(); i++)
     {
         for (int j = 0; j < DRs[i].size(); j++)
@@ -363,7 +363,7 @@ int main()
     //LocalFeatureCrossValidation("oracles_png", SHOG(), 500);
     //printf("\n");
 
-    ExtractLocalFeature("oracles_png", RHOOSC(), 1000);
+    //ExtractLocalFeature("oracles_png", RHOOSC(), 1000);
     //LocalFeatureCrossValidation("oracles_png", RHOOSC(), 1000);
     //printf("\n");
 
@@ -386,18 +386,7 @@ int main()
     //vector<int> width, height;
     //vector<tuple<Mat, int>> result = GetImages("oracles_png");
 
-    //for (auto item : result)
-    //{
-    //    Mat& image = get<0>(item);
-    //    width.push_back(image.cols);
-    //    height.push_back(image.rows);
-    //}
-
-    //printf("Width -- Average: %f, STD: %f\n", Math::Mean(width), Math::StandardDeviation(width));
-    //printf("Height -- Average: %f, STD: %f\n", Math::Mean(height), Math::StandardDeviation(height));
-
-
-
+    
     /*FILE* file = fopen("confusion_matrix", "r");
     vector<int> knn_result(20039), true_result(20039);
     int tmp;

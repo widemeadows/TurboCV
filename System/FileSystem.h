@@ -45,23 +45,26 @@ namespace System
         // Initializes a new instance of the FileSystemInfo class.
         inline FileSystemInfo::FileSystemInfo(const String& path)
         {
-            int pathLen = path.Length();
-            int lastPos = pathLen - 1;
+            size_t pathLen = path.Length();
+            size_t lastPos = pathLen - 1;
 
             // remove all the '\\'s at the end of the path
-            while (lastPos >= 0 && path[lastPos] == '\\')
+            while (lastPos != 0 && path[lastPos] == '\\')
                 lastPos--;
-            
-            _path = path.Substring(0, lastPos + 1);
+
+            if (lastPos == 0 && path[lastPos] == '\\')
+                _path = "";
+            else
+                _path = path.Substring(0, lastPos + 1);
         }
 
         // Gets the string representing the extension part of the file.
         inline String FileSystemInfo::Extension() const
         {
-            int lastBacklash = _path.LastIndexOf('\\');
-            int lastDot = _path.LastIndexOf('.');
+            size_t lastBacklash = _path.LastIndexOf('\\');
+            size_t lastDot = _path.LastIndexOf('.');
 
-            if (lastBacklash < lastDot)
+            if (lastDot != -1 && lastBacklash < lastDot)
                 return _path.Substring(lastDot);
             else
                 return "";

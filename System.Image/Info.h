@@ -26,7 +26,7 @@ namespace System
             void push_back(const T& item) { ptr->push_back(item); };
             void clear() { ptr->clear(); };
 
-            int size() const { return (int)(ptr->size()); };
+            size_t size() const { return ptr->size(); };
 
         private:
             shared_ptr<vector<T>> ptr;
@@ -47,7 +47,7 @@ namespace System
             void push_back(const DescriptorInfo<T>& item) { ptr->push_back(item); };
             void clear() { ptr->clear(); };
 
-            int size() const { return (int)(ptr->size()); };
+            size_t size() const { return ptr->size(); };
 
         private:
             shared_ptr<vector<DescriptorInfo<T>>> ptr;

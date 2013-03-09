@@ -17,8 +17,8 @@ namespace System
 
         for (size_t i = 0; i < pickUpNum; i++)
         {
-            int index = (int)((double)rand() * (cardNum - i - 1) / RAND_MAX + i);
-            assert(index >= 0 && index < cardNum);
+            size_t index = (size_t)((double)rand() * (cardNum - i - 1) / RAND_MAX + i);
+            assert(index < cardNum);
             swap(cards[i], cards[index]);
         }
 
