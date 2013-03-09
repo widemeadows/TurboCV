@@ -448,7 +448,8 @@ namespace System
                         if (abs(orientChannels[k].at<double>(i, j)) < EPS)
                             continue;
 
-                        int r = (i - expectedTop) / cellSize, c = (j - expectedLeft) / cellSize;
+                        int r = (int)((i - expectedTop) / cellSize), 
+                            c = (int)((j - expectedLeft) / cellSize);
 
                         for (int u = -1; u <= 1; u++)
                         {
@@ -459,7 +460,7 @@ namespace System
                                     continue;
 
                                 double dRatio = 1 - abs(Geometry::EulerDistance(
-                                    Point((newC + 0.5) * cellSize, (newR + 0.5) * cellSize),
+                                    Point((int)((newC + 0.5) * cellSize), (int)((newR + 0.5) * cellSize)),
                                     Point(j - expectedLeft, i - expectedTop))) / cellSize;
                                 if (dRatio < 0)
                                     dRatio = 0;
@@ -718,7 +719,7 @@ namespace System
                     if (curr > next && curr > prev)
                     {
                         DescriptorInfo<double> descriptor = GetDescriptor(orientChannels, 
-                            pivots[i], sigmas[j] * 6, cellNum);
+                            pivots[i], (int)(sigmas[j] * 6), cellNum);
                         feature.push_back(descriptor);
                     }
                 }
@@ -764,7 +765,7 @@ namespace System
                                     continue;
 
                                 double dRatio = 1 - abs(Geometry::EulerDistance(
-                                    Point((newC + 0.5) * cellSize, (newR + 0.5) * cellSize),
+                                    Point((int)((newC + 0.5) * cellSize), (int)((newR + 0.5) * cellSize)),
                                     Point(j - expectedLeft, i - expectedTop))) / cellSize;
                                 if (dRatio < 0)
                                     dRatio = 0;

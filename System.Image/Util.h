@@ -4,6 +4,7 @@
 #include <cv.h>
 #include <highgui.h>
 #include <tuple>
+#include <numeric>
 using namespace cv;
 using namespace std;
 
@@ -13,7 +14,7 @@ namespace System
     {
         typedef vector<double> Histogram;
 
-        const int INF = 2147483647;
+        const size_t INF = numeric_limits<size_t>::max();
         const double EPS = 1e-14;
         const int MAX_GRAYSCALE = 255;
 

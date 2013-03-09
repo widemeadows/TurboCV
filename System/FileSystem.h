@@ -158,7 +158,7 @@ namespace System
         // Overridden. Permanently deletes a file.
         inline bool FileInfo::Delete() const
         {
-            return (bool)DeleteFile(_path);
+            return DeleteFile(_path) != 0;
         }
 
         // Gets the full path of the parent directory.
@@ -207,13 +207,13 @@ namespace System
         // Overridden. Creates a directory.
         inline bool DirectoryInfo::Create() const
         {
-            return (bool)CreateDirectory(_path, NULL);
+            return CreateDirectory(_path, NULL) != 0;
         }
 
         // Overridden. Deletes a DirectoryInfo and its contents from a path.
         inline bool DirectoryInfo::Delete() const
         {
-            return (bool)RemoveDirectory(_path);
+            return RemoveDirectory(_path) != 0;
         }
 
         // Gets the parent directory of a specified subdirectory.

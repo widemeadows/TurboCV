@@ -1,4 +1,5 @@
 #pragma once
+#pragma warning (disable: 4996)
 
 #include <cstring>
 #include <string>
@@ -86,12 +87,12 @@ namespace System
         // Returns a newly constructed string object with its value initialized to a copy of 
         // a substring of this instance. The substring is the portion of this instance that starts 
         // at character position offset and ends at the end of this instance.
-        String Substring(int offset) const;
+        String Substring(size_t offset) const;
 
         // Returns a newly constructed string object with its value initialized to a copy of 
         // a substring of this instance. The substring is the portion of this instance that starts 
         // at character position offset and spans length characters.
-        String Substring(int offset, int length) const;
+        String Substring(size_t offset, size_t length) const;
 
         // Searches this instance for the first character that matches the characters specified in its arguments.
         // If found, the index of the specific character is returned. Otherwise, -1 is returned.
@@ -323,7 +324,7 @@ namespace System
     // Returns a newly constructed string object with its value initialized to a copy of 
     // a substring of this instance. The substring is the portion of this instance that starts 
     // at character position offset and ends at the end of this instance.
-    inline String String::Substring(int offset) const
+    inline String String::Substring(size_t offset) const
     {
         return Substring(offset, _length - offset);
     }
@@ -331,9 +332,9 @@ namespace System
     // Returns a newly constructed string object with its value initialized to a copy of 
     // a substring of this instance. The substring is the portion of this instance that starts 
     // at character position offset and spans length characters.
-    inline String String::Substring(int offset, int length) const
+    inline String String::Substring(size_t offset, size_t length) const
     {
-        if (offset < 0 || length < 0 || offset + length > _length)
+        if (offset + length > _length)
             throw ArgumentOutOfRangeException();
 
         String result;

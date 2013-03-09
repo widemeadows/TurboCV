@@ -14,13 +14,13 @@ namespace System
         {
         public:
             static vector<DescriptorInfo<float>> GetVisualWords(
-                const vector<FeatureInfo<float>>& features, int clusterNum, int sampleNum = INF);
+                const vector<FeatureInfo<float>>& features, size_t clusterNum, size_t sampleNum = INF);
 
             static vector<Histogram> GetFrequencyHistograms(
                 const vector<FeatureInfo<float>>& features, const vector<DescriptorInfo<float>>& words);
 
             static vector<Histogram> GetFrequencyHistogram(
-                const vector<FeatureInfo<float>>& features, int clusterNum, int sampleNum = INF);
+                const vector<FeatureInfo<float>>& features, size_t clusterNum, size_t sampleNum = INF);
         
         private:
             static vector<double> GetDistancesToVisualWords(const DescriptorInfo<float>& descriptor, 
@@ -31,37 +31,36 @@ namespace System
         };
 
         inline vector<DescriptorInfo<float>> BOV::GetVisualWords(
-            const vector<FeatureInfo<float>>& features, int clusterNum, int sampleNum)
+            const vector<FeatureInfo<float>>& features, size_t clusterNum, size_t sampleNum)
         {
             vector<DescriptorInfo<float>> allDescriptors;
-            for (int i = 0; i < features.size(); i++)
-                for (int j = 0; j < features[i].size(); j++)
+            for (size_t i = 0; i < features.size(); i++)
+                for (size_t j = 0; j < features[i].size(); j++)
                     allDescriptors.push_back(features[i][j]);
 
             assert(allDescriptors.size() > 0);
-            int descriptorNum = (int)allDescriptors.size(),
-                descriptorSize = (int)allDescriptors[0].size();
+            size_t descriptorNum = allDescriptors.size(), descriptorSize = allDescriptors[0].size();
             printf("Descriptor Num: %d, Descriptor Size: %d.\n", 
-                descriptorNum, descriptorSize);
+                (int)descriptorNum, (int)descriptorSize);
 
             sampleNum = min(descriptorNum, sampleNum);
             Mat samples(sampleNum, descriptorSize, CV_32F);
-            vector<int> randomIndex = RandomPermutate(descriptorNum, sampleNum);
+            vector<size_t> randomIndex = RandomPermutate(descriptorNum, sampleNum);
             sort(randomIndex.begin(), randomIndex.end());
 
             int counter = 0;
-            for (int i = 0; i < randomIndex.size(); i++)
+            for (size_t i = 0; i < randomIndex.size(); i++)
             {
-                int index = randomIndex[i];
+                size_t index = randomIndex[i];
 
-                for (int j = 0; j < descriptorSize; j++)
+                for (size_t j = 0; j < descriptorSize; j++)
                     samples.at<float>(counter, j) = allDescriptors[index][j];
 
                 counter++;
             }
 
             Mat labels(sampleNum, 1, CV_32S);
-            for (int i = 0; i < sampleNum; i++)
+            for (size_t i = 0; i < sampleNum; i++)
                 labels.at<int>(i, 0) = 0;
 
             Mat centres(clusterNum, descriptorSize, CV_32F);
@@ -70,8 +69,8 @@ namespace System
                 1, KMEANS_PP_CENTERS, centres);
 
             vector<DescriptorInfo<float>> words(clusterNum);
-            for (int i = 0; i < clusterNum; i++)
-                for (int j = 0; j < descriptorSize; j++)
+            for (size_t i = 0; i < clusterNum; i++)
+                for (size_t j = 0; j < descriptorSize; j++)
                     words[i].push_back(centres.at<float>(i, j));
 
             return words;
@@ -82,10 +81,10 @@ namespace System
         {
             assert(words.size() > 0 && descriptor.size() == words[0].size());
 
-            int wordNum = (int)words.size();
+            size_t wordNum = words.size();
             vector<double> distances;
 
-            for (int i = 0; i < wordNum; i++)
+            for (size_t i = 0; i < wordNum; i++)
                 distances.push_back(Math::GaussianDistance(descriptor.getVec(), words[i].getVec(), 0.1));
 
             NormOneNormalize(distances.begin(), distances.end());
@@ -95,20 +94,20 @@ namespace System
         inline Histogram BOV::GetFrequencyHistogram(const FeatureInfo<float>& feature, 
             const vector<DescriptorInfo<float>>& words)
         {    
-            int wordNum = words.size();
-            int descriptorNum = feature.size();
+            size_t wordNum = words.size();
+            size_t descriptorNum = feature.size();
             Histogram freqHistogram(wordNum, 0);
 
-            for (int i = 0; i < descriptorNum; i++)
+            for (size_t i = 0; i < descriptorNum; i++)
             {
                 vector<double> distances = GetDistancesToVisualWords(feature[i], words);
                 NormOneNormalize(distances.begin(), distances.end());
 
-                for (int j = wordNum - 1; j >= 0; j--)
+                for (size_t j = 0; j < wordNum; j++)
                     freqHistogram[j] += distances[j];
             }
 
-            for (int i = 0; i < wordNum; i++)
+            for (size_t i = 0; i < wordNum; i++)
                 freqHistogram[i] /= descriptorNum;
 
             return freqHistogram;
@@ -117,18 +116,18 @@ namespace System
         inline vector<Histogram> BOV::GetFrequencyHistograms(const vector<FeatureInfo<float>>& features, 
             const vector<DescriptorInfo<float>>& words)
         {
-            int imageNum = (int)features.size();
+            size_t imageNum = features.size();
             vector<Histogram> freqHistograms(imageNum);
 
             #pragma omp parallel for
-            for (int i = 0; i < imageNum; i++)
+            for (size_t i = 0; i < imageNum; i++)
                 freqHistograms[i] = GetFrequencyHistogram(features[i], words);
 
             return freqHistograms;
         }
 
         inline vector<Histogram> BOV::GetFrequencyHistogram(const vector<FeatureInfo<float>>& features,
-            int clusterNum, int sampleNum)
+            size_t clusterNum, size_t sampleNum)
         {
             return GetFrequencyHistograms(features, GetVisualWords(features, clusterNum, sampleNum));
         }

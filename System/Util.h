@@ -6,12 +6,12 @@ using namespace std;
 
 namespace System
 {
-    inline vector<int> RandomPermutate(size_t cardNum, size_t pickUpNum)
+    inline vector<size_t> RandomPermutate(size_t cardNum, size_t pickUpNum)
     {
         assert(cardNum >= pickUpNum);
-        vector<int> result;
+        vector<size_t> result;
 
-        int* cards = new int[cardNum];
+        size_t* cards = new size_t[cardNum];
         for (size_t i = 0; i < cardNum; i++)
             cards[i] = i;
 
@@ -51,10 +51,10 @@ namespace System
     }
 
     template<typename T>
-    inline tuple<vector<T>, vector<T>, vector<int>> Divide(const vector<T>& vec, 
-        const vector<int>& pickUpIndexes)
+    inline tuple<vector<T>, vector<T>, vector<size_t>> Divide(const vector<T>& vec, 
+        const vector<size_t>& pickUpIndexes)
     {
-        vector<int> indexes = pickUpIndexes;
+        vector<size_t> indexes = pickUpIndexes;
         sort(indexes.begin(), indexes.end());
 
         vector<T> pickUps, others;
@@ -84,18 +84,18 @@ namespace System
     }
 
     template<typename T>
-    inline vector<tuple<vector<T>, vector<T>, vector<int>>> RandomSplit(
+    inline vector<tuple<vector<T>, vector<T>, vector<size_t>>> RandomSplit(
         const vector<T>& vec, size_t fold)
     {
         size_t cardNum = vec.size();
         assert(cardNum >= fold);
 
-        vector<int> permutation = RandomPermutate(cardNum, cardNum);
+        vector<size_t> permutation = RandomPermutate(cardNum, cardNum);
 
-        vector<tuple<vector<T>, vector<T>, vector<int>>> result;
+        vector<tuple<vector<T>, vector<T>, vector<size_t>>> result;
         for (size_t i = 0; i < fold; i++)
         {
-            vector<int> subsetIndexes;
+            vector<size_t> subsetIndexes;
             size_t begin = cardNum / fold * i,
                 end = (i != fold - 1) ? cardNum / fold * (i + 1) : cardNum;
 

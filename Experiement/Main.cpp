@@ -176,7 +176,7 @@ void LocalFeatureCrossValidation(const System::String& imageSetPath, const Featu
     System::String savePath = feature.GetName() + "_oracles_knn.out";
     FILE* file = fopen(savePath, "w");
 
-    vector<tuple<vector<FeatureInfo<float>>, vector<FeatureInfo<float>>, vector<int>>> pass = 
+    vector<tuple<vector<FeatureInfo<float>>, vector<FeatureInfo<float>>, vector<size_t>>> pass = 
         RandomSplit(features, fold);
     vector<vector<double>> DRs(features.size()), FPRs(features.size());
     vector<double> passResult;
@@ -184,7 +184,7 @@ void LocalFeatureCrossValidation(const System::String& imageSetPath, const Featu
     {
         vector<FeatureInfo<float>>& evaluationSet = get<0>(pass[i]);
         vector<FeatureInfo<float>>& trainingSet = get<1>(pass[i]);
-        vector<int>& pickUpIndexes = get<2>(pass[i]);
+        vector<size_t>& pickUpIndexes = get<2>(pass[i]);
 
         vector<DescriptorInfo<float>> words = BOV::GetVisualWords(trainingSet, wordNum, sampleNum);
 
@@ -263,7 +263,7 @@ void GlobalFeatureCrossValidation(const System::String& imageSetPath, const Feat
     /*System::String savePath = feature.GetName() + "_oracles_knn.out";
     FILE* file = fopen(savePath, "w");*/
 
-    vector<tuple<vector<FeatureInfo<float>>, vector<FeatureInfo<float>>, vector<int>>> pass = 
+    vector<tuple<vector<FeatureInfo<float>>, vector<FeatureInfo<float>>, vector<size_t>>> pass = 
         RandomSplit(features, fold);
     vector<vector<double>> DRs(features.size()), FPRs(features.size());
     //vector<double> passResult;
@@ -271,7 +271,7 @@ void GlobalFeatureCrossValidation(const System::String& imageSetPath, const Feat
     {
         vector<FeatureInfo<float>>& evaluationSet = get<0>(pass[i]);
         vector<FeatureInfo<float>>& trainingSet = get<1>(pass[i]);
-        vector<int>& pickUpIndexes = get<2>(pass[i]);
+        vector<size_t>& pickUpIndexes = get<2>(pass[i]);
 
         vector<vector<double>> trainingData, evaluationData;
         for (int j = 0; j < trainingSet.size(); j++)

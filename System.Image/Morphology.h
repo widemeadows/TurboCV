@@ -162,7 +162,7 @@ namespace System
 
                         if (component.size() <= points)
                         {
-                            for (int k = component.size() - 1; k >= 0; k--)
+                            for (size_t k = 0; k < component.size(); k++)
                                 dst.at<uchar>(component[k].y, component[k].x) = 0;
                         }
                     }

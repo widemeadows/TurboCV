@@ -236,7 +236,7 @@ namespace System
                 {
                     if (edgeFlags.at<int>(i, j) == 1)
                     {
-                        Edge edge = TrackEdge(edgeFlags, edgeList.size() + 1, junctions, 
+                        Edge edge = TrackEdge(edgeFlags, (int)edgeList.size() + 1, junctions, 
                             endpoints, Point(j, i));
 
                         if (edge.size() >= minLength)

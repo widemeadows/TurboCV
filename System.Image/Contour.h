@@ -20,7 +20,7 @@ namespace System
             static bool Compare(const tuple<double, tuple<Point, Point>>& u, 
                 const tuple<double, tuple<Point, Point>>& v);
 
-            static vector<Point> GetPivots(const vector<Point>& points, int pivotNum);
+            static vector<Point> GetPivots(const vector<Point>& points, size_t pivotNum);
         };
 
         inline bool Contour::Compare(const tuple<double, tuple<Point, Point>>& u, 
@@ -41,17 +41,17 @@ namespace System
 	        return points;
         }
 
-        inline vector<Point> Contour::GetPivots(const vector<Point>& points, int pivotNum)
+        inline vector<Point> Contour::GetPivots(const vector<Point>& points, size_t pivotNum)
         {
-            int pointNum = points.size();
+            size_t pointNum = points.size();
 	        assert(pointNum >= pivotNum);
 
 	        vector<tuple<double, tuple<Point, Point>>> distances;
 	        unordered_set<Point, PointHash> pivots;
 
-	        for (int i = 0; i < pointNum; i++)
+	        for (size_t i = 0; i < pointNum; i++)
 	        {
-		        for (int j = i + 1; j < pointNum; j++)
+		        for (size_t j = i + 1; j < pointNum; j++)
 		        {
 			        double distance = Geometry::EulerDistance(points[i], points[j]);
 			        distances.push_back(make_tuple(distance, make_tuple(points[i], points[j])));

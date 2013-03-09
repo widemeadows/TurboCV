@@ -23,8 +23,8 @@ namespace System
 
         inline tuple<Mat, Mat> Gradient::GetGradientKernel(double sigma, double epsilon)
         {
-            double halfSize = ceil(sigma * sqrt(-2 * log(sqrt(2 * CV_PI) * sigma * epsilon)));
-            double size = halfSize * 2 + 1;
+            int halfSize = (int)ceil(sigma * sqrt(-2 * log(sqrt(2 * CV_PI) * sigma * epsilon)));
+            int size = halfSize * 2 + 1;
             double sum = 0, root;
             Mat dx(size, size, CV_64F), dy(size, size, CV_64F);
 
@@ -162,7 +162,7 @@ namespace System
 
         inline vector<Mat> GetLoGPyramid(const Mat& image, const vector<double>& sigmas)
         {
-            int sigmaNum = sigmas.size();
+            size_t sigmaNum = sigmas.size();
             vector<Mat> LoGPyramid(sigmaNum);
 
             for (int i = 0; i < sigmaNum; i++)
@@ -183,7 +183,7 @@ namespace System
 
         inline vector<Mat> GetDoGPyramid(const Mat& image, const vector<double>& sigmas)
         {
-            int sigmaNum = sigmas.size();
+            size_t sigmaNum = sigmas.size();
             vector<Mat> GaussianPyramid(sigmaNum + 1);
 
             image.convertTo(GaussianPyramid[0], CV_64F);
