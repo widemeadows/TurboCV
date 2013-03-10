@@ -35,7 +35,7 @@ void ExtractLocalFeature(const System::String& imageSetPath, const Feature& feat
 
     vector<FeatureInfo<float>> features(imageNum);
     printf("Compute " + feature.GetName() + "...\n");
-    #pragma omp parallel for
+    #pragma omp parallel for schedule(guided)
     for (int i = 0; i < imageNum; i++)
         Convert(feature.GetFeatureWithPreprocess(get<0>(images[i]), true), features[i]);
     

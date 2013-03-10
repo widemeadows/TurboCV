@@ -2,11 +2,11 @@
 
 #include "../System/String.h"
 #include "../System/Math.h"
+#include "BinaryImage.h"
 #include "Contour.h"
 #include "Filter.h"
 #include "Geometry.h"
 #include "Info.h"
-#include "Morphology.h"
 #include <cv.h>
 #include <tuple>
 using namespace cv;
@@ -22,7 +22,6 @@ namespace System
             static Mat Preprocess(const Mat& sketchImage, bool thinning = false);
 
             FeatureInfo<double> GetFeatureWithPreprocess(const Mat& sketchImage, bool thinning = false) const;
-
             FeatureInfo<double> GetFeatureWithoutPreprocess(const Mat& sketchImage) const;
 
             virtual String GetName() const = 0;
@@ -32,36 +31,6 @@ namespace System
 
             virtual FeatureInfo<double> GetFeature(const Mat& sketchImage) const = 0;
         };
-
-        inline FeatureInfo<double> Feature::GetFeatureWithPreprocess(const Mat& sketchImage, bool thinning) const
-        {
-            return GetFeature(Preprocess(sketchImage, thinning));
-        }
-
-        inline FeatureInfo<double> Feature::GetFeatureWithoutPreprocess(const Mat& sketchImage) const
-        {
-            return GetFeature(sketchImage);
-        }
-
-        inline Mat Feature::GetBoundingBox(const Mat& sketchImage)
-        {
-            int minX = sketchImage.cols - 1, maxX = 0,
-                minY = sketchImage.rows - 1, maxY = 0;
-
-            for (int i = 0; i < sketchImage.rows; i++)
-                for (int j = 0; j < sketchImage.cols; j++)
-                {
-                    if (sketchImage.at<uchar>(i, j))
-                    {
-                        minX = min(minX, j);
-                        maxX = max(maxX, j);
-                        minY = min(minY, i);
-                        maxY = max(maxY, i);
-                    }
-                }
-
-            return Mat(sketchImage, Range(minY, maxY + 1), Range(minX, maxX + 1));
-        }
 
         inline Mat Feature::Preprocess(const Mat& sketchImage, bool thinning)
         {
@@ -103,6 +72,50 @@ namespace System
             return finalImage;
         }
 
+        inline FeatureInfo<double> Feature::GetFeatureWithPreprocess(const Mat& sketchImage, bool thinning) const
+        {
+            return GetFeature(Preprocess(sketchImage, thinning));
+        }
+
+        inline FeatureInfo<double> Feature::GetFeatureWithoutPreprocess(const Mat& sketchImage) const
+        {
+            return GetFeature(sketchImage);
+        }
+
+        inline Mat Feature::GetBoundingBox(const Mat& sketchImage)
+        {
+            int minX = sketchImage.cols - 1, maxX = 0,
+                minY = sketchImage.rows - 1, maxY = 0;
+
+            for (int i = 0; i < sketchImage.rows; i++)
+                for (int j = 0; j < sketchImage.cols; j++)
+                {
+                    if (sketchImage.at<uchar>(i, j))
+                    {
+                        minX = min(minX, j);
+                        maxX = max(maxX, j);
+                        minY = min(minY, i);
+                        maxY = max(maxY, i);
+                    }
+                }
+
+            return Mat(sketchImage, Range(minY, maxY + 1), Range(minX, maxX + 1));
+        }
+
+        ///////////////////////////////////////////////////////////////////////
+
+        inline vector<Point> GetRegularlySamplingPoints(size_t height, size_t width, size_t samplingNumPerDirection)
+        {
+            int heightStep = height / samplingNumPerDirection, widthStep = width / samplingNumPerDirection;
+            vector<Point> points;
+
+            for (int i = heightStep / 2; i < height; i += heightStep)
+                for (int j = widthStep / 2; j < width; j += widthStep)
+                    points.push_back(Point(j, i));
+
+            return points;
+        }
+
         ///////////////////////////////////////////////////////////////////////
 
         class HOG : public Feature
@@ -119,9 +132,9 @@ namespace System
 
         inline FeatureInfo<double> HOG::GetFeature(const Mat& sketchImage) const
         {
-            int orientNum = 4, cellNum = 4, blockSize = 92, sampleNum = 28;
-            int cellSize = blockSize / cellNum, kernelSize = cellSize * 2 + 1;
+            int orientNum = 4, sampleNum = 28, blockSize = 92, cellNum = 4;
 
+            int cellSize = blockSize / cellNum, kernelSize = cellSize * 2 + 1;
             Mat tentKernel(kernelSize, kernelSize, CV_64F);
             for (int i = 0; i < kernelSize; i++)
             {
@@ -142,16 +155,11 @@ namespace System
                 filter2D(orientChannels[i], filteredOrientChannels[i], -1, tentKernel);
 
             FeatureInfo<double> feature;
-            int height = sketchImage.rows, width = sketchImage.cols;
-            int heightStep = height / sampleNum, widthStep = width / sampleNum;
-            for (int i = heightStep / 2; i < height; i += heightStep)
+            vector<Point> points = GetRegularlySamplingPoints(sketchImage.rows, sketchImage.cols, sampleNum);
+            for (Point point : points)
             {
-                for (int j = widthStep / 2; j < width; j += widthStep)
-                {
-                    DescriptorInfo<double> desc = GetDescriptor(filteredOrientChannels, 
-                        Point(j, i), blockSize, cellNum);
-                    feature.push_back(desc);
-                }
+                DescriptorInfo<double> desc = GetDescriptor(filteredOrientChannels, point, blockSize, cellNum);
+                feature.push_back(desc);
             }
 
             return feature;
@@ -218,8 +226,8 @@ namespace System
             vector<double> logDistances(tmp, tmp + sizeof(tmp) / sizeof(double));
             int angleNum = 9, orientNum = 8;
 
-            vector<Point> points = Contour::GetEdgels(sketchImage);
-            vector<Point> pivots = Contour::GetPivots(points, (int)(points.size() * 0.33));
+            vector<Point> points = GetEdgels(sketchImage);
+            vector<Point> pivots = GetPivots(points, (int)(points.size() * 0.33));
 
             tuple<Mat, Mat> gradient = Gradient::GetGradient(sketchImage);
             Mat& powerImage = get<0>(gradient);
@@ -320,8 +328,8 @@ namespace System
             vector<double> logDistances(tmp, tmp + sizeof(tmp) / sizeof(double));
             int angleNum = 12;
 
-            vector<Point> points = Contour::GetEdgels(sketchImage);
-            vector<Point> pivots = Contour::GetPivots(points, (int)(points.size() * 0.33));
+            vector<Point> points = GetEdgels(sketchImage);
+            vector<Point> pivots = GetPivots(points, (int)(points.size() * 0.33));
 
             FeatureInfo<double> feature;
             for (int i = 0; i < pivots.size(); i++)
@@ -404,8 +412,8 @@ namespace System
         {
             int orientNum = 4, cellNum = 4;
 
-            vector<Point> points = Contour::GetEdgels(sketchImage);
-            vector<Point> pivots = Contour::GetPivots(points, (int)(points.size() * 0.33));
+            vector<Point> points = GetEdgels(sketchImage);
+            vector<Point> pivots = GetPivots(points, (int)(points.size() * 0.33));
             vector<Mat> orientChannels = Gradient::GetOrientChannels(sketchImage, orientNum);
 
             FeatureInfo<double> feature;
@@ -504,7 +512,7 @@ namespace System
             int angleNum = 9, orientNum = 8, sampleNum = 28;
 
             Mat orientImage = get<1>(Gradient::GetGradient(sketchImage));
-            vector<Point> points = Contour::GetEdgels(sketchImage); 
+            vector<Point> points = GetEdgels(sketchImage); 
 
             FeatureInfo<double> feature;
             int height = sketchImage.rows, width = sketchImage.cols;
@@ -607,8 +615,8 @@ namespace System
             int angleNum = 12, sampleNum = 28;
 
             Mat orientImage = get<1>(Gradient::GetGradient(sketchImage));
-            vector<Point> points = Contour::GetEdgels(sketchImage); 
-            vector<Point> pivots = Contour::GetPivots(points, (int)(points.size() * 0.33));
+            vector<Point> points = GetEdgels(sketchImage); 
+            vector<Point> pivots = GetPivots(points, (int)(points.size() * 0.33));
 
             FeatureInfo<double> feature;
             int height = sketchImage.rows, width = sketchImage.cols;
@@ -702,8 +710,8 @@ namespace System
             for (int i = 1; i < scaleNum; i++)
                 sigmas.push_back(sigmas[i - 1] * sigmaStep);
 
-            vector<Point> points = Contour::GetEdgels(sketchImage);
-            vector<Point> pivots = Contour::GetPivots(points, (int)(points.size() * 0.33));
+            vector<Point> points = GetEdgels(sketchImage);
+            vector<Point> pivots = GetPivots(points, (int)(points.size() * 0.33));
             vector<Mat> orientChannels = Gradient::GetOrientChannels(sketchImage, orientNum);
             vector<Mat> pyramid = GetLoGPyramid(sketchImage, sigmas);
             

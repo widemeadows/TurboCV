@@ -3,6 +3,7 @@
 #include "Util.h"
 #include "Geometry.h"
 #include <cv.h>
+#include <tuple>
 #include <unordered_set>
 #include <algorithm>
 using namespace cv;
@@ -12,36 +13,7 @@ namespace System
 {
     namespace Image
     {
-        class Contour
-        {
-        public:
-            static vector<Point> GetEdgels(const Mat& sketchImage);
-            
-            static bool Compare(const tuple<double, tuple<Point, Point>>& u, 
-                const tuple<double, tuple<Point, Point>>& v);
-
-            static vector<Point> GetPivots(const vector<Point>& points, size_t pivotNum);
-        };
-
-        inline bool Contour::Compare(const tuple<double, tuple<Point, Point>>& u, 
-            const tuple<double, tuple<Point, Point>>& v)
-        {
-            return u < v;
-        }
-
-        inline vector<Point> Contour::GetEdgels(const Mat& sketchImage)
-        {
-	        vector<Point> points;
-
-	        for (int i = 0; i < sketchImage.rows; i++)
-		        for (int j = 0; j < sketchImage.cols; j++)
-			        if (sketchImage.at<uchar>(i, j))
-				        points.push_back(Point(j, i));
-
-	        return points;
-        }
-
-        inline vector<Point> Contour::GetPivots(const vector<Point>& points, size_t pivotNum)
+        inline vector<Point> GetPivots(const vector<Point>& points, size_t pivotNum)
         {
             size_t pointNum = points.size();
 	        assert(pointNum >= pivotNum);
@@ -58,7 +30,10 @@ namespace System
 		        }
 		        pivots.insert(points[i]);
 	        }
-	        sort(distances.begin(), distances.end(), Contour::Compare);
+	        sort(distances.begin(), distances.end(), [](
+                const tuple<double, tuple<Point, Point>>& u, 
+                const tuple<double, tuple<Point, Point>>& v)
+                { return u < v; });
 
 	        int ptr = 0;
 	        while (pivots.size() > pivotNum)

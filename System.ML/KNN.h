@@ -28,7 +28,7 @@ namespace System
 		        vector<vector<double>> distanceMatrix(evaluationSet.size());
                 vector<vector<bool>> relevantMatrix(evaluationSet.size());
 
-                #pragma omp parallel for
+                #pragma omp parallel for schedule(guided)
                 for (int i = 0; i < evaluationSet.size(); i++)
                 {
                     for (int j = 0; j < trainingSet.size(); j++)
@@ -100,7 +100,7 @@ namespace System
                 int sampleNum = samples.size();
 		        vector<int> results(sampleNum);
 
-		        #pragma omp parallel for
+		        #pragma omp parallel for schedule(guided)
 		        for (int i = 0; i < sampleNum; i++)
 		        {
 			        results[i] = predictOneSample(samples[i], K);

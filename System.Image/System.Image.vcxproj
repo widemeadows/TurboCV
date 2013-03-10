@@ -148,7 +148,7 @@
     <ClInclude Include="Info.h" />
     <ClInclude Include="Util.h" />
     <ClInclude Include="Filter.h" />
-    <ClInclude Include="Morphology.h" />
+    <ClInclude Include="BinaryImage.h" />
     <ClInclude Include="System.Image.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

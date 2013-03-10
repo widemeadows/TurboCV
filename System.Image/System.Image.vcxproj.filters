@@ -15,9 +15,6 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="Morphology.h">
-      <Filter>头文件</Filter>
-    </ClInclude>
     <ClInclude Include="Filter.h">
       <Filter>头文件</Filter>
     </ClInclude>
@@ -43,6 +40,9 @@
       <Filter>头文件</Filter>
     </ClInclude>
     <ClInclude Include="Feature.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="BinaryImage.h">
       <Filter>头文件</Filter>
     </ClInclude>
   </ItemGroup>

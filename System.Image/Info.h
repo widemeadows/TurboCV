@@ -15,10 +15,10 @@ namespace System
         public:
             DescriptorInfo() : ptr(new vector<T>()) {};
 
-            typename T& operator[](int index) { return (*ptr)[index]; };
-            typename const T& operator[](int index) const { return (*ptr)[index]; };
+            T& operator[](int index) { return (*ptr)[index]; };
+            const T& operator[](int index) const { return (*ptr)[index]; };
 
-            typename vector<T> getVec() const { return *ptr; }
+            vector<T> getVec() const { return *ptr; }
 
             typename vector<T>::iterator begin() const { return ptr->begin(); };
             typename vector<T>::iterator end() const { return ptr->end(); };
@@ -38,8 +38,8 @@ namespace System
         public:
             FeatureInfo() : ptr(new vector<DescriptorInfo<T>>()) {};
 
-            typename DescriptorInfo<T>& operator[](int index) { return (*ptr)[index]; };
-            typename const DescriptorInfo<T>& operator[](int index) const { return (*ptr)[index]; };
+            DescriptorInfo<T>& operator[](int index) { return (*ptr)[index]; };
+            const DescriptorInfo<T>& operator[](int index) const { return (*ptr)[index]; };
 
             typename vector<DescriptorInfo<T>>::iterator begin() const { return ptr->begin(); };
             typename vector<DescriptorInfo<T>>::iterator end() const { return ptr->end(); };
