@@ -90,32 +90,7 @@ tuple<vector<double>, vector<double>> ROC(const vector<double>& distances,
     return make_tuple(DR, FPR);
 }
 
-//void ExtractGlobalFeature(const System::String& imageSetPath, const Feature& feature)
-//{
-//    srand(1);
-//    vector<tuple<Mat, int>> images = GetImages(imageSetPath, CV_LOAD_IMAGE_GRAYSCALE);
-//    int imageNum = (int)images.size();
-//
-//    vector<FeatureInfo<float>> features(imageNum);
-//    printf("Compute " + feature.GetName() + "...\n");
-//    #pragma omp parallel for
-//    for (int i = 0; i < imageNum; i++)
-//        Convert(feature.GetFeatureWithPreprocess(get<0>(images[i]), true), features[i]);
-//
-//    printf("Write To File...\n");
-//    System::String savePath = feature.GetName() + "_oracles";
-//    FILE* file = fopen(savePath, "w");
-//    for (int i = 0; i < features.size(); i++)
-//    {
-//        fprintf(file, "%d", get<1>(images[i]));
-//        for (int j = 0; j < features[i][0].size(); j++)
-//            fprintf(file, " %d:%f", j + 1, features[i][0][j]);
-//        fprintf(file, "\n");
-//    }
-//    fclose(file);
-//}
-
-void LocalFeatureCrossValidation(const System::String& imageSetPath, const Feature& feature, 
+void LocalFeatureCrossValidation(const System::String& imageSetPath, const LocalFeature& feature, 
                                  int wordNum, int sampleNum = 1000000, int fold = 3)
 {
     srand(1);
@@ -124,7 +99,7 @@ void LocalFeatureCrossValidation(const System::String& imageSetPath, const Featu
 
     vector<LocalFeature_f> features(imageNum);
     printf("Compute " + feature.GetName() + "...\n");
-    #pragma omp parallel for schedule(guided)
+    #pragma omp parallel for schedule(dynamic, 10)
     for (int i = 0; i < imageNum; i++)
         Convert(feature.GetFeatureWithPreprocess(get<0>(images[i]), true), features[i]);
 
@@ -154,7 +129,7 @@ void LocalFeatureCrossValidation(const System::String& imageSetPath, const Featu
     vector<double> passResult;
     for (int i = 0; i < fold; i++)
     {
-        printf("Begin Fold %d...\n", i + 1);
+        printf("\nBegin Fold %d...\n", i + 1);
         vector<LocalFeature_f>& evaluationSet = get<0>(pass[i]);
         vector<LocalFeature_f>& trainingSet = get<1>(pass[i]);
         vector<size_t>& pickUpIndexes = get<2>(pass[i]);
@@ -179,7 +154,7 @@ void LocalFeatureCrossValidation(const System::String& imageSetPath, const Featu
                 trainingLabels.push_back(get<1>(images[j]));
         }
 
-        KNN knn;
+        KNN<Histogram> knn;
         pair<double, map<int, double>> precisions = 
             knn.Evaluate(trainingHistograms, trainingLabels, evaluationHistograms, evaluationLabels, 4);
        
@@ -224,115 +199,109 @@ void LocalFeatureCrossValidation(const System::String& imageSetPath, const Featu
     fclose(file);
 }
 
-//void GlobalFeatureCrossValidation(const System::String& imageSetPath, const Feature& feature, 
-//                                  int fold = 3)
-//{
-//    srand(1);
-//    vector<tuple<Mat, int>> images = GetImages(imageSetPath, CV_LOAD_IMAGE_GRAYSCALE);
-//    int imageNum = (int)images.size();
-//
-//    vector<FeatureInfo<float>> features(imageNum);
-//    printf("Compute " + feature.GetName() + "...\n");
-//    #pragma omp parallel for
-//    for (int i = 0; i < imageNum; i++)
-//        Convert(feature.GetFeatureWithPreprocess(get<0>(images[i]), true), features[i]);
-//    
-//    System::String savePath = feature.GetName() + "_oracles_knn.out";
-//    FILE* file = fopen(savePath, "w");
-//
-//    vector<tuple<vector<FeatureInfo<float>>, vector<FeatureInfo<float>>, vector<size_t>>> pass = 
-//        RandomSplit(features, fold);
-//    vector<vector<double>> DRs(features.size()), FPRs(features.size());
-//    vector<double> passResult;
-//    for (int i = 0; i < fold; i++)
-//    {
-//        vector<FeatureInfo<float>>& evaluationSet = get<0>(pass[i]);
-//        vector<FeatureInfo<float>>& trainingSet = get<1>(pass[i]);
-//        vector<size_t>& pickUpIndexes = get<2>(pass[i]);
-//
-//        vector<vector<double>> trainingData, evaluationData;
-//        for (int j = 0; j < trainingSet.size(); j++)
-//        {
-//            vector<double> data;
-//            for (int k = 0; k < trainingSet[j][0].size(); k++)
-//                data.push_back(trainingSet[j][0][k]);
-//            trainingData.push_back(data);
-//        }
-//        for (int j = 0; j < evaluationSet.size(); j++)
-//        {
-//            vector<double> data;
-//            for (int k = 0; k < evaluationSet[j][0].size(); k++)
-//                data.push_back(evaluationSet[j][0][k]);
-//            evaluationData.push_back(data);
-//        }
-//        
-//        vector<int> trainingLabels, evaluationLabels;
-//        int counter = 0;
-//        for (int j = 0; j < imageNum; j++)
-//        {
-//            if (counter < pickUpIndexes.size() && j == pickUpIndexes[counter])
-//            {
-//                evaluationLabels.push_back(get<1>(images[j]));
-//                counter++;
-//            }
-//            else
-//                trainingLabels.push_back(get<1>(images[j]));
-//        }
-//
-//        KNN knn;
-//        pair<double, map<int, double>> precisions = 
-//            knn.Evaluate(trainingData, trainingLabels, evaluationData, evaluationLabels, 4);
-//        
-//        passResult.push_back(precisions.first);
-//        fprintf(file, "Fold %d: %f\n", i + 1, precisions.first);
-//        printf("Fold %d: %f\n", i + 1, precisions.first);
-//
-//        pair<vector<vector<double>>, vector<vector<bool>>> matrix =
-//            knn.Evaluate(trainingData, trainingLabels, evaluationData, evaluationLabels);
-//        vector<vector<double>>& distances = matrix.first;
-//        vector<vector<bool>>& relevants = matrix.second;
-//        for (int j = 0; j < pickUpIndexes.size(); j++)
-//        {
-//            int index = pickUpIndexes[j];
-//            auto roc = ROC(distances[j], relevants[j]);
-//            DRs[index] = get<0>(roc);
-//            FPRs[index] = get<1>(roc);
-//        }
-//    }
-//
-//    fprintf(file, "Average: %f, Standard Deviation: %f\n", Math::Mean(passResult), 
-//        Math::StandardDeviation(passResult));
-//    printf("Average: %f, Standard Deviation: %f\n", Math::Mean(passResult), 
-//        Math::StandardDeviation(passResult));
-//
-//    fclose(file);
-//
-//    savePath = feature.GetName() + "_oracles_roc";
-//    file = fopen(savePath, "w");
-//    for (int i = 0; i < DRs.size(); i++)
-//    {
-//        for (int j = 0; j < DRs[i].size(); j++)
-//            fprintf(file, "%f ", DRs[i][j]);
-//        fprintf(file, "\n");
-//
-//        for (int j = 0; j < FPRs[i].size(); j++)
-//            fprintf(file, "%f ", FPRs[i][j]);
-//        fprintf(file, "\n");
-//    }
-//    fclose(file);
-//}
+void GlobalFeatureCrossValidation(const System::String& imageSetPath, const GlobalFeature& feature, 
+                                  int fold = 3)
+{
+    srand(1);
+    vector<tuple<Mat, int>> images = GetImages(imageSetPath, CV_LOAD_IMAGE_GRAYSCALE);
+    int imageNum = (int)images.size();
+
+    vector<GlobalFeature_f> features(imageNum);
+    printf("Compute " + feature.GetName() + "...\n");
+    #pragma omp parallel for schedule(dynamic, 10)
+    for (int i = 0; i < imageNum; i++)
+        Convert(feature.GetFeatureWithPreprocess(get<0>(images[i]), true), features[i]);
+
+    printf("Write To File...\n");
+    System::String savePath = feature.GetName() + "_oracles";
+    FILE* file = fopen(savePath, "w");
+    for (int i = 0; i < features.size(); i++)
+    {
+        fprintf(file, "%d", get<1>(images[i]));
+        for (int j = 0; j < features[i].size(); j++)
+            fprintf(file, " %d:%f", j + 1, features[i][j]);
+        fprintf(file, "\n");
+    }
+    fclose(file);
+
+    vector<tuple<vector<GlobalFeature_f>, vector<GlobalFeature_f>, vector<size_t>>> pass = 
+        RandomSplit(features, fold);
+    vector<vector<double>> DRs(features.size()), FPRs(features.size());
+    vector<double> passResult;
+    for (int i = 0; i < fold; i++)
+    {
+        printf("\nBegin Fold %d...\n", i + 1);
+        vector<GlobalFeature_f>& evaluationSet = get<0>(pass[i]);
+        vector<GlobalFeature_f>& trainingSet = get<1>(pass[i]);
+        vector<size_t>& pickUpIndexes = get<2>(pass[i]);
+
+        vector<int> trainingLabels, evaluationLabels;
+        int counter = 0;
+        for (int j = 0; j < imageNum; j++)
+        {
+            if (counter < pickUpIndexes.size() && j == pickUpIndexes[counter])
+            {
+                evaluationLabels.push_back(get<1>(images[j]));
+                counter++;
+            }
+            else
+                trainingLabels.push_back(get<1>(images[j]));
+        }
+
+        KNN<GlobalFeature_f> knn;
+        pair<double, map<int, double>> precisions = 
+            knn.Evaluate(trainingSet, trainingLabels, evaluationSet, evaluationLabels, 4);
+
+        passResult.push_back(precisions.first);
+        printf("Fold %d Accuracy: %f\n", i + 1, precisions.first);
+
+        pair<vector<vector<double>>, vector<vector<bool>>> matrix =
+            knn.Evaluate(trainingSet, trainingLabels, evaluationSet, evaluationLabels);
+        vector<vector<double>>& distances = matrix.first;
+        vector<vector<bool>>& relevants = matrix.second;
+        for (int j = 0; j < pickUpIndexes.size(); j++)
+        {
+            int index = pickUpIndexes[j];
+            auto roc = ROC(distances[j], relevants[j]);
+            DRs[index] = get<0>(roc);
+            FPRs[index] = get<1>(roc);
+        }
+    }
+
+    savePath = feature.GetName() + "_oracles_knn.out";
+    file = fopen(savePath, "w");
+    for (int i = 0; i < passResult.size(); i++)
+        fprintf(file, "Fold %d Accuracy: %f\n", i + 1, passResult[i]);
+    fprintf(file, "Average: %f, Standard Deviation: %f\n", Math::Mean(passResult), 
+        Math::StandardDeviation(passResult));
+    printf("Average: %f, Standard Deviation: %f\n", Math::Mean(passResult), 
+        Math::StandardDeviation(passResult));
+
+    fclose(file);
+
+    savePath = feature.GetName() + "_oracles_roc";
+    file = fopen(savePath, "w");
+    for (int i = 0; i < DRs.size(); i++)
+    {
+        for (int j = 0; j < DRs[i].size(); j++)
+            fprintf(file, "%f ", DRs[i][j]);
+        fprintf(file, "\n");
+
+        for (int j = 0; j < FPRs[i].size(); j++)
+            fprintf(file, "%f ", FPRs[i][j]);
+        fprintf(file, "\n");
+    }
+    fclose(file);
+}
 
 int main()
 {
-    //ExtractLocalFeature("oracles_png", HOG(), 500);
     //LocalFeatureCrossValidation("oracles_png", HOG(), 500);
     //printf("\n");
 
-    //ExtractLocalFeature("oracles_png", HOOSC(), 1000);
-    //LocalFeatureCrossValidation("oracles_png", HOOSC(), 1000);
-    //printf("\n");
+    LocalFeatureCrossValidation("oracles_png", HOOSC(), 1000);
+    printf("\n");
 
-    //ExtractLocalFeature("oracles_png", SC(), 1000);
     //LocalFeatureCrossValidation("oracles_png", SC(), 1000);
     //printf("\n");
 

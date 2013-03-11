@@ -13,15 +13,14 @@ namespace System
 {
     namespace ML
     {
-        typedef Vector<double> Data;
-
+        template<typename T>
         class KNN
         {
         public:
             static pair<vector<vector<double>>, vector<vector<bool>>> Evaluate(
-                const vector<Data>& trainingSet,
+                const vector<T>& trainingSet,
                 const vector<int>& trainingLabels,
-                const vector<Data>& evaluationSet,
+                const vector<T>& evaluationSet,
                 const vector<int>& evaluationLabels)
             {
                 assert(trainingSet.size() == trainingLabels.size());
@@ -30,7 +29,7 @@ namespace System
 		        vector<vector<double>> distanceMatrix(evaluationSet.size());
                 vector<vector<bool>> relevantMatrix(evaluationSet.size());
 
-                #pragma omp parallel for schedule(guided)
+                #pragma omp parallel for schedule(dynamic, 10)
                 for (size_t i = 0; i < evaluationSet.size(); i++)
                 {
                     for (size_t j = 0; j < trainingSet.size(); j++)
@@ -46,9 +45,9 @@ namespace System
             }
 
             pair<double, map<int, double>> Evaluate(
-                const vector<Data>& trainingSet,
+                const vector<T>& trainingSet,
                 const vector<int>& trainingLabels,
-                const vector<Data>& evaluationSet,
+                const vector<T>& evaluationSet,
                 const vector<int>& evaluationLabels,
                 int K)
 	        {
@@ -81,7 +80,7 @@ namespace System
 		        return make_pair((double)correctNum / evaluationNum, precisions);
 	        }
 
-            void Train(const vector<Data>& data, const vector<int>& labels)
+            void Train(const vector<T>& data, const vector<int>& labels)
 	        {
                 assert(data.size() == labels.size() && data.size() > 0);
                 int dataNum = (int)data.size();
@@ -97,12 +96,12 @@ namespace System
                     _dataNumPerClass[_labels[i]]++;
 	        }
 
-            vector<int> Predict(const vector<Data>& samples, int K)
+            vector<int> Predict(const vector<T>& samples, int K)
 	        {
                 int sampleNum = samples.size();
 		        vector<int> results(sampleNum);
 
-		        #pragma omp parallel for schedule(guided)
+		        #pragma omp parallel for schedule(dynamic, 10)
 		        for (int i = 0; i < sampleNum; i++)
 		        {
 			        results[i] = predictOneSample(samples[i], K);
@@ -112,7 +111,7 @@ namespace System
 	        }
 
         private:
-            int predictOneSample(const Data& sample, int K)
+            int predictOneSample(const T& sample, int K)
 	        {
                 size_t dataNum = _data.size();
 		        vector<pair<double, int>> distances(dataNum);
@@ -147,7 +146,7 @@ namespace System
             }
 
             vector<int> _labels;
-            vector<Data> _data;
+            vector<T> _data;
             unordered_map<int, int> _dataNumPerClass;
         };
     }

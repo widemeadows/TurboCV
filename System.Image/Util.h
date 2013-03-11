@@ -102,6 +102,40 @@ namespace System
             }
         }
 
+        inline size_t RoundIndex(int index, size_t period, bool cyclic = false)
+        {
+            if (cyclic)
+            {
+                while (index < 0)
+                    index += period;
+
+                return (size_t)index % period;
+            }
+            else
+            {
+                if (index < 0)
+                    return 0;
+                else if (index >= period)
+                    return period - 1;
+                else
+                    return index;
+            }
+        }
+
+        inline size_t FindBinIndex(double value, double minIncluded, double maxExcluded, 
+            size_t intervalNum, bool cyclic = false)
+        {
+            assert(intervalNum > 0 && maxExcluded > minIncluded);
+
+            double intervalSize = (maxExcluded - minIncluded) / intervalNum;
+
+            int index = (int)(value / intervalSize);
+            index = RoundIndex(index, intervalNum, cyclic);
+            assert(index >= 0 && index < intervalNum);
+
+            return index;
+        }
+
         inline Mat FFTShift(const Mat& data)
         {
 	        int width = data.cols, height = data.rows;
