@@ -12,8 +12,6 @@ namespace System
 {
     namespace Image
     {
-        typedef vector<double> Histogram;
-
         const size_t INF = numeric_limits<size_t>::max();
         const double EPS = 1e-14;
         const int MAX_GRAYSCALE = 255;

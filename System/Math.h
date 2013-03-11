@@ -13,7 +13,19 @@ namespace System
         static const double PI;
 
         template<typename T>
+        static T Min(const vector<T>& vec);
+
+        template<typename T>
+        static T Max(const vector<T>& vec);
+
+        template<typename T>
         static T Sum(const vector<T>& vec);
+
+        template<typename T>
+        static double Mean(const vector<T>& vec);
+
+        template<typename T>
+        static double StandardDeviation(const vector<T>& vec);
 
         static double Gauss(double x, double sigma);
 
@@ -27,15 +39,33 @@ namespace System
 
         template<typename T>
         static double GaussianDistance(const vector<T>& u, const vector<T>& v, double sigma);
-
-        template<typename T>
-        static double Mean(const vector<T>& vec);
-
-        template<typename T>
-        static double StandardDeviation(const vector<T>& vec);
     };
 
     const double Math::PI = 3.1415926535897932384626433832795;
+
+    template<typename T>
+    inline T Math::Min(const vector<T>& vec)
+    {
+        assert(vec.size() > 0);
+
+        T result = vec[0];
+        for (size_t i = 1; i < vec.size(); i++)
+            result = min(vec[i], result);
+
+        return result;
+    }
+
+    template<typename T>
+    inline T Math::Max(const vector<T>& vec)
+    {
+        assert(vec.size() > 0);
+
+        T result = vec[0];
+        for (size_t i = 1; i < vec.size(); i++)
+            result = max(vec[i], result);
+
+        return result;
+    }
 
     template <typename T>
     inline T Math::Sum(const vector<T>& vec)
@@ -46,6 +76,28 @@ namespace System
             sum += item;
 
         return sum;
+    }
+
+    template<typename T>
+    inline double Math::Mean(const vector<T>& vec)
+    {
+        assert(vec.size() > 0);
+
+        return Sum(vec) / (double)vec.size();
+    }
+
+    template<typename T>
+    inline double Math::StandardDeviation(const vector<T>& vec)
+    {
+        assert(vec.size() > 0);
+
+        double mean = Mean(vec);
+
+        double squareSum = 0;
+        for (auto item : vec)
+            squareSum += (double)item * (double)item;
+
+        return sqrt((squareSum - vec.size() * mean * mean) / vec.size());
     }
 
     inline double Math::Gauss(double x, double sigma)
@@ -92,27 +144,5 @@ namespace System
             distance += (u[i] - v[i]) * (u[i] - v[i]);
 
         return exp(-distance / (2 * sigma * sigma));
-    }
-
-    template<typename T>
-    inline double Math::Mean(const vector<T>& vec)
-    {
-        assert(vec.size() > 0);
-
-        return Sum(vec) / (double)vec.size();
-    }
-
-    template<typename T>
-    inline double Math::StandardDeviation(const vector<T>& vec)
-    {
-        assert(vec.size() > 0);
-
-        double mean = Mean(vec);
-
-        double squareSum = 0;
-        for (auto item : vec)
-            squareSum += (double)item * (double)item;
-
-        return sqrt((squareSum - vec.size() * mean * mean) / vec.size());
     }
 }

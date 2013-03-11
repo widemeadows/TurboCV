@@ -6,7 +6,7 @@ using namespace System;
 
 namespace UnitTest
 {        
-    TEST_CLASS(BasicTypeTest)
+    TEST_CLASS(TypeTest)
     {
     public:
         TEST_METHOD(ParseTest)

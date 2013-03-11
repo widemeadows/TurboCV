@@ -19,4 +19,4 @@ TurboCV has functions as follow.
 
 This toolkit is written **for fun**. Its purpose is to simplify development of "demo programs", not "commercial softwares". Therefore, it may not contains much code to process exceptions and some unimportant details. In addition, the efficiency is not a priority.
 
-*Currently there is no code here. I will commit them after some code cleaning.*
+~~*Currently there is no code here. I will commit them after some code cleaning.*~~

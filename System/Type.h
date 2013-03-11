@@ -3,6 +3,8 @@
 #include <iomanip>
 #include <sstream>
 #include <string>
+#include <vector>
+#include <memory>
 #include "String.h"
 using namespace std;
 
@@ -98,4 +100,30 @@ namespace System
 
         return result;
     }
+
+    ///////////////////////////////////////////////////////////////////////
+
+    template<typename T>
+    class Vector
+    {
+    public:
+        Vector() : ptr(new vector<T>()) {};
+        Vector(size_t size) : ptr(new vector<T>(size)) {};
+
+        T& operator[](int index) { return (*ptr)[index]; };
+        const T& operator[](int index) const { return (*ptr)[index]; };
+
+        const vector<T>& getVec() const { return *ptr; }
+
+        typename vector<T>::iterator begin() const { return ptr->begin(); };
+        typename vector<T>::iterator end() const { return ptr->end(); };
+
+        void push_back(const T& item) { ptr->push_back(item); };
+        void clear() { ptr->clear(); };
+
+        size_t size() const { return ptr->size(); };
+
+    private:
+        shared_ptr<vector<T>> ptr;
+    };
 }

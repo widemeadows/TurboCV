@@ -142,10 +142,10 @@
   <ItemGroup>
     <ClInclude Include="BOV.h" />
     <ClInclude Include="Feature.h" />
-    <ClInclude Include="Contour.h" />
+    <ClInclude Include="Sample.h" />
     <ClInclude Include="EdgeLink.h" />
     <ClInclude Include="Geometry.h" />
-    <ClInclude Include="Info.h" />
+    <ClInclude Include="Typedef.h" />
     <ClInclude Include="Util.h" />
     <ClInclude Include="Filter.h" />
     <ClInclude Include="BinaryImage.h" />

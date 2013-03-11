@@ -33,16 +33,16 @@
     <ClInclude Include="Geometry.h">
       <Filter>头文件</Filter>
     </ClInclude>
-    <ClInclude Include="Contour.h">
-      <Filter>头文件</Filter>
-    </ClInclude>
-    <ClInclude Include="Info.h">
-      <Filter>头文件</Filter>
-    </ClInclude>
     <ClInclude Include="Feature.h">
       <Filter>头文件</Filter>
     </ClInclude>
     <ClInclude Include="BinaryImage.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="Sample.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="Typedef.h">
       <Filter>头文件</Filter>
     </ClInclude>
   </ItemGroup>

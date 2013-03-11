@@ -1,8 +1,8 @@
 #pragma once
 
 #include "../System/System.h"
-#include "Util.h"
 #include "Feature.h"
+#include "Typedef.h"
 #include <cv.h>
 using namespace std;
 
@@ -13,35 +13,34 @@ namespace System
         class BOV
         {
         public:
-            static vector<DescriptorInfo<float>> GetVisualWords(
-                const vector<FeatureInfo<float>>& features, size_t clusterNum, size_t sampleNum = INF);
+            static vector<Word_f> GetVisualWords(
+                const vector<LocalFeature_f>& features, size_t clusterNum, size_t sampleNum = INF);
 
             static vector<Histogram> GetFrequencyHistograms(
-                const vector<FeatureInfo<float>>& features, const vector<DescriptorInfo<float>>& words);
+                const vector<LocalFeature_f>& features, const vector<Word_f>& words);
 
             static vector<Histogram> GetFrequencyHistogram(
-                const vector<FeatureInfo<float>>& features, size_t clusterNum, size_t sampleNum = INF);
+                const vector<LocalFeature_f>& features, size_t clusterNum, size_t sampleNum = INF);
         
         private:
-            static vector<double> GetDistancesToVisualWords(const DescriptorInfo<float>& descriptor, 
-                const vector<DescriptorInfo<float>>& words);
+            static vector<double> GetDistancesToVisualWords(const Descriptor_f& descriptor, 
+                const vector<Word_f>& words);
 
-            static Histogram BOV::GetFrequencyHistogram(const FeatureInfo<float>& feature, 
-                const vector<DescriptorInfo<float>>& words);
+            static Histogram BOV::GetFrequencyHistogram(const LocalFeature_f& feature, 
+                const vector<Word_f>& words);
         };
 
-        inline vector<DescriptorInfo<float>> BOV::GetVisualWords(
-            const vector<FeatureInfo<float>>& features, size_t clusterNum, size_t sampleNum)
+        inline vector<Word_f> BOV::GetVisualWords(
+            const vector<LocalFeature_f>& features, size_t clusterNum, size_t sampleNum)
         {
-            vector<DescriptorInfo<float>> allDescriptors;
+            vector<Descriptor_f> allDescriptors;
             for (size_t i = 0; i < features.size(); i++)
                 for (size_t j = 0; j < features[i].size(); j++)
                     allDescriptors.push_back(features[i][j]);
 
             assert(allDescriptors.size() > 0);
             size_t descriptorNum = allDescriptors.size(), descriptorSize = allDescriptors[0].size();
-            printf("Descriptor Num: %d, Descriptor Size: %d.\n", 
-                (int)descriptorNum, (int)descriptorSize);
+            printf("Descriptor Num: %d, Descriptor Size: %d.\n", (int)descriptorNum, (int)descriptorSize);
 
             sampleNum = min(descriptorNum, sampleNum);
             Mat samples(sampleNum, descriptorSize, CV_32F);
@@ -63,21 +62,21 @@ namespace System
             for (size_t i = 0; i < sampleNum; i++)
                 labels.at<int>(i, 0) = 0;
 
-            Mat centres(clusterNum, descriptorSize, CV_32F);
+            Mat centers(clusterNum, descriptorSize, CV_32F);
             printf("K-Means Begin...\n");
             kmeans(samples, clusterNum, labels, TermCriteria(CV_TERMCRIT_ITER, 500, 1e-6), 
-                1, KMEANS_PP_CENTERS, centres);
+                1, KMEANS_PP_CENTERS, centers);
 
-            vector<DescriptorInfo<float>> words(clusterNum);
+            vector<Word_f> words(clusterNum);
             for (size_t i = 0; i < clusterNum; i++)
                 for (size_t j = 0; j < descriptorSize; j++)
-                    words[i].push_back(centres.at<float>(i, j));
+                    words[i].push_back(centers.at<float>(i, j));
 
             return words;
         }
 
         inline vector<double> BOV::GetDistancesToVisualWords(
-            const DescriptorInfo<float>& descriptor, const vector<DescriptorInfo<float>>& words)
+            const Descriptor_f& descriptor, const vector<Word_f>& words)
         {
             assert(words.size() > 0 && descriptor.size() == words[0].size());
 
@@ -91,12 +90,12 @@ namespace System
             return distances;
         }
 
-        inline Histogram BOV::GetFrequencyHistogram(const FeatureInfo<float>& feature, 
-            const vector<DescriptorInfo<float>>& words)
+        inline Histogram BOV::GetFrequencyHistogram(const LocalFeature_f& feature, 
+            const vector<Word_f>& words)
         {    
             size_t wordNum = words.size();
             size_t descriptorNum = feature.size();
-            Histogram freqHistogram(wordNum, 0);
+            Histogram freqHistogram(wordNum);
 
             for (size_t i = 0; i < descriptorNum; i++)
             {
@@ -113,20 +112,20 @@ namespace System
             return freqHistogram;
         }
 
-        inline vector<Histogram> BOV::GetFrequencyHistograms(const vector<FeatureInfo<float>>& features, 
-            const vector<DescriptorInfo<float>>& words)
+        inline vector<Histogram> BOV::GetFrequencyHistograms(const vector<LocalFeature_f>& features, 
+            const vector<Word_f>& words)
         {
             size_t imageNum = features.size();
             vector<Histogram> freqHistograms(imageNum);
 
-            #pragma omp parallel for
+            #pragma omp parallel for schedule(guided)
             for (size_t i = 0; i < imageNum; i++)
                 freqHistograms[i] = GetFrequencyHistogram(features[i], words);
 
             return freqHistograms;
         }
 
-        inline vector<Histogram> BOV::GetFrequencyHistogram(const vector<FeatureInfo<float>>& features,
+        inline vector<Histogram> BOV::GetFrequencyHistogram(const vector<LocalFeature_f>& features,
             size_t clusterNum, size_t sampleNum)
         {
             return GetFrequencyHistograms(features, GetVisualWords(features, clusterNum, sampleNum));

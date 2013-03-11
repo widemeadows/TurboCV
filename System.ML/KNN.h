@@ -13,13 +13,15 @@ namespace System
 {
     namespace ML
     {
+        typedef Vector<double> Data;
+
         class KNN
         {
         public:
             static pair<vector<vector<double>>, vector<vector<bool>>> Evaluate(
-                const vector<vector<double>>& trainingSet,
+                const vector<Data>& trainingSet,
                 const vector<int>& trainingLabels,
-                const vector<vector<double>>& evaluationSet,
+                const vector<Data>& evaluationSet,
                 const vector<int>& evaluationLabels)
             {
                 assert(trainingSet.size() == trainingLabels.size());
@@ -29,12 +31,12 @@ namespace System
                 vector<vector<bool>> relevantMatrix(evaluationSet.size());
 
                 #pragma omp parallel for schedule(guided)
-                for (int i = 0; i < evaluationSet.size(); i++)
+                for (size_t i = 0; i < evaluationSet.size(); i++)
                 {
-                    for (int j = 0; j < trainingSet.size(); j++)
+                    for (size_t j = 0; j < trainingSet.size(); j++)
 		            {
                         distanceMatrix[i].push_back(Math::NormOneDistance(
-                            evaluationSet[i], trainingSet[j]));
+                            evaluationSet[i].getVec(), trainingSet[j].getVec()));
 
                         relevantMatrix[i].push_back(evaluationLabels[i] == trainingLabels[j]);
 		            }
@@ -44,9 +46,9 @@ namespace System
             }
 
             pair<double, map<int, double>> Evaluate(
-                const vector<vector<double>>& trainingSet,
+                const vector<Data>& trainingSet,
                 const vector<int>& trainingLabels,
-                const vector<vector<double>>& evaluationSet,
+                const vector<Data>& evaluationSet,
                 const vector<int>& evaluationLabels,
                 int K)
 	        {
@@ -56,9 +58,9 @@ namespace System
 		        Train(trainingSet, trainingLabels);
 		        vector<int> predict = Predict(evaluationSet, K);
 
-                int evaluationNum = (int)evaluationSet.size(), correctNum = 0;
+                size_t evaluationNum = evaluationSet.size(), correctNum = 0;
                 unordered_map<int, int> evaluationNumPerClass, correctNumPerClass;
-		        for (int i = 0; i < evaluationNum; i++)
+		        for (size_t i = 0; i < evaluationNum; i++)
 		        {
 			        evaluationNumPerClass[evaluationLabels[i]]++;
 
@@ -79,7 +81,7 @@ namespace System
 		        return make_pair((double)correctNum / evaluationNum, precisions);
 	        }
 
-            void Train(const vector<vector<double>>& data, const vector<int>& labels)
+            void Train(const vector<Data>& data, const vector<int>& labels)
 	        {
                 assert(data.size() == labels.size() && data.size() > 0);
                 int dataNum = (int)data.size();
@@ -95,7 +97,7 @@ namespace System
                     _dataNumPerClass[_labels[i]]++;
 	        }
 
-            vector<int> Predict(const vector<vector<double>>& samples, int K)
+            vector<int> Predict(const vector<Data>& samples, int K)
 	        {
                 int sampleNum = samples.size();
 		        vector<int> results(sampleNum);
@@ -110,14 +112,15 @@ namespace System
 	        }
 
         private:
-            int predictOneSample(const vector<double>& sample, int K)
+            int predictOneSample(const Data& sample, int K)
 	        {
-                int dataNum = (int)_data.size();
+                size_t dataNum = _data.size();
 		        vector<pair<double, int>> distances(dataNum);
 
-		        for (int i = 0; i < dataNum; i++)
+		        for (size_t i = 0; i < dataNum; i++)
 		        {
-			        distances[i] = make_pair(Math::NormOneDistance(sample, _data[i]), _labels[i]);
+			        distances[i] = make_pair(
+                        Math::NormOneDistance(sample.getVec(), _data[i].getVec()), _labels[i]);
 		        }
 		        partial_sort(distances.begin(), distances.begin() + K, distances.end());
 
@@ -144,7 +147,7 @@ namespace System
             }
 
             vector<int> _labels;
-            vector<vector<double>> _data;
+            vector<Data> _data;
             unordered_map<int, int> _dataNumPerClass;
         };
     }

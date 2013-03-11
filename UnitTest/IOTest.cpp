@@ -16,7 +16,7 @@ namespace UnitTest
         TEST_METHOD(IORelatedTest)
         {
             String rootDirFullName = "D:\\IOUnitTest";
-            DirectoryInfo rootDir(rootDirFullName);
+            DirectoryInfo rootDir(rootDirFullName + "\\");
 
             Assert::AreEqual(false, rootDir.Exists());
             Assert::AreEqual("", rootDir.Extension());
@@ -31,7 +31,7 @@ namespace UnitTest
             String subDirFullName1 = rootDirFullName + "\\SubDir1";
             String subDirFullName2 = rootDirFullName + "\\SubDir2";
             DirectoryInfo subDir1(subDirFullName1);
-            DirectoryInfo subDir2(subDirFullName2);
+            DirectoryInfo subDir2(subDirFullName2 + "\\");
 
             Assert::AreEqual(false, subDir1.Exists());
             Assert::AreEqual(false, subDir2.Exists());
