@@ -135,6 +135,66 @@ namespace System
 
         ///////////////////////////////////////////////////////////////////////
 
+        /*class Test : public LocalFeature
+        {
+        protected:
+            virtual LocalFeatureVec GetFeature(const Mat& sketchImage) const;
+
+            virtual String GetName() const { return "test"; };
+
+        private:
+            static Descriptor GetDescriptor(const Size& size, const Point& center, 
+                const vector<Point>& points, int blockSize, int cellNum);
+        };
+
+        inline LocalFeatureVec Test::GetFeature(const Mat& sketchImage) const
+        {
+            int sampleNum = 28, blockSize = 112, cellNum = 8;
+
+            vector<Point> points = GetEdgels(sketchImage);
+
+            LocalFeatureVec feature;
+            vector<Point> centers = SampleOnGrid(sketchImage.rows, sketchImage.cols, sampleNum);
+            for (Point center : centers)
+            {
+                Descriptor descriptor = GetDescriptor(sketchImage.size(), center, points, blockSize, cellNum);
+                feature.push_back(descriptor);
+            }
+
+            return feature;
+        }
+
+        inline Descriptor Test::GetDescriptor(const Size& size, const Point& center, 
+            const vector<Point>& points, int blockSize, int cellNum)
+        {
+            int height = size.height, width = size.width;
+            double cellSize = (double)blockSize / cellNum;
+            int expectedTop = center.y - blockSize / 2,
+                expectedLeft = center.x - blockSize / 2;
+            Mat hist = Mat::zeros(cellNum, cellNum, CV_64F);
+
+            for (auto point : points)
+            {
+                int r = (int)((point.y - expectedTop) / cellSize);
+                int c = (int)((point.x - expectedLeft) / cellSize);
+
+                if (r < 0 || r >= cellNum || c < 0 || c >= cellNum)
+                    continue;
+                else
+                    hist.at<double>(r, c)++;
+            }
+
+            Descriptor descriptor;
+            for (int i = 0; i < cellNum; i++)
+                for (int j = 0; j < cellNum; j++)
+                    descriptor.push_back(hist.at<double>(i, j));
+
+            NormOneNormalize(descriptor.begin(), descriptor.end());
+            return descriptor;
+        }*/
+
+        ///////////////////////////////////////////////////////////////////////
+
         class HOG : public LocalFeature
         {
         protected:

@@ -84,7 +84,7 @@ namespace System
             vector<double> distances;
 
             for (size_t i = 0; i < wordNum; i++)
-                distances.push_back(Math::GaussianDistance(descriptor.getVec(), words[i].getVec(), 0.1));
+                distances.push_back(Math::GaussianDistance(descriptor, words[i], 0.1));
 
             NormOneNormalize(distances.begin(), distances.end());
             return distances;
@@ -119,7 +119,7 @@ namespace System
             vector<Histogram> freqHistograms(imageNum);
 
             #pragma omp parallel for schedule(guided)
-            for (size_t i = 0; i < imageNum; i++)
+            for (int i = 0; i < imageNum; i++)
                 freqHistograms[i] = GetFrequencyHistogram(features[i], words);
 
             return freqHistograms;

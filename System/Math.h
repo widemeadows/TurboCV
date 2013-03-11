@@ -3,6 +3,7 @@
 #include <cassert>
 #include <cmath>
 #include <vector>
+#include "Type.h"
 using namespace std;
 
 namespace System
@@ -35,10 +36,19 @@ namespace System
         static double NormOneDistance(const vector<T>& u, const vector<T>& v);
 
         template<typename T>
+        static double NormOneDistance(const Vector<T>& u, const Vector<T>& v);
+
+        template<typename T>
         static double NormTwoDistance(const vector<T>& u, const vector<T>& v);
 
         template<typename T>
+        static double NormTwoDistance(const Vector<T>& u, const Vector<T>& v);
+
+        template<typename T>
         static double GaussianDistance(const vector<T>& u, const vector<T>& v, double sigma);
+
+        template<typename T>
+        static double GaussianDistance(const Vector<T>& u, const Vector<T>& v, double sigma);
     };
 
     const double Math::PI = 3.1415926535897932384626433832795;
@@ -123,6 +133,12 @@ namespace System
     }
 
     template<typename T>
+    inline double Math::NormOneDistance(const Vector<T>& u, const Vector<T>& v)
+    {
+        return NormOneDistance((const vector<T>&)u, (const vector<T>&)v);
+    }
+
+    template<typename T>
     inline double Math::NormTwoDistance(const vector<T>& u, const vector<T>& v)
     {
         assert(u.size() == v.size());
@@ -135,6 +151,12 @@ namespace System
     }
 
     template<typename T>
+    inline double Math::NormTwoDistance(const Vector<T>& u, const Vector<T>& v)
+    {
+        return NormTwoDistance((const vector<T>&)u, (const vector<T>&)v);
+    }
+
+    template<typename T>
     inline double Math::GaussianDistance(const vector<T>& u, const vector<T>& v, double sigma)
     {
         assert(u.size() == v.size());
@@ -144,5 +166,11 @@ namespace System
             distance += (u[i] - v[i]) * (u[i] - v[i]);
 
         return exp(-distance / (2 * sigma * sigma));
+    }
+
+    template<typename T>
+    inline double Math::GaussianDistance(const Vector<T>& u, const Vector<T>& v, double sigma)
+    {
+        return GaussianDistance((const vector<T>&)u, (const vector<T>&)v, sigma);
     }
 }

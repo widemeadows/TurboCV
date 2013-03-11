@@ -113,7 +113,7 @@ namespace System
         T& operator[](int index) { return (*ptr)[index]; };
         const T& operator[](int index) const { return (*ptr)[index]; };
 
-        const vector<T>& getVec() const { return *ptr; }
+        operator const vector<T>&() const { return *ptr; }
 
         typename vector<T>::iterator begin() const { return ptr->begin(); };
         typename vector<T>::iterator end() const { return ptr->end(); };
