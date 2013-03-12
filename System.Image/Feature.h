@@ -199,8 +199,10 @@ namespace System
             for (int i = 0; i < 6; i++)
             {
                 vector<Point>& points = channels[i];
-                vector<Point> pivots = SampleFromPoints(points, points.size() * 0.33);
+                if (points.size() < 10)
+                    continue;
 
+                vector<Point> pivots = SampleFromPoints(points, points.size() * 0.33);
                 for (int j = 0; j < pivots.size(); j++)
                 {
                     Descriptor descriptor = GetDescriptor(pivots[j], points, logDistances, angleNum);

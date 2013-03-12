@@ -1,6 +1,8 @@
 #include "../System/System.h"
 #include "../System.Image/System.Image.h"
 #include "../System.ML/System.ML.h"
+#include <tbb/parallel_for.h>
+#include <tbb/blocked_range.h>
 using namespace System;
 using namespace System::IO;
 using namespace System::Image;
@@ -90,18 +92,39 @@ tuple<vector<double>, vector<double>> ROC(const vector<double>& distances,
     return make_tuple(DR, FPR);
 }
 
+vector<LocalFeature_f> features(20039);
+vector<tuple<Mat, int>> images;
+
+class TBB
+{
+public:
+    TBB(const LocalFeature& feat) : feature(feat) {};
+    
+    void operator()(const tbb::blocked_range<int>& range) const
+    {
+        for (int i = range.begin(); i < range.end(); i++)
+        {
+            Convert(feature.GetFeatureWithPreprocess(get<0>(images[i]), true), features[i]);
+        }
+    }
+    
+private:
+    const LocalFeature& feature;
+};
+
 void LocalFeatureCrossValidation(const System::String& imageSetPath, const LocalFeature& feature, 
                                  int wordNum, int sampleNum = 1000000, int fold = 3)
 {
     srand(1);
-    vector<tuple<Mat, int>> images = GetImages(imageSetPath, CV_LOAD_IMAGE_GRAYSCALE);
+    images = GetImages(imageSetPath, CV_LOAD_IMAGE_GRAYSCALE);
     int imageNum = (int)images.size();
 
-    vector<LocalFeature_f> features(imageNum);
+    //vector<LocalFeature_f> features(imageNum);
     printf("Compute " + feature.GetName() + "...\n");
     #pragma omp parallel for
     for (int i = 0; i < imageNum; i++)
         Convert(feature.GetFeatureWithPreprocess(get<0>(images[i]), true), features[i]);
+    //tbb::parallel_for(tbb::blocked_range<int>(0, imageNum), TBB(feature), tbb::auto_partitioner());
 
     { // Use a block here to destruct words and freqHistograms immediately.
         printf("Compute Visual Words...\n");
@@ -379,8 +402,8 @@ void EdgeMatchingCrossValidation(const System::String& imageSetPath, const EdgeM
 
 int main()
 {
-    //LocalFeatureCrossValidation("oracles_png", HOG(), 500);
-    //printf("\n");
+    LocalFeatureCrossValidation("oracles_png", HOG(), 500);
+    printf("\n");
 
     //LocalFeatureCrossValidation("oracles_png", HOOSC(), 1000);
     //printf("\n");
@@ -418,6 +441,6 @@ int main()
     //EdgeMatchingCrossValidation("oracles_png", Hitmap());
     //printf("\n");
 
-    LocalFeatureCrossValidation("oracles_png", Test(), 500);
-    printf("\n");
+    //LocalFeatureCrossValidation("oracles_png", Test(), 500);
+    //printf("\n");
 }

@@ -4,7 +4,6 @@
 #include <sstream>
 #include <string>
 #include <vector>
-#include <memory>
 #include "String.h"
 using namespace std;
 
@@ -104,20 +103,76 @@ namespace System
     ///////////////////////////////////////////////////////////////////////
 
     template<typename T>
+    class ThreadUnsafeCounter
+    {
+    public:
+        explicit ThreadUnsafeCounter(T* object) : count(1), instance(object) {};
+
+        void AddRef() { count++; }
+
+        void Release() 
+        { 
+            count--; 
+            if (!count)
+            {
+                Dispose();
+                delete this;
+            }
+        }
+
+    protected:
+        void Dispose() { delete instance; }
+
+    private:
+        int count;
+        T* instance;
+    };
+
+    template<typename T>
     class ThreadUnsafeSmartPtr
     {
     public:
-        ThreadUnsafeSmartPtr(T* ref)
+        explicit ThreadUnsafeSmartPtr() : instance(NULL), counter(NULL) {};
+
+        explicit ThreadUnsafeSmartPtr(T* object) : 
+            instance(object), counter(new ThreadUnsafeCounter<T>(object)) {};
+
+        explicit ThreadUnsafeSmartPtr(const ThreadUnsafeSmartPtr& u) : 
+            instance(u.instance), counter(u.counter)
         {
-            this->ref = ref;
-            this->counter = 1;
+            if (counter)
+                counter->AddRef();
         }
 
+        ~ThreadUnsafeSmartPtr()
+        {
+            if (counter)
+                counter->Release();
+        }
 
+        ThreadUnsafeSmartPtr& operator=(const ThreadUnsafeSmartPtr& u)
+        {
+            instance = u.instance;
+
+            if (counter != u.counter)
+            {
+                if (counter)
+                    counter->Release();
+                counter = u.counter;
+            }
+
+            if (counter)
+                counter->AddRef();
+
+            return *this;
+        }
+
+        T* operator->() const { return instance; }
+        T& operator*() const { return *instance; }
 
     private:
-        T* ref;
-        int counter;
+        T* instance;
+        ThreadUnsafeCounter<T>* counter;
     };
 
     ///////////////////////////////////////////////////////////////////////
@@ -143,6 +198,6 @@ namespace System
         size_t size() const { return ptr->size(); };
 
     private:
-        shared_ptr<vector<T>> ptr;
+        ThreadUnsafeSmartPtr<vector<T>> ptr;
     };
 }

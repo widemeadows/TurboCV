@@ -244,7 +244,6 @@ namespace System
                         (data.cFileName[0] != '.')) // ignore '.' and '..'
                         subDirs.push_back(_path + "\\" + data.cFileName);
 
-                    CloseHandle(handle);
                 } while (FindNextFile(handle, &data));
             }
 
@@ -270,7 +269,6 @@ namespace System
                     if (!(data.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY))
                         files.push_back(_path + "\\" + data.cFileName);
 
-                    CloseHandle(handle);
                 } while (FindNextFile(handle, &data));
             }
 
