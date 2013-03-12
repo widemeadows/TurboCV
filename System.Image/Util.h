@@ -12,7 +12,7 @@ namespace System
 {
     namespace Image
     {
-        const size_t INF = numeric_limits<size_t>::max();
+        const long long INF = numeric_limits<long long>::max();
         const double EPS = 1e-14;
         const int MAX_GRAYSCALE = 255;
 

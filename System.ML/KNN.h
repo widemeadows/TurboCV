@@ -31,7 +31,7 @@ namespace System
                 vector<vector<double>> distanceMatrix(evaluationSet.size());
                 vector<vector<bool>> relevantMatrix(evaluationSet.size());
 
-                #pragma omp parallel for schedule(dynamic, 10)
+                #pragma omp parallel for
                 for (int i = 0; i < evaluationSet.size(); i++)
                 {
                     for (size_t j = 0; j < trainingSet.size(); j++)
@@ -56,7 +56,7 @@ namespace System
                 vector<vector<double>> distanceMatrix(evaluationSet.size());
                 vector<vector<bool>> relevantMatrix(evaluationSet.size());
 
-                #pragma omp parallel for schedule(dynamic, 10)
+                #pragma omp parallel for
                 for (int i = 0; i < evaluationSet.size(); i++)
                 {
                     for (size_t j = 0; j < trainingSet.size(); j++)
@@ -161,7 +161,7 @@ namespace System
                 int sampleNum = samples.size();
 		        vector<int> results(sampleNum);
 
-		        #pragma omp parallel for schedule(dynamic, 10)
+		        #pragma omp parallel for
 		        for (int i = 0; i < sampleNum; i++)
 		        {
 			        results[i] = predictOneSample(samples[i], K, GetDistance);
@@ -175,7 +175,7 @@ namespace System
                 int sampleNum = samples.size();
                 vector<int> results(sampleNum);
 
-                #pragma omp parallel for schedule(dynamic, 10)
+                #pragma omp parallel for
                 for (int i = 0; i < sampleNum; i++)
                 {
                     results[i] = predictOneSample(samples[i], K);

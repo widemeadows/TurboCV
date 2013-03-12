@@ -135,7 +135,7 @@ namespace System
 
         ///////////////////////////////////////////////////////////////////////
 
-        /*class Test : public LocalFeature
+        class Test : public LocalFeature
         {
         protected:
             virtual LocalFeatureVec GetFeature(const Mat& sketchImage) const;
@@ -143,58 +143,125 @@ namespace System
             virtual String GetName() const { return "test"; };
 
         private:
-            static Descriptor GetDescriptor(const Size& size, const Point& center, 
-                const vector<Point>& points, int blockSize, int cellNum);
+            static vector<vector<Point>> GetChannels(const Mat& sketchImage, int orientNum)
+            {
+                int sigma = 9, lambda = 24, ksize = sigma * 6 + 1;
+                vector<Mat> gaborResponses;
+
+                for (int i = 0; i < orientNum; i++)
+                {
+                    Mat kernel = getGaborKernel(Size(ksize, ksize), sigma, 
+                        CV_PI / orientNum * i, lambda, 1, 0);
+
+                    Mat gaborResponse;
+                    filter2D(sketchImage, gaborResponse, CV_64F, kernel);
+
+                    gaborResponses.push_back(abs(gaborResponse));
+                }
+
+                vector<Point> points = GetEdgels(sketchImage);
+
+                vector<vector<Point>> channels(orientNum);
+                for (int i = 0; i < points.size(); i++)
+                {
+                    double maxResponse = -INF;
+                    int index = -1;
+
+                    for (int j = 0; j < orientNum; j++)
+                    {
+                        if (gaborResponses[j].at<double>(points[i].y, points[i].x) > maxResponse)
+                        {
+                            maxResponse = gaborResponses[j].at<double>(points[i].y, points[i].x);
+                            index = j;
+                        }
+                    }
+
+                    assert(index >= 0 && index < orientNum);
+                    channels[index].push_back(points[i]);
+                }
+
+                return channels;
+            }
+
+            static Descriptor GetDescriptor(const Point& pivot, const vector<Point>& pivots,
+                const vector<double>& logDistances, int angleNum);
         };
 
         inline LocalFeatureVec Test::GetFeature(const Mat& sketchImage) const
         {
-            int sampleNum = 28, blockSize = 112, cellNum = 8;
+            double tmp[] = { 0, 0.125, 0.25, 0.5, 1, 2 };
+            vector<double> logDistances(tmp, tmp + sizeof(tmp) / sizeof(double));
+            int angleNum = 12;
 
-            vector<Point> points = GetEdgels(sketchImage);
-
+            vector<vector<Point>> channels = GetChannels(sketchImage, 6);
             LocalFeatureVec feature;
-            vector<Point> centers = SampleOnGrid(sketchImage.rows, sketchImage.cols, sampleNum);
-            for (Point center : centers)
+            
+            for (int i = 0; i < 6; i++)
             {
-                Descriptor descriptor = GetDescriptor(sketchImage.size(), center, points, blockSize, cellNum);
-                feature.push_back(descriptor);
+                vector<Point>& points = channels[i];
+                vector<Point> pivots = SampleFromPoints(points, points.size() * 0.33);
+
+                for (int j = 0; j < pivots.size(); j++)
+                {
+                    Descriptor descriptor = GetDescriptor(pivots[j], points, logDistances, angleNum);
+                    feature.push_back(descriptor);
+                }
             }
 
             return feature;
         }
 
-        inline Descriptor Test::GetDescriptor(const Size& size, const Point& center, 
-            const vector<Point>& points, int blockSize, int cellNum)
+        inline Descriptor Test::GetDescriptor(const Point& pivot, const vector<Point>& pivots,
+            const vector<double>& logDistances, int angleNum)
         {
-            int height = size.height, width = size.width;
-            double cellSize = (double)blockSize / cellNum;
-            int expectedTop = center.y - blockSize / 2,
-                expectedLeft = center.x - blockSize / 2;
-            Mat hist = Mat::zeros(cellNum, cellNum, CV_64F);
+            int pivotNum = pivots.size();
+            assert(pivotNum > 1);
 
-            for (auto point : points)
+            vector<double> distances = Geometry::EulerDistance(pivot, pivots);
+            vector<double> angles = Geometry::Angle(pivot, pivots);
+            double mean = Math::Sum(distances) / (pivotNum - 1); // Except pivot
+            for (int i = 0; i < pivotNum; i++)
+                distances[i] /= mean;
+
+            int distanceNum = logDistances.size() - 1;
+            Mat bins = Mat::zeros(distanceNum, angleNum, CV_64F);
+
+            for (int i = 0; i < pivotNum; i++)
             {
-                int r = (int)((point.y - expectedTop) / cellSize);
-                int c = (int)((point.x - expectedLeft) / cellSize);
-
-                if (r < 0 || r >= cellNum || c < 0 || c >= cellNum)
+                if (pivots[i] == pivot)
                     continue;
-                else
-                    hist.at<double>(r, c)++;
+
+                for (int j = 0; j < distanceNum; j++)
+                {
+                    if (distances[i] >= logDistances[j] && distances[i] < logDistances[j + 1])
+                    {
+                        int a = FindBinIndex(angles[i], 0, 2 * CV_PI, angleNum, true);
+                        bins.at<double>(j, a)++;
+
+                        break;
+                    }
+                }
             }
 
             Descriptor descriptor;
-            for (int i = 0; i < cellNum; i++)
-                for (int j = 0; j < cellNum; j++)
-                    descriptor.push_back(hist.at<double>(i, j));
+            for (int i = 0; i < distanceNum; i++)
+            {
+                vector<double> ring;
+                for (int j = 0; j < angleNum; j++)
+                    ring.push_back(bins.at<double>(i, j));
 
-            NormOneNormalize(descriptor.begin(), descriptor.end());
+                NormOneNormalize(ring.begin(), ring.end());
+
+                for (auto item : ring)
+                    descriptor.push_back(item);
+            }
+
             return descriptor;
-        }*/
+        }
 
         ///////////////////////////////////////////////////////////////////////
 
+        // Histogram of Gradient
         class HOG : public LocalFeature
         {
         protected:
@@ -284,6 +351,214 @@ namespace System
         
         ///////////////////////////////////////////////////////////////////////
 
+        // Shape Based HOG
+        class SHOG : public LocalFeature
+        {
+        protected:
+            virtual LocalFeatureVec GetFeature(const Mat& sketchImage) const;
+
+            virtual String GetName() const { return "shog"; };
+
+        private:
+            static Descriptor GetDescriptor(const vector<Mat>& orientChannels,
+                const Point& pivot, const vector<Point>& points, int cellNum);
+        };
+
+        inline LocalFeatureVec SHOG::GetFeature(const Mat& sketchImage) const
+        {
+            int orientNum = 4, cellNum = 4;
+
+            vector<Point> points = GetEdgels(sketchImage);
+            vector<Point> pivots = SampleFromPoints(points, (int)(points.size() * 0.33));
+            vector<Mat> orientChannels = Gradient::GetOrientChannels(sketchImage, orientNum);
+
+            LocalFeatureVec feature;
+            for (int i = 0; i < pivots.size(); i++)
+            {
+                Descriptor descriptor = GetDescriptor(orientChannels, pivots[i], 
+                    points, cellNum);
+                feature.push_back(descriptor);
+            }
+
+            return feature;
+        }
+
+        inline Descriptor SHOG::GetDescriptor(const vector<Mat>& orientChannels,
+            const Point& pivot, const vector<Point>& points, int cellNum)
+        {
+            vector<double> distances = Geometry::EulerDistance(pivot, points);
+            double mean = Math::Sum(distances) / (points.size() - 1); // Except pivot
+            int blockSize = (int)(1.5 * mean);
+
+            int height = orientChannels[0].rows, 
+                width = orientChannels[0].cols,
+                orientNum = orientChannels.size();
+            int expectedTop = pivot.y - blockSize / 2,
+                expectedLeft = pivot.x - blockSize / 2;
+            double cellSize = (double)blockSize / cellNum;
+            int dims[] = { cellNum, cellNum, orientNum };
+            Mat hist(3, dims, CV_64F);
+            hist = Scalar::all(0);
+
+            for (int i = expectedTop; i < expectedTop + blockSize; i++)
+            {
+                for (int j = expectedLeft; j < expectedLeft + blockSize; j++)
+                {
+                    if (i < 0 || i >= height || j < 0 || j >= width)
+                        continue;
+
+                    for (int k = 0; k < orientNum; k++)
+                    {
+                        if (abs(orientChannels[k].at<double>(i, j)) < EPS)
+                            continue;
+
+                        int r = (int)((i - expectedTop) / cellSize), 
+                            c = (int)((j - expectedLeft) / cellSize);
+
+                        for (int u = -1; u <= 1; u++)
+                        {
+                            for (int v = -1; v <= 1; v++)
+                            {
+                                int newR = r + u, newC = c + v;
+                                if (newR < 0 || newR >= cellNum || newC < 0 || newC >= cellNum)
+                                    continue;
+
+                                double dRatio = 1 - abs(Geometry::EulerDistance(
+                                    Point((int)((newC + 0.5) * cellSize), (int)((newR + 0.5) * cellSize)),
+                                    Point(j - expectedLeft, i - expectedTop))) / cellSize;
+                                if (dRatio < 0)
+                                    dRatio = 0;
+
+                                hist.at<double>(newR, newC, k) += orientChannels[k].at<double>(i, j) * dRatio;
+                            }
+                        }
+                    }                    
+                }
+            }
+
+            Descriptor descriptor;
+            for (int i = 0; i < cellNum; i++)
+                for (int j = 0; j < cellNum; j++)
+                    for (int k = 0; k < orientNum; k++)
+                        descriptor.push_back(hist.at<double>(i, j, k));
+
+            NormTwoNormalize(descriptor.begin(), descriptor.end());
+            return descriptor;
+        }
+
+        ///////////////////////////////////////////////////////////////////////
+
+        // LoG-SHOG
+        class ASHOG : public LocalFeature
+        {
+        protected:
+            virtual LocalFeatureVec GetFeature(const Mat& sketchImage) const;
+
+            virtual String GetName() const { return "ashog"; };
+
+        private:
+            static Descriptor GetDescriptor(const vector<Mat>& orientChannels, 
+                const Point& pivot, int blockSize, int cellNum);
+        };
+
+        inline LocalFeatureVec ASHOG::GetFeature(const Mat& sketchImage) const
+        {
+            int orientNum = 4, cellNum = 4, scaleNum = 15;
+            double sigmaInit = 0.7, sigmaStep = 1.2;
+
+            vector<double> sigmas;
+            sigmas.push_back(sigmaInit);
+            for (int i = 1; i < scaleNum; i++)
+                sigmas.push_back(sigmas[i - 1] * sigmaStep);
+
+            vector<Point> points = GetEdgels(sketchImage);
+            vector<Point> pivots = SampleFromPoints(points, (int)(points.size() * 0.33));
+            vector<Mat> orientChannels = Gradient::GetOrientChannels(sketchImage, orientNum);
+            vector<Mat> pyramid = GetLoGPyramid(sketchImage, sigmas);
+
+            LocalFeatureVec feature;
+            for (int i = 0; i < pivots.size(); i++)
+            {
+                for (int j = 0; j < scaleNum; j++)
+                {
+                    double prev = j > 0 ? pyramid[j - 1].at<double>(pivots[i].y, pivots[i].x) : 0;
+                    double curr = pyramid[j].at<double>(pivots[i].y, pivots[i].x);
+                    double next = j < scaleNum - 1 ? pyramid[j + 1].at<double>(pivots[i].y, pivots[i].x) : 0;
+
+                    if (curr > next && curr > prev)
+                    {
+                        Descriptor desc = GetDescriptor(orientChannels, pivots[i], 
+                            (int)(sigmas[j] * 6 + 1), cellNum);
+                        feature.push_back(desc);
+                    }
+                }
+            }
+
+            return feature;
+        }
+
+        inline Descriptor ASHOG::GetDescriptor(const vector<Mat>& orientChannels, 
+            const Point& pivot, int blockSize, int cellNum)
+        {
+            int height = orientChannels[0].rows, 
+                width = orientChannels[0].cols,
+                orientNum = (int)orientChannels.size();
+            int expectedTop = pivot.y - blockSize / 2,
+                expectedLeft = pivot.x - blockSize / 2;
+            double cellSize = (double)blockSize / cellNum;
+            int dims[] = { cellNum, cellNum, orientNum };
+            Mat hist(3, dims, CV_64F);
+            hist = Scalar::all(0);
+
+            for (int i = expectedTop; i < expectedTop + blockSize; i++)
+            {
+                for (int j = expectedLeft; j < expectedLeft + blockSize; j++)
+                {
+                    if (i < 0 || i >= height || j < 0 || j >= width)
+                        continue;
+
+                    for (int k = 0; k < orientNum; k++)
+                    {
+                        if (abs(orientChannels[k].at<double>(i, j)) < EPS)
+                            continue;
+
+                        int r = (int)((i - expectedTop) / cellSize), 
+                            c = (int)((j - expectedLeft) / cellSize);
+
+                        for (int u = -1; u <= 1; u++)
+                        {
+                            for (int v = -1; v <= 1; v++)
+                            {
+                                int newR = r + u, newC = c + v;
+                                if (newR < 0 || newR >= cellNum || newC < 0 || newC >= cellNum)
+                                    continue;
+
+                                double dRatio = 1 - abs(Geometry::EulerDistance(
+                                    Point((int)((newC + 0.5) * cellSize), (int)((newR + 0.5) * cellSize)),
+                                    Point(j - expectedLeft, i - expectedTop))) / cellSize;
+                                if (dRatio < 0)
+                                    dRatio = 0;
+
+                                hist.at<double>(newR, newC, k) += orientChannels[k].at<double>(i, j) * dRatio;
+                            }
+                        }
+                    }                    
+                }
+            }
+
+            Descriptor desc;
+            for (int i = 0; i < cellNum; i++)
+                for (int j = 0; j < cellNum; j++)
+                    for (int k = 0; k < orientNum; k++)
+                        desc.push_back(hist.at<double>(i, j, k));
+
+            NormTwoNormalize(desc.begin(), desc.end());
+            return desc;
+        }
+
+        ///////////////////////////////////////////////////////////////////////
+
+        // Histogram of Oriented Shape Context
         class HOOSC : public LocalFeature
         {
         protected:
@@ -381,6 +656,102 @@ namespace System
 
         ///////////////////////////////////////////////////////////////////////
 
+        // Regularly Sampling HOOSC
+        class RHOOSC : public LocalFeature
+        {
+        protected:
+            virtual LocalFeatureVec GetFeature(const Mat& sketchImage) const;
+
+            virtual String GetName() const { return "rhoosc"; };
+
+        private:
+            static Descriptor GetDescriptor(const Mat& orientImage, 
+                const Point& center, const vector<Point>& points, 
+                const vector<double>& logDistances, int angleNum, int orientNum);
+        };
+
+        inline LocalFeatureVec RHOOSC::GetFeature(const Mat& sketchImage) const
+        {
+            double tmp[] = { 0, 0.125, 0.25, 0.5, 1, 2 };
+            vector<double> logDistances(tmp, tmp + sizeof(tmp) / sizeof(double));
+            int angleNum = 9, orientNum = 8, sampleNum = 28;
+
+            Mat orientImage = get<1>(Gradient::GetGradient(sketchImage));
+            vector<Point> points = GetEdgels(sketchImage); 
+
+            LocalFeatureVec feature;
+            vector<Point> centers = SampleOnGrid(sketchImage.rows, sketchImage.cols, sampleNum);
+            for (Point center : centers)
+            {
+                Descriptor desc = GetDescriptor(orientImage, center, points,
+                    logDistances, angleNum, orientNum);
+                feature.push_back(desc);
+            }
+
+            return feature;
+        }
+
+        inline Descriptor RHOOSC::GetDescriptor(const Mat& orientImage, 
+            const Point& center, const vector<Point>& points, 
+            const vector<double>& logDistances, int angleNum, int orientNum)
+        {
+            int pointNum = points.size();
+            assert(pointNum > 1);
+
+            vector<double> distances = Geometry::EulerDistance(center, points);
+            vector<double> angles = Geometry::Angle(center, points);
+            double mean = Math::Sum(distances) / (pointNum - 1); // Except pivot
+            for (int i = 0; i < pointNum; i++)
+                distances[i] /= mean;
+
+            int distanceNum = logDistances.size() - 1;
+            int dims[] = { distanceNum, angleNum, orientNum };
+            Mat bins(3, dims, CV_64F);
+            bins = Scalar::all(0);
+
+            double orientStep = CV_PI / orientNum, sigma = 10;
+            for (int i = 0; i < pointNum; i++)
+            {
+                if (points[i] == center)
+                    continue;
+
+                for (int j = 0; j < distanceNum; j++)
+                {
+                    if (distances[i] >= logDistances[j] && distances[i] < logDistances[j + 1])
+                    {
+                        int a = FindBinIndex(angles[i], 0, 2 * CV_PI, angleNum, true);
+
+                        double orient = orientImage.at<double>(points[i].y, points[i].x);
+                        int o = (int)(orient / orientStep); 
+
+                        double value = Math::Gauss(((o + 0.5) * orientStep - orient) * 180 / CV_PI, sigma);
+                        bins.at<double>(j, a, RoundIndex(o, orientNum, true)) += value;
+
+                        break;
+                    }
+                }
+            }
+
+            Descriptor descriptor;
+            for (int i = 0; i < distanceNum; i++)
+            {
+                vector<double> ring;
+                for (int j = 0; j < angleNum; j++)
+                    for (int k = 0; k < orientNum; k++)
+                        ring.push_back(bins.at<double>(i, j, k));
+
+                NormOneNormalize(ring.begin(), ring.end());
+
+                for (auto item : ring)
+                    descriptor.push_back(item);
+            }
+
+            return descriptor;
+        }
+
+        ///////////////////////////////////////////////////////////////////////
+
+        // Histogram of Shape Context
         class SC : public LocalFeature
         {
         protected:
@@ -405,8 +776,7 @@ namespace System
             LocalFeatureVec feature;
             for (int i = 0; i < pivots.size(); i++)
             {
-                Descriptor descriptor = GetDescriptor(pivots[i], pivots, 
-                    logDistances, angleNum);
+                Descriptor descriptor = GetDescriptor(pivots[i], pivots, logDistances, angleNum);
                 feature.push_back(descriptor);
             }
 
@@ -460,199 +830,93 @@ namespace System
 
 	        return descriptor;
         }
-        
+
+
         ///////////////////////////////////////////////////////////////////////
 
-        class SHOG : public LocalFeature
+        // Histogram of Shape Context
+        class SCP : public LocalFeature
         {
         protected:
             virtual LocalFeatureVec GetFeature(const Mat& sketchImage) const;
-            
-            virtual String GetName() const { return "shog"; };
+
+            virtual String GetName() const { return "sc"; };
 
         private:
-            static Descriptor GetDescriptor(const vector<Mat>& orientChannels,
-                const Point& pivot, const vector<Point>& points, int cellNum);
+            static Descriptor GetDescriptor(const Point& pivot, const vector<Point>& pivots,
+                const vector<double>& logDistances, int angleNum);
         };
 
-        inline LocalFeatureVec SHOG::GetFeature(const Mat& sketchImage) const
+        inline LocalFeatureVec SCP::GetFeature(const Mat& sketchImage) const
         {
-            int orientNum = 4, cellNum = 4;
+            double tmp[] = { 0, 0.125, 0.25, 0.5, 1, 2 };
+            vector<double> logDistances(tmp, tmp + sizeof(tmp) / sizeof(double));
+            int angleNum = 12;
 
             vector<Point> points = GetEdgels(sketchImage);
             vector<Point> pivots = SampleFromPoints(points, (int)(points.size() * 0.33));
-            vector<Mat> orientChannels = Gradient::GetOrientChannels(sketchImage, orientNum);
 
             LocalFeatureVec feature;
             for (int i = 0; i < pivots.size(); i++)
             {
-                Descriptor descriptor = GetDescriptor(orientChannels, pivots[i], 
-                    points, cellNum);
+                Descriptor descriptor = GetDescriptor(pivots[i], points, logDistances, angleNum);
                 feature.push_back(descriptor);
             }
 
             return feature;
         }
 
-        inline Descriptor SHOG::GetDescriptor(const vector<Mat>& orientChannels,
-            const Point& pivot, const vector<Point>& points, int cellNum)
+        inline Descriptor SCP::GetDescriptor(const Point& pivot, const vector<Point>& pivots,
+            const vector<double>& logDistances, int angleNum)
         {
-            vector<double> distances = Geometry::EulerDistance(pivot, points);
-	        double mean = Math::Sum(distances) / (points.size() - 1); // Except pivot
-            int blockSize = (int)(1.5 * mean);
+            int pivotNum = pivots.size();
+            assert(pivotNum > 1);
 
-            int height = orientChannels[0].rows, 
-                width = orientChannels[0].cols,
-                orientNum = orientChannels.size();
-            int expectedTop = pivot.y - blockSize / 2,
-                expectedLeft = pivot.x - blockSize / 2;
-            double cellSize = (double)blockSize / cellNum;
-            int dims[] = { cellNum, cellNum, orientNum };
-            Mat hist(3, dims, CV_64F);
-            hist = Scalar::all(0);
+            vector<double> distances = Geometry::EulerDistance(pivot, pivots);
+            vector<double> angles = Geometry::Angle(pivot, pivots);
+            double mean = Math::Sum(distances) / (pivotNum - 1); // Except pivot
+            for (int i = 0; i < pivotNum; i++)
+                distances[i] /= mean;
 
-            for (int i = expectedTop; i < expectedTop + blockSize; i++)
+            int distanceNum = logDistances.size() - 1;
+            Mat bins = Mat::zeros(distanceNum, angleNum, CV_64F);
+
+            for (int i = 0; i < pivotNum; i++)
             {
-                for (int j = expectedLeft; j < expectedLeft + blockSize; j++)
+                if (pivots[i] == pivot)
+                    continue;
+
+                for (int j = 0; j < distanceNum; j++)
                 {
-                    if (i < 0 || i >= height || j < 0 || j >= width)
-                        continue;
-
-                    for (int k = 0; k < orientNum; k++)
+                    if (distances[i] >= logDistances[j] && distances[i] < logDistances[j + 1])
                     {
-                        if (abs(orientChannels[k].at<double>(i, j)) < EPS)
-                            continue;
+                        int a = FindBinIndex(angles[i], 0, 2 * CV_PI, angleNum, true);
+                        bins.at<double>(j, a)++;
 
-                        int r = (int)((i - expectedTop) / cellSize), 
-                            c = (int)((j - expectedLeft) / cellSize);
-
-                        for (int u = -1; u <= 1; u++)
-                        {
-                            for (int v = -1; v <= 1; v++)
-                            {
-                                int newR = r + u, newC = c + v;
-                                if (newR < 0 || newR >= cellNum || newC < 0 || newC >= cellNum)
-                                    continue;
-
-                                double dRatio = 1 - abs(Geometry::EulerDistance(
-                                    Point((int)((newC + 0.5) * cellSize), (int)((newR + 0.5) * cellSize)),
-                                    Point(j - expectedLeft, i - expectedTop))) / cellSize;
-                                if (dRatio < 0)
-                                    dRatio = 0;
-
-                                hist.at<double>(newR, newC, k) += orientChannels[k].at<double>(i, j) * dRatio;
-                            }
-                        }
-                    }                    
+                        break;
+                    }
                 }
             }
 
             Descriptor descriptor;
-            for (int i = 0; i < cellNum; i++)
-                for (int j = 0; j < cellNum; j++)
-                    for (int k = 0; k < orientNum; k++)
-                        descriptor.push_back(hist.at<double>(i, j, k));
+            for (int i = 0; i < distanceNum; i++)
+            {
+                vector<double> ring;
+                for (int j = 0; j < angleNum; j++)
+                    ring.push_back(bins.at<double>(i, j));
 
-            NormTwoNormalize(descriptor.begin(), descriptor.end());
+                NormOneNormalize(ring.begin(), ring.end());
+
+                for (auto item : ring)
+                    descriptor.push_back(item);
+            }
+
             return descriptor;
         }
 
         ///////////////////////////////////////////////////////////////////////
 
-        class RHOOSC : public LocalFeature
-        {
-        protected:
-            virtual LocalFeatureVec GetFeature(const Mat& sketchImage) const;
-            
-            virtual String GetName() const { return "rhoosc"; };
-
-        private:
-            static Descriptor GetDescriptor(const Mat& orientImage, 
-                const Point& centre, const vector<Point>& points, 
-                const vector<double>& logDistances, int angleNum, int orientNum);
-        };
-
-        inline LocalFeatureVec RHOOSC::GetFeature(const Mat& sketchImage) const
-        {
-            double tmp[] = { 0, 0.125, 0.25, 0.5, 1, 2 };
-            vector<double> logDistances(tmp, tmp + sizeof(tmp) / sizeof(double));
-            int angleNum = 9, orientNum = 8, sampleNum = 28;
-
-            Mat orientImage = get<1>(Gradient::GetGradient(sketchImage));
-            vector<Point> points = GetEdgels(sketchImage); 
-
-            LocalFeatureVec feature;
-            vector<Point> centers = SampleOnGrid(sketchImage.rows, sketchImage.cols, sampleNum);
-            for (Point center : centers)
-            {
-                Descriptor desc = GetDescriptor(orientImage, center, points,
-                    logDistances, angleNum, orientNum);
-                feature.push_back(desc);
-            }
-
-            return feature;
-        }
-
-        inline Descriptor RHOOSC::GetDescriptor(const Mat& orientImage, 
-            const Point& centre, const vector<Point>& points, 
-            const vector<double>& logDistances, int angleNum, int orientNum)
-        {
-            int pointNum = points.size();
-            assert(pointNum > 1);
-
-            vector<double> distances = Geometry::EulerDistance(centre, points);
-            vector<double> angles = Geometry::Angle(centre, points);
-	        double mean = Math::Sum(distances) / (pointNum - 1); // Except pivot
-	        for (int i = 0; i < pointNum; i++)
-		        distances[i] /= mean;
-
-            int distanceNum = logDistances.size() - 1;
-	        int dims[] = { distanceNum, angleNum, orientNum };
-	        Mat bins(3, dims, CV_64F);
-            bins = Scalar::all(0);
-
-            double orientStep = CV_PI / orientNum, sigma = 10;
-	        for (int i = 0; i < pointNum; i++)
-	        {
-		        if (points[i] == centre)
-			        continue;
-
-		        for (int j = 0; j < distanceNum; j++)
-		        {
-			        if (distances[i] >= logDistances[j] && distances[i] < logDistances[j + 1])
-			        {
-				        int a = FindBinIndex(angles[i], 0, 2 * CV_PI, angleNum, true);
-
-                        double orient = orientImage.at<double>(points[i].y, points[i].x);
-                        int o = (int)(orient / orientStep); 
-
-				        double value = Math::Gauss(((o + 0.5) * orientStep - orient) * 180 / CV_PI, sigma);
-				        bins.at<double>(j, a, RoundIndex(o, orientNum, true)) += value;
-
-				        break;
-			        }
-		        }
-	        }
-
-            Descriptor descriptor;
-	        for (int i = 0; i < distanceNum; i++)
-	        {
-                vector<double> ring;
-		        for (int j = 0; j < angleNum; j++)
-			        for (int k = 0; k < orientNum; k++)
-				        ring.push_back(bins.at<double>(i, j, k));
-
-		        NormOneNormalize(ring.begin(), ring.end());
-
-                for (auto item : ring)
-                    descriptor.push_back(item);
-	        }
-
-	        return descriptor;
-        }
-
-        ///////////////////////////////////////////////////////////////////////
-
+        // Regularly Sampling Shape Context
         class RSC : public LocalFeature
         {
         protected:
@@ -701,7 +965,6 @@ namespace System
             int distanceNum = logDistances.size() - 1;
 	        Mat bins = Mat::zeros(distanceNum, angleNum, CV_64F);
 
-            double sigma = 10;
 	        for (int i = 0; i < pivotNum; i++)
 	        {
 		        if (pivots[i] == center)
@@ -737,115 +1000,7 @@ namespace System
 
         ///////////////////////////////////////////////////////////////////////
 
-        class ASHOG : public LocalFeature
-        {
-        protected:
-            virtual LocalFeatureVec GetFeature(const Mat& sketchImage) const;
-
-            virtual String GetName() const { return "ashog"; };
-            
-        private:
-            static Descriptor GetDescriptor(const vector<Mat>& orientChannels, 
-                const Point& pivot, int blockSize, int cellNum);
-        };
-
-        inline LocalFeatureVec ASHOG::GetFeature(const Mat& sketchImage) const
-        {
-            int orientNum = 4, cellNum = 4, scaleNum = 15;
-            double sigmaInit = 0.7, sigmaStep = 1.2;
-            
-            vector<double> sigmas;
-            sigmas.push_back(sigmaInit);
-            for (int i = 1; i < scaleNum; i++)
-                sigmas.push_back(sigmas[i - 1] * sigmaStep);
-
-            vector<Point> points = GetEdgels(sketchImage);
-            vector<Point> pivots = SampleFromPoints(points, (int)(points.size() * 0.33));
-            vector<Mat> orientChannels = Gradient::GetOrientChannels(sketchImage, orientNum);
-            vector<Mat> pyramid = GetLoGPyramid(sketchImage, sigmas);
-            
-            LocalFeatureVec feature;
-            for (int i = 0; i < pivots.size(); i++)
-            {
-                for (int j = 0; j < scaleNum; j++)
-                {
-                    double prev = j > 0 ? pyramid[j - 1].at<double>(pivots[i].y, pivots[i].x) : 0;
-                    double curr = pyramid[j].at<double>(pivots[i].y, pivots[i].x);
-                    double next = j < scaleNum - 1 ? pyramid[j + 1].at<double>(pivots[i].y, pivots[i].x) : 0;
-
-                    if (curr > next && curr > prev)
-                    {
-                        Descriptor desc = GetDescriptor(orientChannels, pivots[i], 
-                            (int)(sigmas[j] * 6 + 1), cellNum);
-                        feature.push_back(desc);
-                    }
-                }
-            }
-
-            return feature;
-        }
-
-        inline Descriptor ASHOG::GetDescriptor(const vector<Mat>& orientChannels, 
-            const Point& pivot, int blockSize, int cellNum)
-        {
-            int height = orientChannels[0].rows, 
-                width = orientChannels[0].cols,
-                orientNum = (int)orientChannels.size();
-            int expectedTop = pivot.y - blockSize / 2,
-                expectedLeft = pivot.x - blockSize / 2;
-            double cellSize = (double)blockSize / cellNum;
-            int dims[] = { cellNum, cellNum, orientNum };
-            Mat hist(3, dims, CV_64F);
-            hist = Scalar::all(0);
-
-            for (int i = expectedTop; i < expectedTop + blockSize; i++)
-            {
-                for (int j = expectedLeft; j < expectedLeft + blockSize; j++)
-                {
-                    if (i < 0 || i >= height || j < 0 || j >= width)
-                        continue;
-
-                    for (int k = 0; k < orientNum; k++)
-                    {
-                        if (abs(orientChannels[k].at<double>(i, j)) < EPS)
-                            continue;
-
-                        int r = (int)((i - expectedTop) / cellSize), 
-                            c = (int)((j - expectedLeft) / cellSize);
-
-                        for (int u = -1; u <= 1; u++)
-                        {
-                            for (int v = -1; v <= 1; v++)
-                            {
-                                int newR = r + u, newC = c + v;
-                                if (newR < 0 || newR >= cellNum || newC < 0 || newC >= cellNum)
-                                    continue;
-
-                                double dRatio = 1 - abs(Geometry::EulerDistance(
-                                    Point((int)((newC + 0.5) * cellSize), (int)((newR + 0.5) * cellSize)),
-                                    Point(j - expectedLeft, i - expectedTop))) / cellSize;
-                                if (dRatio < 0)
-                                    dRatio = 0;
-
-                                hist.at<double>(newR, newC, k) += orientChannels[k].at<double>(i, j) * dRatio;
-                            }
-                        }
-                    }                    
-                }
-            }
-
-            Descriptor desc;
-            for (int i = 0; i < cellNum; i++)
-                for (int j = 0; j < cellNum; j++)
-                    for (int k = 0; k < orientNum; k++)
-                        desc.push_back(hist.at<double>(i, j, k));
-
-            NormTwoNormalize(desc.begin(), desc.end());
-            return desc;
-        }
-
-        ///////////////////////////////////////////////////////////////////////
-
+        // Average Gabor Responses
         class Gabor : public LocalFeature
         {
         protected:
@@ -855,7 +1010,7 @@ namespace System
             
         private:
             static Descriptor GetDescriptor(const vector<Mat>& gaborResponses, 
-                const Point& centre, int blockSize, int cellNum);
+                const Point& center, int blockSize, int cellNum);
         };
 
         inline LocalFeatureVec Gabor::GetFeature(const Mat& sketchImage) const
@@ -897,14 +1052,14 @@ namespace System
         }
 
         inline Descriptor Gabor::GetDescriptor(const vector<Mat>& gaborResponses, 
-                const Point& centre, int blockSize, int cellNum)
+                const Point& center, int blockSize, int cellNum)
         {
             assert(gaborResponses.size() > 0);
 
             int height = gaborResponses[0].rows,
                 width = gaborResponses[0].cols,
-                expectedTop = centre.y - blockSize / 2,
-                expectedLeft = centre.x - blockSize / 2,
+                expectedTop = center.y - blockSize / 2,
+                expectedLeft = center.x - blockSize / 2,
                 cellSize = blockSize / cellNum;
 
             Descriptor desc;
@@ -935,6 +1090,7 @@ namespace System
 
         ///////////////////////////////////////////////////////////////////////
 
+        // Model the Shape of Scene
         class GIST : public GlobalFeature
         {
         protected:

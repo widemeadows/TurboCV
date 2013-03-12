@@ -99,7 +99,7 @@ void LocalFeatureCrossValidation(const System::String& imageSetPath, const Local
 
     vector<LocalFeature_f> features(imageNum);
     printf("Compute " + feature.GetName() + "...\n");
-    #pragma omp parallel for schedule(dynamic, 10)
+    #pragma omp parallel for
     for (int i = 0; i < imageNum; i++)
         Convert(feature.GetFeatureWithPreprocess(get<0>(images[i]), true), features[i]);
 
@@ -208,7 +208,7 @@ void GlobalFeatureCrossValidation(const System::String& imageSetPath, const Glob
 
     vector<GlobalFeature_f> features(imageNum);
     printf("Compute " + feature.GetName() + "...\n");
-    #pragma omp parallel for schedule(dynamic, 10)
+    #pragma omp parallel for
     for (int i = 0; i < imageNum; i++)
         Convert(feature.GetFeatureWithPreprocess(get<0>(images[i]), true), features[i]);
 
@@ -294,28 +294,29 @@ void GlobalFeatureCrossValidation(const System::String& imageSetPath, const Glob
     fclose(file);
 }
 
-void EdgeMatchingCrossValidation(const System::String& imageSetPath, const ChamferMatching& cm,
+template<typename EdgeMatching>
+void EdgeMatchingCrossValidation(const System::String& imageSetPath, const EdgeMatching& matching,
                                  int fold = 3)
 {
     srand(1);
     vector<tuple<Mat, int>> images = GetImages(imageSetPath, CV_LOAD_IMAGE_GRAYSCALE);
     int imageNum = (int)images.size();
 
-    vector<tuple<vector<Point>, Mat>> transforms(imageNum);
-    printf("Compute " + cm.GetName() + "...\n");
-    #pragma omp parallel for schedule(dynamic, 10)
+    vector<EdgeMatching::Info> transforms(imageNum);
+    printf("Compute " + matching.GetName() + "...\n");
+    #pragma omp parallel for
     for (int i = 0; i < imageNum; i++)
-        transforms[i] = cm.GetFeatureWithPreprocess(get<0>(images[i]));
+        transforms[i] = matching.GetFeatureWithPreprocess(get<0>(images[i]), true);
 
-    vector<tuple<vector<ChamferMatching::Info>, vector<ChamferMatching::Info>, vector<size_t>>> pass = 
+    vector<tuple<vector<EdgeMatching::Info>, vector<EdgeMatching::Info>, vector<size_t>>> pass = 
         RandomSplit(transforms, fold);
     vector<vector<double>> DRs(imageNum), FPRs(imageNum);
     vector<double> passResult;
     for (int i = 0; i < fold; i++)
     {
         printf("\nBegin Fold %d...\n", i + 1);
-        vector<ChamferMatching::Info>& evaluationSet = get<0>(pass[i]);
-        vector<ChamferMatching::Info>& trainingSet = get<1>(pass[i]);
+        vector<EdgeMatching::Info>& evaluationSet = get<0>(pass[i]);
+        vector<EdgeMatching::Info>& trainingSet = get<1>(pass[i]);
         vector<size_t>& pickUpIndexes = get<2>(pass[i]);
 
         vector<int> trainingLabels, evaluationLabels;
@@ -331,17 +332,15 @@ void EdgeMatchingCrossValidation(const System::String& imageSetPath, const Chamf
                 trainingLabels.push_back(get<1>(images[j]));
         }
 
-        KNN<ChamferMatching::Info> knn;
-        pair<double, map<int, double>> precisions = 
-            knn.Evaluate(4, trainingSet, trainingLabels, evaluationSet, evaluationLabels, 
-            ChamferMatching::GetDistance);
+        KNN<EdgeMatching::Info> knn;
+        pair<double, map<int, double>> precisions = knn.Evaluate(
+            4, trainingSet, trainingLabels, evaluationSet, evaluationLabels, EdgeMatching::GetDistance);
 
         passResult.push_back(precisions.first);
         printf("Fold %d Accuracy: %f\n", i + 1, precisions.first);
 
-        pair<vector<vector<double>>, vector<vector<bool>>> matrix =
-            knn.Evaluate(trainingSet, trainingLabels, evaluationSet, evaluationLabels,
-            ChamferMatching::GetDistance);
+        pair<vector<vector<double>>, vector<vector<bool>>> matrix = knn.Evaluate(
+            trainingSet, trainingLabels, evaluationSet, evaluationLabels, EdgeMatching::GetDistance);
         vector<vector<double>>& distances = matrix.first;
         vector<vector<bool>>& relevants = matrix.second;
         for (int j = 0; j < pickUpIndexes.size(); j++)
@@ -353,7 +352,7 @@ void EdgeMatchingCrossValidation(const System::String& imageSetPath, const Chamf
         }
     }
 
-    System::String savePath = cm.GetName() + "_oracles_knn.out";
+    System::String savePath = matching.GetName() + "_oracles_knn.out";
     FILE* file = fopen(savePath, "w");
     for (int i = 0; i < passResult.size(); i++)
         fprintf(file, "Fold %d Accuracy: %f\n", i + 1, passResult[i]);
@@ -363,7 +362,7 @@ void EdgeMatchingCrossValidation(const System::String& imageSetPath, const Chamf
         Math::StandardDeviation(passResult));
     fclose(file);
 
-    savePath = cm.GetName() + "_oracles_roc";
+    savePath = matching.GetName() + "_oracles_roc";
     file = fopen(savePath, "w");
     for (int i = 0; i < DRs.size(); i++)
     {
@@ -380,88 +379,42 @@ void EdgeMatchingCrossValidation(const System::String& imageSetPath, const Chamf
 
 int main()
 {
-    LocalFeatureCrossValidation("oracles_png", HOG(), 500);
-    printf("\n");
-
-    //LocalFeatureCrossValidation("oracles_png", Test(), 500);
+    //LocalFeatureCrossValidation("oracles_png", HOG(), 500);
     //printf("\n");
 
-    LocalFeatureCrossValidation("oracles_png", HOOSC(), 1000);
+    //LocalFeatureCrossValidation("oracles_png", HOOSC(), 1000);
+    //printf("\n");
+
+    //LocalFeatureCrossValidation("oracles_png", SC(), 1000);
+    //printf("\n");
+
+    //LocalFeatureCrossValidation("oracles_png", SCP(), 1000);
+    //printf("\n");
+
+    //LocalFeatureCrossValidation("oracles_png", SHOG(), 500);
+    //printf("\n");
+
+    //LocalFeatureCrossValidation("oracles_png", RHOOSC(), 1000);
+    //printf("\n");
+
+    //LocalFeatureCrossValidation("oracles_png", RSC(), 1000);
+    //printf("\n");
+
+    //LocalFeatureCrossValidation("oracles_png", ASHOG(), 1000);
+    //printf("\n");
+
+    //LocalFeatureCrossValidation("oracles_png", Gabor(), 500);
+    //printf("\n");
+
+    //GlobalFeatureCrossValidation("oracles_png", GIST());
+    //printf("\n");
+
+    //EdgeMatchingCrossValidation("oracles_png", CM());
+    //printf("\n");
+
+    //EdgeMatchingCrossValidation("oracles_png", OCM());
+    //printf("\n");
+
+    LocalFeatureCrossValidation("oracles_png", Test(), 500);
     printf("\n");
-
-    LocalFeatureCrossValidation("oracles_png", SC(), 1000);
-    printf("\n");
-
-    LocalFeatureCrossValidation("oracles_png", SHOG(), 500);
-    printf("\n");
-
-    LocalFeatureCrossValidation("oracles_png", RHOOSC(), 1000);
-    printf("\n");
-
-    LocalFeatureCrossValidation("oracles_png", RSC(), 1000);
-    printf("\n");
-
-    LocalFeatureCrossValidation("oracles_png", ASHOG(), 1000);
-    printf("\n");
-
-    LocalFeatureCrossValidation("oracles_png", Gabor(), 500);
-    printf("\n");
-
-    GlobalFeatureCrossValidation("oracles_png", GIST());
-    printf("\n");
-
-    EdgeMatchingCrossValidation("oracles_png", ChamferMatching());
-    printf("\n");
-
-    //vector<int> width, height;
-    //vector<tuple<Mat, int>> result = GetImages("oracles_png");
-    
-    /*FILE* file = fopen("confusion_matrix", "r");
-    vector<int> knn_result(20039), true_result(20039);
-    int tmp;
-    unordered_map<int, int> dataNumPerClass;
-
-    for (int i = 0; i < 20039; i++)
-    {
-        fscanf(file, "%d", &tmp);
-        tmp--;
-        knn_result[i] = tmp;
-    }
-
-    for (int i = 0; i < 20039; i++)
-    {
-        fscanf(file, "%d", &tmp);
-        tmp--;
-        true_result[i] = tmp;
-
-        dataNumPerClass[tmp]++;
-    }
-
-    fclose(file);
-
-    int classNum = dataNumPerClass.size();
-    printf("Class Num: %d\n", classNum);
-
-    vector<vector<double>> matrix(classNum);
-    for (int i = 0; i < classNum; i++)
-        matrix[i] = vector<double>(classNum);
-
-    for (int i = 0; i < 20039; i++)
-        matrix[true_result[i]][knn_result[i]]++;
-
-    for (int i = 0; i < classNum; i++)
-    {
-        int num = dataNumPerClass[i];
-        for (int j = 0; j < classNum; j++)
-            matrix[i][j] /= num;
-    }
-
-    file = fopen("matrix", "w");
-    for (int i = 0; i < classNum; i++)
-    {
-        for (int j = 0; j < classNum; j++)
-            fprintf(file, "%f ", matrix[i][j]);
-        fprintf(file, "\n");
-    }
-    fclose(file);*/
 }

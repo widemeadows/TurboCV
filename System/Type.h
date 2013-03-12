@@ -104,6 +104,25 @@ namespace System
     ///////////////////////////////////////////////////////////////////////
 
     template<typename T>
+    class ThreadUnsafeSmartPtr
+    {
+    public:
+        ThreadUnsafeSmartPtr(T* ref)
+        {
+            this->ref = ref;
+            this->counter = 1;
+        }
+
+
+
+    private:
+        T* ref;
+        int counter;
+    };
+
+    ///////////////////////////////////////////////////////////////////////
+
+    template<typename T>
     class Vector
     {
     public:
