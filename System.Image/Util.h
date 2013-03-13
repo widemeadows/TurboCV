@@ -3,7 +3,6 @@
 #include "../System/System.h"
 #include <cv.h>
 #include <highgui.h>
-#include <tuple>
 #include <numeric>
 using namespace cv;
 using namespace std;
@@ -22,17 +21,6 @@ namespace System
                 return true;
             else if (u.x == v.x)
                 return u.y < v.y;
-            else
-                return false;
-        }
-
-        template<typename T1, typename T2>
-        bool operator<(const tuple<T1, T2>& u, const tuple<T1, T2>& v)
-        {
-            if (get<0>(u) < get<0>(v))
-                return true;
-            else if (get<0>(u) == get<0>(v))
-                return get<1>(u) < get<1>(v);
             else
                 return false;
         }

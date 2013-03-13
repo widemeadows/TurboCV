@@ -1,7 +1,9 @@
 #pragma once
 
-#include <vector>
 #include <cassert>
+#include <cstdlib>
+#include <vector>
+#include "Type.h"
 using namespace std;
 
 namespace System
@@ -30,9 +32,9 @@ namespace System
     }
 
     template<typename T>
-    inline vector<T> PickUp(const vector<T>& vec, const vector<int>& pickUpIndexes)
+    inline vector<T> PickUp(const vector<T>& vec, const vector<size_t>& pickUpIndexes)
     {
-        vector<int> indexes = pickUpIndexes;
+        vector<size_t> indexes = pickUpIndexes;
         sort(indexes.begin(), indexes.end());
 
         vector<T> pickUps;
@@ -51,7 +53,7 @@ namespace System
     }
 
     template<typename T>
-    inline tuple<vector<T>, vector<T>, vector<size_t>> Divide(const vector<T>& vec, 
+    inline Tuple<vector<T>, vector<T>, vector<size_t>> Divide(const vector<T>& vec, 
         const vector<size_t>& pickUpIndexes)
     {
         vector<size_t> indexes = pickUpIndexes;
@@ -71,7 +73,7 @@ namespace System
                 others.push_back(vec[i]);
         }
 
-        return make_tuple(pickUps, others, indexes);
+        return CreateTuple(pickUps, others, indexes);
     }
 
     template<typename T>
@@ -84,7 +86,7 @@ namespace System
     }
 
     template<typename T>
-    inline vector<tuple<vector<T>, vector<T>, vector<size_t>>> RandomSplit(
+    inline vector<Tuple<vector<T>, vector<T>, vector<size_t>>> RandomSplit(
         const vector<T>& vec, size_t fold)
     {
         size_t cardNum = vec.size();
@@ -92,7 +94,7 @@ namespace System
 
         vector<size_t> permutation = RandomPermutate(cardNum, cardNum);
 
-        vector<tuple<vector<T>, vector<T>, vector<size_t>>> result;
+        vector<Tuple<vector<T>, vector<T>, vector<size_t>>> result;
         for (size_t i = 0; i < fold; i++)
         {
             vector<size_t> subsetIndexes;

@@ -1,14 +1,15 @@
 #include "../System/System.h"
 #include "../System.Image/System.Image.h"
 #include "../System.ML/System.ML.h"
-#include <tbb/parallel_for.h>
-#include <tbb/blocked_range.h>
+#include <cv.h>
+#include <highgui.h>
 using namespace System;
 using namespace System::IO;
 using namespace System::Image;
 using namespace System::ML;
+using namespace cv;
 
-inline vector<tuple<Mat, int>> GetImages(const System::String& imageSetPath, 
+inline vector<Tuple<Mat, int>> GetImages(const System::String& imageSetPath, 
     int imageLoadMode = CV_LOAD_IMAGE_GRAYSCALE)
 {
     DirectoryInfo imageSetInfo(imageSetPath);
@@ -16,14 +17,14 @@ inline vector<tuple<Mat, int>> GetImages(const System::String& imageSetPath,
     vector<System::String> classInfos = imageSetInfo.GetDirectories();
     sort(classInfos.begin(), classInfos.end());
 
-    vector<tuple<Mat, int>> images;
+    vector<Tuple<Mat, int>> images;
     for (int i = 0; i < classInfos.size(); i++)
     {
         vector<System::String> fileInfos = DirectoryInfo(classInfos[i]).GetFiles();
         sort(fileInfos.begin(), fileInfos.end());
-        
+
         for (int j = 0; j < fileInfos.size(); j++)
-            images.push_back(make_tuple(imread(fileInfos[j], imageLoadMode), i + 1));
+            images.push_back(CreateTuple(imread(fileInfos[j], imageLoadMode), i + 1));
     }
 
     return images;
@@ -43,7 +44,7 @@ inline vector<double> linspace(double start, double end, int pointNum)
     return result;
 }
 
-tuple<vector<double>, vector<double>> ROC(const vector<double>& distances, 
+Tuple<vector<double>, vector<double>> ROC(const vector<double>& distances, 
     const vector<bool>& relevants)
 {
     vector<double> positiveDist, negativeDist;
@@ -89,42 +90,21 @@ tuple<vector<double>, vector<double>> ROC(const vector<double>& distances,
         FPR.push_back(FP[i] / (FP[i] + TN[i]));
     }
 
-    return make_tuple(DR, FPR);
+    return CreateTuple(DR, FPR);
 }
-
-vector<LocalFeature_f> features(20039);
-vector<tuple<Mat, int>> images;
-
-class TBB
-{
-public:
-    TBB(const LocalFeature& feat) : feature(feat) {};
-    
-    void operator()(const tbb::blocked_range<int>& range) const
-    {
-        for (int i = range.begin(); i < range.end(); i++)
-        {
-            Convert(feature.GetFeatureWithPreprocess(get<0>(images[i]), true), features[i]);
-        }
-    }
-    
-private:
-    const LocalFeature& feature;
-};
 
 void LocalFeatureCrossValidation(const System::String& imageSetPath, const LocalFeature& feature, 
                                  int wordNum, int sampleNum = 1000000, int fold = 3)
 {
     srand(1);
-    images = GetImages(imageSetPath, CV_LOAD_IMAGE_GRAYSCALE);
+    vector<Tuple<Mat, int>> images = GetImages(imageSetPath, CV_LOAD_IMAGE_GRAYSCALE);
     int imageNum = (int)images.size();
 
-    //vector<LocalFeature_f> features(imageNum);
+    vector<LocalFeature_f> features(imageNum);
     printf("Compute " + feature.GetName() + "...\n");
     #pragma omp parallel for
     for (int i = 0; i < imageNum; i++)
-        Convert(feature.GetFeatureWithPreprocess(get<0>(images[i]), true), features[i]);
-    //tbb::parallel_for(tbb::blocked_range<int>(0, imageNum), TBB(feature), tbb::auto_partitioner());
+        Convert(feature.GetFeatureWithPreprocess(images[i].Item1(), true), features[i]);
 
     { // Use a block here to destruct words and freqHistograms immediately.
         printf("Compute Visual Words...\n");
@@ -138,7 +118,7 @@ void LocalFeatureCrossValidation(const System::String& imageSetPath, const Local
         FILE* file = fopen(savePath, "w");
         for (int i = 0; i < freqHistograms.size(); i++)
         {
-            fprintf(file, "%d", get<1>(images[i]));
+            fprintf(file, "%d", images[i].Item2());
             for (int j = 0; j < freqHistograms[i].size(); j++)
                 fprintf(file, " %d:%f", j + 1, freqHistograms[i][j]);
             fprintf(file, "\n");
@@ -146,16 +126,16 @@ void LocalFeatureCrossValidation(const System::String& imageSetPath, const Local
         fclose(file);
     }
 
-    vector<tuple<vector<LocalFeature_f>, vector<LocalFeature_f>, vector<size_t>>> pass = 
+    vector<Tuple<vector<LocalFeature_f>, vector<LocalFeature_f>, vector<size_t>>> pass = 
         RandomSplit(features, fold);
     vector<vector<double>> DRs(imageNum), FPRs(imageNum);
     vector<double> passResult;
     for (int i = 0; i < fold; i++)
     {
         printf("\nBegin Fold %d...\n", i + 1);
-        vector<LocalFeature_f>& evaluationSet = get<0>(pass[i]);
-        vector<LocalFeature_f>& trainingSet = get<1>(pass[i]);
-        vector<size_t>& pickUpIndexes = get<2>(pass[i]);
+        vector<LocalFeature_f>& evaluationSet = pass[i].Item1();
+        vector<LocalFeature_f>& trainingSet = pass[i].Item2();
+        vector<size_t>& pickUpIndexes = pass[i].Item3();
 
         printf("Compute Visual Words...\n");
         vector<Word_f> words = BOV::GetVisualWords(trainingSet, wordNum, sampleNum);
@@ -170,11 +150,11 @@ void LocalFeatureCrossValidation(const System::String& imageSetPath, const Local
         {
             if (counter < pickUpIndexes.size() && j == pickUpIndexes[counter])
             {
-                evaluationLabels.push_back(get<1>(images[j]));
+                evaluationLabels.push_back(images[j].Item2());
                 counter++;
             }
             else
-                trainingLabels.push_back(get<1>(images[j]));
+                trainingLabels.push_back(images[j].Item2());
         }
 
         KNN<Histogram> knn;
@@ -192,8 +172,8 @@ void LocalFeatureCrossValidation(const System::String& imageSetPath, const Local
         {
             int index = pickUpIndexes[j];
             auto roc = ROC(distances[j], relevants[j]);
-            DRs[index] = get<0>(roc);
-            FPRs[index] = get<1>(roc);
+            DRs[index] = roc.Item1();
+            FPRs[index] = roc.Item2();
         }
     }
 
@@ -226,37 +206,37 @@ void GlobalFeatureCrossValidation(const System::String& imageSetPath, const Glob
                                   int fold = 3)
 {
     srand(1);
-    vector<tuple<Mat, int>> images = GetImages(imageSetPath, CV_LOAD_IMAGE_GRAYSCALE);
+    vector<Tuple<Mat, int>> images = GetImages(imageSetPath, CV_LOAD_IMAGE_GRAYSCALE);
     int imageNum = (int)images.size();
 
     vector<GlobalFeature_f> features(imageNum);
     printf("Compute " + feature.GetName() + "...\n");
     #pragma omp parallel for
     for (int i = 0; i < imageNum; i++)
-        Convert(feature.GetFeatureWithPreprocess(get<0>(images[i]), true), features[i]);
+        Convert(feature.GetFeatureWithPreprocess(images[i].Item1(), true), features[i]);
 
     printf("Write To File...\n");
     System::String savePath = feature.GetName() + "_oracles";
     FILE* file = fopen(savePath, "w");
     for (int i = 0; i < features.size(); i++)
     {
-        fprintf(file, "%d", get<1>(images[i]));
+        fprintf(file, "%d", images[i].Item2());
         for (int j = 0; j < features[i].size(); j++)
             fprintf(file, " %d:%f", j + 1, features[i][j]);
         fprintf(file, "\n");
     }
     fclose(file);
 
-    vector<tuple<vector<GlobalFeature_f>, vector<GlobalFeature_f>, vector<size_t>>> pass = 
+    vector<Tuple<vector<GlobalFeature_f>, vector<GlobalFeature_f>, vector<size_t>>> pass = 
         RandomSplit(features, fold);
     vector<vector<double>> DRs(imageNum), FPRs(imageNum);
     vector<double> passResult;
     for (int i = 0; i < fold; i++)
     {
         printf("\nBegin Fold %d...\n", i + 1);
-        vector<GlobalFeature_f>& evaluationSet = get<0>(pass[i]);
-        vector<GlobalFeature_f>& trainingSet = get<1>(pass[i]);
-        vector<size_t>& pickUpIndexes = get<2>(pass[i]);
+        vector<GlobalFeature_f>& evaluationSet = pass[i].Item1();
+        vector<GlobalFeature_f>& trainingSet = pass[i].Item2();
+        vector<size_t>& pickUpIndexes = pass[i].Item3();
 
         vector<int> trainingLabels, evaluationLabels;
         int counter = 0;
@@ -264,11 +244,11 @@ void GlobalFeatureCrossValidation(const System::String& imageSetPath, const Glob
         {
             if (counter < pickUpIndexes.size() && j == pickUpIndexes[counter])
             {
-                evaluationLabels.push_back(get<1>(images[j]));
+                evaluationLabels.push_back(images[j].Item2());
                 counter++;
             }
             else
-                trainingLabels.push_back(get<1>(images[j]));
+                trainingLabels.push_back(images[j].Item2());
         }
 
         KNN<GlobalFeature_f> knn;
@@ -286,8 +266,8 @@ void GlobalFeatureCrossValidation(const System::String& imageSetPath, const Glob
         {
             int index = pickUpIndexes[j];
             auto roc = ROC(distances[j], relevants[j]);
-            DRs[index] = get<0>(roc);
-            FPRs[index] = get<1>(roc);
+            DRs[index] = roc.Item1();
+            FPRs[index] = roc.Item2();
         }
     }
 
@@ -322,25 +302,25 @@ void EdgeMatchingCrossValidation(const System::String& imageSetPath, const EdgeM
                                  int fold = 3)
 {
     srand(1);
-    vector<tuple<Mat, int>> images = GetImages(imageSetPath, CV_LOAD_IMAGE_GRAYSCALE);
+    vector<Tuple<Mat, int>> images = GetImages(imageSetPath, CV_LOAD_IMAGE_GRAYSCALE);
     int imageNum = (int)images.size();
 
     vector<EdgeMatching::Info> transforms(imageNum);
     printf("Compute " + matching.GetName() + "...\n");
     #pragma omp parallel for
     for (int i = 0; i < imageNum; i++)
-        transforms[i] = matching.GetFeatureWithPreprocess(get<0>(images[i]), true);
+        transforms[i] = matching.GetFeatureWithPreprocess(images[i].Item1(), true);
 
-    vector<tuple<vector<EdgeMatching::Info>, vector<EdgeMatching::Info>, vector<size_t>>> pass = 
+    vector<Tuple<vector<EdgeMatching::Info>, vector<EdgeMatching::Info>, vector<size_t>>> pass = 
         RandomSplit(transforms, fold);
     vector<vector<double>> DRs(imageNum), FPRs(imageNum);
     vector<double> passResult;
     for (int i = 0; i < fold; i++)
     {
         printf("\nBegin Fold %d...\n", i + 1);
-        vector<EdgeMatching::Info>& evaluationSet = get<0>(pass[i]);
-        vector<EdgeMatching::Info>& trainingSet = get<1>(pass[i]);
-        vector<size_t>& pickUpIndexes = get<2>(pass[i]);
+        vector<EdgeMatching::Info>& evaluationSet = pass[i].Item1();
+        vector<EdgeMatching::Info>& trainingSet = pass[i].Item2();
+        vector<size_t>& pickUpIndexes = pass[i].Item3();
 
         vector<int> trainingLabels, evaluationLabels;
         int counter = 0;
@@ -348,11 +328,11 @@ void EdgeMatchingCrossValidation(const System::String& imageSetPath, const EdgeM
         {
             if (counter < pickUpIndexes.size() && j == pickUpIndexes[counter])
             {
-                evaluationLabels.push_back(get<1>(images[j]));
+                evaluationLabels.push_back(images[j].Item2());
                 counter++;
             }
             else
-                trainingLabels.push_back(get<1>(images[j]));
+                trainingLabels.push_back(images[j].Item2());
         }
 
         KNN<EdgeMatching::Info> knn;
@@ -370,8 +350,8 @@ void EdgeMatchingCrossValidation(const System::String& imageSetPath, const EdgeM
         {
             int index = pickUpIndexes[j];
             auto roc = ROC(distances[j], relevants[j]);
-            DRs[index] = get<0>(roc);
-            FPRs[index] = get<1>(roc);
+            DRs[index] = roc.Item1();
+            FPRs[index] = roc.Item2();
         }
     }
 
@@ -402,8 +382,8 @@ void EdgeMatchingCrossValidation(const System::String& imageSetPath, const EdgeM
 
 int main()
 {
-    LocalFeatureCrossValidation("oracles_png", HOG(), 500);
-    printf("\n");
+    //LocalFeatureCrossValidation("oracles_png", HOG(), 500);
+    //printf("\n");
 
     //LocalFeatureCrossValidation("oracles_png", HOOSC(), 1000);
     //printf("\n");
@@ -411,8 +391,8 @@ int main()
     //LocalFeatureCrossValidation("oracles_png", SC(), 1000);
     //printf("\n");
 
-    //LocalFeatureCrossValidation("oracles_png", SCP(), 1000);
-    //printf("\n");
+    LocalFeatureCrossValidation("oracles_png", SCP(), 1000);
+    printf("\n");
 
     //LocalFeatureCrossValidation("oracles_png", SHOG(), 500);
     //printf("\n");

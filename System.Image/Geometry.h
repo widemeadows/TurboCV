@@ -28,10 +28,10 @@ namespace System
 
         inline vector<double> Geometry::EulerDistance(const Point& u, const vector<Point>& vec)
         {
-            vector<double> distances;
+            vector<double> distances(vec.size());
 
             for (int i = 0; i < vec.size(); i++)
-		        distances.push_back(Geometry::EulerDistance(u, vec[i]));
+		        distances[i] = Geometry::EulerDistance(u, vec[i]);
 
             return distances;
         }
@@ -55,10 +55,10 @@ namespace System
 
         inline vector<double> Geometry::Angle(const Point& start, const vector<Point>& ends)
         {
-            vector<double> angles;
+            vector<double> angles(ends.size());
 
             for (int i = 0; i < ends.size(); i++)
-                angles.push_back(Geometry::Angle(start, ends[i]));
+                angles[i] = Geometry::Angle(start, ends[i]);
 
             return angles;
         }

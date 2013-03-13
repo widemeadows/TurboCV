@@ -1,5 +1,6 @@
 #pragma once
 
+#include "../System/System.h"
 #include "BinaryImage.h"
 #include "Geometry.h"
 #include "Util.h"
@@ -32,37 +33,35 @@ namespace System
             size_t pointNum = points.size();
 	        assert(pointNum >= samplingNum);
 
-	        vector<tuple<double, tuple<Point, Point>>> distances;
-	        unordered_set<Point, PointHash> pivots;
+            vector<Tuple<double, Tuple<Point, Point>>> distances(pointNum * (pointNum - 1) / 2);
+            unordered_set<Point, PointHash> pivots;
 
-	        for (size_t i = 0; i < pointNum; i++)
-	        {
-		        for (size_t j = i + 1; j < pointNum; j++)
-		        {
-			        double distance = Geometry::EulerDistance(points[i], points[j]);
-			        distances.push_back(make_tuple(distance, make_tuple(points[i], points[j])));
-		        }
-		        pivots.insert(points[i]);
-	        }
-	        sort(distances.begin(), distances.end(), [](
-                const tuple<double, tuple<Point, Point>>& u, 
-                const tuple<double, tuple<Point, Point>>& v)
-                { return u < v; });
+            int counter = 0;
+            for (size_t i = 0; i < pointNum; i++)
+            {
+                for (size_t j = i + 1; j < pointNum; j++)
+                {
+                    double distance = Geometry::EulerDistance(points[i], points[j]);
+                    distances[counter++] = CreateTuple(distance, CreateTuple(points[i], points[j]));
+                }
+                pivots.insert(points[i]);
+            }
+            sort(distances.begin(), distances.end());
 
-	        int ptr = 0;
-	        while (pivots.size() > samplingNum)
-	        {
-		        tuple<Point, Point> pointPair = get<1>(distances[ptr++]);
-		        if (pivots.find(get<0>(pointPair)) != pivots.end() &&
-			        pivots.find(get<1>(pointPair)) != pivots.end())
-		        pivots.erase(get<1>(pointPair));
-	        }
+            int ptr = 0;
+            while (pivots.size() > samplingNum)
+            {
+                Tuple<Point, Point> pointPair = distances[ptr++].Item2();
+                if (pivots.find(pointPair.Item1()) != pivots.end() &&
+                    pivots.find(pointPair.Item2()) != pivots.end())
+                    pivots.erase(pointPair.Item2());
+            }
 
-	        vector<Point> results;
-	        for (auto pivot : pivots)
-		        results.push_back(pivot);
+            vector<Point> results;
+            for (auto pivot : pivots)
+                results.push_back(pivot);
 
-	        return results;
+            return results;
         }
 
         inline vector<Point> SampleOnShape(const Mat& sketchImage, size_t samplingNum)

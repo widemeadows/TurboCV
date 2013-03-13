@@ -3,7 +3,6 @@
 #include "../System/System.h"
 #include "System.Image.h"
 #include <cv.h>
-#include <tuple>
 using namespace cv;
 using namespace std;
 
@@ -14,14 +13,14 @@ namespace System
         class Gradient
         {
         public:
-            static tuple<Mat, Mat> GetGradientKernel(double sigma, double epsilon);
+            static Tuple<Mat, Mat> GetGradientKernel(double sigma, double epsilon);
 
-            static tuple<Mat, Mat> Gradient::GetGradient(const Mat& image, double sigma = 1.0);
+            static Tuple<Mat, Mat> Gradient::GetGradient(const Mat& image, double sigma = 1.0);
 
             static vector<Mat> Gradient::GetOrientChannels(const Mat& sketchImage, int orientNum);
         };
 
-        inline tuple<Mat, Mat> Gradient::GetGradientKernel(double sigma, double epsilon)
+        inline Tuple<Mat, Mat> Gradient::GetGradientKernel(double sigma, double epsilon)
         {
             int halfSize = (int)ceil(sigma * sqrt(-2 * log(sqrt(2 * CV_PI) * sigma * epsilon)));
             int size = halfSize * 2 + 1;
@@ -48,15 +47,15 @@ namespace System
                 }
             }
 
-            return make_tuple(dx, dy);
+            return CreateTuple(dx, dy);
         }
 
-        inline tuple<Mat, Mat> Gradient::GetGradient(const Mat& image, double sigma)
+        inline Tuple<Mat, Mat> Gradient::GetGradient(const Mat& image, double sigma)
         {
-            tuple<Mat, Mat> kernel = GetGradientKernel(sigma, 1e-2);
+            Tuple<Mat, Mat> kernel = GetGradientKernel(sigma, 1e-2);
             Mat dxImage, dyImage;
-            filter2D(image, dxImage, CV_64F, get<0>(kernel));
-            filter2D(image, dyImage, CV_64F, get<1>(kernel));
+            filter2D(image, dxImage, CV_64F, kernel.Item1());
+            filter2D(image, dyImage, CV_64F, kernel.Item2());
 
             Mat orientImage(image.rows, image.cols, CV_64F);
             for (int i = 0; i < image.rows; i++)
@@ -79,14 +78,14 @@ namespace System
                     powerImage.at<double>(i, j) = sqrt(dyImage.at<double>(i, j) * dyImage.at<double>(i, j) +
                         dxImage.at<double>(i, j) * dxImage.at<double>(i, j));
 
-            return make_tuple(powerImage, orientImage);
+            return CreateTuple(powerImage, orientImage);
         }
 
         inline vector<Mat> Gradient::GetOrientChannels(const Mat& sketchImage, int orientNum)
         {
-            tuple<Mat, Mat> gradient = GetGradient(sketchImage);
-            Mat& powerImage = get<0>(gradient);
-            Mat& orientImage = get<1>(gradient);
+            Tuple<Mat, Mat> gradient = GetGradient(sketchImage);
+            Mat& powerImage = gradient.Item1();
+            Mat& orientImage = gradient.Item2();
             int height = sketchImage.rows, width = sketchImage.cols;
             double orientBinSize = CV_PI / orientNum;
 

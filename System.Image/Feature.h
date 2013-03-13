@@ -8,7 +8,6 @@
 #include "Sample.h"
 #include "Typedef.h"
 #include <cv.h>
-#include <tuple>
 using namespace cv;
 using namespace std;
 
@@ -583,9 +582,9 @@ namespace System
             vector<Point> points = GetEdgels(sketchImage);
             vector<Point> pivots = SampleFromPoints(points, (size_t)(points.size() * 0.33));
 
-            tuple<Mat, Mat> gradient = Gradient::GetGradient(sketchImage);
-            Mat& powerImage = get<0>(gradient);
-            Mat& orientImage = get<1>(gradient);
+            Tuple<Mat, Mat> gradient = Gradient::GetGradient(sketchImage);
+            Mat& powerImage = gradient.Item1();
+            Mat& orientImage = gradient.Item2();
 
             LocalFeatureVec feature;
             for (int i = 0; i < pivots.size(); i++)
@@ -678,7 +677,7 @@ namespace System
             vector<double> logDistances(tmp, tmp + sizeof(tmp) / sizeof(double));
             int angleNum = 9, orientNum = 8, sampleNum = 28;
 
-            Mat orientImage = get<1>(Gradient::GetGradient(sketchImage));
+            Mat orientImage = Gradient::GetGradient(sketchImage).Item2();
             vector<Point> points = GetEdgels(sketchImage); 
 
             LocalFeatureVec feature;
@@ -842,7 +841,7 @@ namespace System
         protected:
             virtual LocalFeatureVec GetFeature(const Mat& sketchImage) const;
 
-            virtual String GetName() const { return "sc"; };
+            virtual String GetName() const { return "scp"; };
 
         private:
             static Descriptor GetDescriptor(const Point& pivot, const vector<Point>& pivots,
@@ -901,16 +900,15 @@ namespace System
             }
 
             Descriptor descriptor;
+            int ringBegin = 0;
+
             for (int i = 0; i < distanceNum; i++)
             {
-                vector<double> ring;
                 for (int j = 0; j < angleNum; j++)
-                    ring.push_back(bins.at<double>(i, j));
+                    descriptor.push_back(bins.at<double>(i, j));
 
-                NormOneNormalize(ring.begin(), ring.end());
-
-                for (auto item : ring)
-                    descriptor.push_back(item);
+                NormOneNormalize(descriptor.begin() + ringBegin, descriptor.end());
+                ringBegin = descriptor.size();
             }
 
             return descriptor;
@@ -937,7 +935,7 @@ namespace System
             vector<double> logDistances(tmp, tmp + sizeof(tmp) / sizeof(double));
             int angleNum = 12, sampleNum = 28;
 
-            Mat orientImage = get<1>(Gradient::GetGradient(sketchImage));
+            Mat orientImage = Gradient::GetGradient(sketchImage).Item2();
             vector<Point> points = GetEdgels(sketchImage); 
             vector<Point> pivots = SampleFromPoints(points, (int)(points.size() * 0.33));
 

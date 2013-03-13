@@ -1,9 +1,10 @@
 #pragma once
 
+#include "../System/System.h"
 #include "Util.h"
 #include <cv.h>
-#include <tuple>
 #include <vector>
+#include <algorithm>
 #include <unordered_set>
 using namespace cv;
 using namespace std;
@@ -44,7 +45,7 @@ namespace System
         }
 
         // Assume: Edgels are 1 and Background is 0.
-        inline tuple<vector<Point>, vector<Point>> FindJunctionsOrEndpoints(const Mat& binaryImage)
+        inline Tuple<vector<Point>, vector<Point>> FindJunctionsOrEndpoints(const Mat& binaryImage)
         {
             vector<Point> junctions, endPoints;
             Mat patch(3, 3, CV_8U);
@@ -70,12 +71,12 @@ namespace System
                 }
             }
 
-            return make_tuple(junctions, endPoints);
+            return CreateTuple(junctions, endPoints);
         }
 
         // Find next connected edge point.
         // Assume: Edgels are 1 and Background is 0.
-        tuple<Status, Point> NextPoint(const Mat& edgeFlags, int edgeNo, 
+        Tuple<Status, Point> NextPoint(const Mat& edgeFlags, int edgeNo, 
             const unordered_set<Point, PointHash>& junctions,
             const unordered_set<Point, PointHash>& endpoints, 
             const Point& centre)
@@ -94,7 +95,7 @@ namespace System
                     if ((junctions.find(Point(newX, newY)) != junctions.end() ||
                         endpoints.find(Point(newX, newY)) != endpoints.end()) &&
                         edgeFlags.at<int>(newY, newX) != -edgeNo)
-                        return make_tuple(LastPoint, Point(newX, newY));
+                        return CreateTuple(LastPoint, Point(newX, newY));
                 }
             }
 
@@ -121,7 +122,7 @@ namespace System
                                 counter++;
 
                         if (counter < 2)
-                            return make_tuple(NormalPoint, Point(newX, newY));
+                            return CreateTuple(NormalPoint, Point(newX, newY));
                         else
                         {
                             flag = true;
@@ -136,10 +137,10 @@ namespace System
             // that had less than two connections to our current edge, but there was
             // one with more. Use the point we recorded above.
             if (flag)
-                return make_tuple(NormalPoint, record);
+                return CreateTuple(NormalPoint, record);
             
             // If we get here there was no connecting next point at all.
-            return make_tuple(NoPoint, record);
+            return CreateTuple(NoPoint, record);
         }
 
         Edge TrackEdge(Mat& edgeFlags, int edgeNo, 
@@ -151,9 +152,9 @@ namespace System
             edge.push_back(start);
             edgeFlags.at<int>(start.y, start.x) = -edgeNo;
 
-            tuple<Status, Point> next = NextPoint(edgeFlags, edgeNo, junctions, endpoints, start);
-            Status status = get<0>(next);
-            Point nextPoint = get<1>(next);
+            Tuple<Status, Point> next = NextPoint(edgeFlags, edgeNo, junctions, endpoints, start);
+            Status status = next.Item1();
+            Point nextPoint = next.Item2();
 
             while (status != NoPoint)
             {
@@ -165,8 +166,8 @@ namespace System
                 else
                 {
                     next = NextPoint(edgeFlags, edgeNo, junctions, endpoints, nextPoint);
-                    status = get<0>(next);
-                    nextPoint = get<1>(next);
+                    status = next.Item1();
+                    nextPoint = next.Item2();
                 }
             }
 
@@ -175,11 +176,11 @@ namespace System
             if (junctions.find(start) == junctions.end() && 
                 endpoints.find(start) == endpoints.end())
             {
-                reverse(edge.begin(), edge.end());
+                std::reverse(edge.begin(), edge.end());
 
                 next = NextPoint(edgeFlags, edgeNo, junctions, endpoints, start);
-                status = get<0>(next);
-                nextPoint = get<1>(next);
+                status = next.Item1();
+                nextPoint = next.Item2();
 
                 while (status != NoPoint)
                 {
@@ -191,8 +192,8 @@ namespace System
                     else
                     {
                         next = NextPoint(edgeFlags, edgeNo, junctions, endpoints, nextPoint);
-                        status = get<0>(next);
-                        nextPoint = get<1>(next);
+                        status = next.Item1();
+                        nextPoint = next.Item2();
                     }
                 }
             }
@@ -217,13 +218,13 @@ namespace System
         // We strongly recommend removing any isolated pixel before applying EdgeLink.
         vector<Edge> EdgeLink(const Mat& binaryImage, int minLength = 10)
         {
-            tuple<vector<Point>, vector<Point>> juncOrEnd = 
+            Tuple<vector<Point>, vector<Point>> juncOrEnd = 
                 FindJunctionsOrEndpoints(binaryImage);
 
             unordered_set<Point, PointHash> junctions, endpoints;
-            for (auto p : get<0>(juncOrEnd))
+            for (auto p : juncOrEnd.Item1())
                 junctions.insert(p);
-            for (auto p : get<1>(juncOrEnd))
+            for (auto p : juncOrEnd.Item2())
                 endpoints.insert(p);
 
             Mat edgeFlags;
