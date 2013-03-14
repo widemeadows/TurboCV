@@ -174,6 +174,7 @@ namespace System
         inline vector<Point> GetEdgels(const Mat& sketchImage)
         {
 	        vector<Point> points;
+            points.reserve(1024);
 
 	        for (int i = 0; i < sketchImage.rows; i++)
 		        for (int j = 0; j < sketchImage.cols; j++)

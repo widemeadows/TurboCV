@@ -2,6 +2,7 @@
 
 #include "../System/System.h"
 #include "Feature.h"
+#include "Filter.h"
 #include <cv.h>
 using namespace std;
 using namespace cv;
@@ -88,25 +89,29 @@ namespace System
         public:
             typedef Vector<Tuple<vector<Point>, Mat>> Info;
 
-            Info GetFeatureWithPreprocess(const Mat& sketchImage, bool thinning = false) const;
-            Info GetFeatureWithoutPreprocess(const Mat& sketchImage) const;
+            Info GetFeatureWithPreprocess(const Mat& sketchImage, bool thinning = false);
+            Info GetFeatureWithoutPreprocess(const Mat& sketchImage);
 
             static double GetDistance(const Info& u, const Info& v);
 
-            static vector<vector<Point>> GetChannels(const Mat& sketchImage, int orientNum);
+            vector<vector<Point>> GetChannels(const Mat& sketchImage, int orientNum);
 
             virtual String GetName() const { return "ocm"; };
 
         protected:
-            virtual Info Transform(const Mat& sketchImage, double maxDistance = 40) const;
+            virtual Info Transform(const Mat& sketchImage, double maxDistance = 40);
+
+        private:
+            vector<Mat> cache;
+            ConvolveDFTWithCache convolve2D;
         };
 
-        inline OCM::Info OCM::GetFeatureWithPreprocess(const Mat& sketchImage, bool thinning) const
+        inline OCM::Info OCM::GetFeatureWithPreprocess(const Mat& sketchImage, bool thinning)
         {
             return Transform(Preprocess(sketchImage, thinning));
         }
 
-        inline OCM::Info OCM::GetFeatureWithoutPreprocess(const Mat& sketchImage) const
+        inline OCM::Info OCM::GetFeatureWithoutPreprocess(const Mat& sketchImage)
         {
             return Transform(sketchImage);
         }
@@ -140,17 +145,16 @@ namespace System
         inline vector<vector<Point>> OCM::GetChannels(const Mat& sketchImage, int orientNum)
         {
             int sigma = 9, lambda = 24, ksize = sigma * 6 + 1;
-            vector<Mat> gaborResponses(orientNum);
+            if (cache.size() != orientNum)
+                cache.resize(orientNum);
 
             for (int i = 0; i < orientNum; i++)
             {
                 Mat kernel = getGaborKernel(Size(ksize, ksize), sigma, 
                     CV_PI / orientNum * i, lambda, 1, 0);
 
-                Mat gaborResponse;
-                filter2D(sketchImage, gaborResponse, CV_64F, kernel);
-
-                gaborResponses[i] = abs(gaborResponse);
+                convolve2D(sketchImage, cache[i], CV_64F, kernel);
+                cache[i] = abs(cache[i]);
             }
 
             vector<Point> points = GetEdgels(sketchImage);
@@ -163,9 +167,9 @@ namespace System
 
                 for (int j = 0; j < orientNum; j++)
                 {
-                    if (gaborResponses[j].at<double>(points[i].y, points[i].x) > maxResponse)
+                    if (cache[j].at<double>(points[i].y, points[i].x) > maxResponse)
                     {
-                        maxResponse = gaborResponses[j].at<double>(points[i].y, points[i].x);
+                        maxResponse = cache[j].at<double>(points[i].y, points[i].x);
                         index = j;
                     }
                 }
@@ -177,7 +181,7 @@ namespace System
             return channels;
         }
 
-        inline OCM::Info OCM::Transform(const Mat& sketchImage, double maxDistance) const
+        inline OCM::Info OCM::Transform(const Mat& sketchImage, double maxDistance)
         {
             vector<vector<Point>> channels = GetChannels(sketchImage, 6);
             Info result(channels.size());
@@ -308,8 +312,8 @@ namespace System
 
         inline Hitmap::Info Hitmap::Transform(const Mat& sketchImage, double maxDistance) const
         {
-            Info result;
             vector<vector<Point>> channels = GetChannels(sketchImage, 6);
+            Info result(channels.size());
 
             for (int i = 0; i < channels.size(); i++)
             {
@@ -330,7 +334,7 @@ namespace System
                     }
                 }
 
-                result.push_back(CreateTuple(channels[i], dt));
+                result[i] = CreateTuple(channels[i], dt);
             }
 
             return result;

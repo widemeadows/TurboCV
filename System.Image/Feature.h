@@ -900,15 +900,16 @@ namespace System
             }
 
             Descriptor descriptor;
-            int ringBegin = 0;
-
             for (int i = 0; i < distanceNum; i++)
             {
+                vector<double> ring;
                 for (int j = 0; j < angleNum; j++)
-                    descriptor.push_back(bins.at<double>(i, j));
+                    ring.push_back(bins.at<double>(i, j));
 
-                NormOneNormalize(descriptor.begin() + ringBegin, descriptor.end());
-                ringBegin = descriptor.size();
+                NormOneNormalize(ring.begin(), ring.end());
+
+                for (auto item : ring)
+                    descriptor.push_back(item);
             }
 
             return descriptor;

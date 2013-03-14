@@ -204,5 +204,219 @@ namespace System
 
             return DoGPyramid;
         }
+
+        inline void convolveDFT(InputArray src, OutputArray dst, int ddepth, InputArray kernel)
+        {
+            Mat A = src.getMat(), B = kernel.getMat();
+            if (ddepth != -1)
+            {
+                A.convertTo(A, ddepth);
+                B.convertTo(B, ddepth);
+            }
+
+            // reallocate the output array if needed
+            if (ddepth == -1)
+                dst.create(A.rows, A.cols, A.type());
+            else
+                dst.create(A.rows, A.cols, ddepth);
+            Mat C = dst.getMat();
+
+            // calculate the size of DFT transform
+            Size dftSize;
+            dftSize.width = getOptimalDFTSize(A.cols + B.cols - 1);
+            dftSize.height = getOptimalDFTSize(A.rows + B.rows - 1);
+
+            // allocate temporary buffers and initialize them with 0's
+            Mat tempA, tempB;
+            if (ddepth == -1)
+            {
+                tempA = Mat(dftSize, A.type(), Scalar::all(0));
+                tempB = Mat(dftSize, B.type(), Scalar::all(0));
+            }
+            else
+            {
+                tempA = Mat(dftSize, ddepth, Scalar::all(0));
+                tempB = Mat(dftSize, ddepth, Scalar::all(0));
+            }
+
+            // copy A and B to the top-left corners of tempA and tempB, respectively
+            Mat roiA(tempA, Rect(0, 0, A.cols, A.rows));
+            A.copyTo(roiA);
+            Mat roiB(tempB, Rect(0, 0, B.cols, B.rows));
+            B.copyTo(roiB);
+
+            // now transform the padded A & B in-place;
+            // use "nonzeroRows" hint for faster processing
+            dft(tempA, tempA, 0, A.rows);
+            dft(tempB, tempB, 0, B.rows);
+
+            // multiply the spectrums;
+            // the function handles packed spectrum representations well
+            mulSpectrums(tempA, tempB, tempA, DFT_ROWS);
+
+            // transform the product back from the frequency domain.
+            // Even though all the result rows will be non-zero,
+            // you need only the first C.rows of them, and thus you
+            // pass nonzeroRows == C.rows
+            dft(tempA, tempA, DFT_INVERSE + DFT_SCALE, tempA.rows);
+
+            // now copy the result back to C.
+            tempA(Rect((tempA.cols - C.cols) / 2, (tempA.rows - C.rows) / 2, 
+                C.cols, C.rows)).copyTo(C);
+        }
+
+        class ConvolveDFTWithCache
+        {
+        public:
+            void operator()(InputArray src, OutputArray dst, int ddepth, InputArray kernel)
+            {
+                Mat A = src.getMat(), B = kernel.getMat();
+                if (ddepth != -1)
+                {
+                    A.convertTo(A, ddepth);
+                    B.convertTo(B, ddepth);
+                }
+
+                // reallocate the output array if needed
+                if (ddepth == -1)
+                    dst.create(A.rows, A.cols, A.type());
+                else
+                    dst.create(A.rows, A.cols, ddepth);
+                Mat C = dst.getMat();
+
+                // calculate the size of DFT transform
+                Size dftSize;
+                dftSize.width = getOptimalDFTSize(A.cols + B.cols - 1);
+                dftSize.height = getOptimalDFTSize(A.rows + B.rows - 1);
+
+                // allocate temporary buffers and initialize them with 0's
+                if (ddepth == -1)
+                {
+                    tempA.create(dftSize, A.type());
+                    tempA = Scalar::all(0);
+                    tempB.create(dftSize, B.type());
+                    tempB = Scalar::all(0);
+                }
+                else
+                {
+                    tempA.create(dftSize, ddepth);
+                    tempA = Scalar::all(0);
+                    tempB.create(dftSize, ddepth);
+                    tempB = Scalar::all(0);
+                }
+
+                // copy A and B to the top-left corners of tempA and tempB, respectively
+                Mat roiA(tempA, Rect(0, 0, A.cols, A.rows));
+                A.copyTo(roiA);
+                Mat roiB(tempB, Rect(0, 0, B.cols, B.rows));
+                B.copyTo(roiB);
+
+                // now transform the padded A & B in-place;
+                // use "nonzeroRows" hint for faster processing
+                dft(tempA, tempA, 0, A.rows);
+                dft(tempB, tempB, 0, B.rows);
+
+                // multiply the spectrums;
+                // the function handles packed spectrum representations well
+                mulSpectrums(tempA, tempB, tempA, 0);
+
+                // transform the product back from the frequency domain.
+                // Even though all the result rows will be non-zero,
+                // you need only the first C.rows of them, and thus you
+                // pass nonzeroRows == C.rows
+                dft(tempA, tempA, DFT_INVERSE + DFT_SCALE, tempA.rows);
+
+                // now copy the result back to C.
+                tempA(Rect((tempA.cols - C.cols) / 2, (tempA.rows - C.rows) / 2, 
+                    C.cols, C.rows)).copyTo(C);
+            }
+
+        private:
+            Mat tempA, tempB;
+        };
+
+        void crossCorr( const Mat& img, const Mat& _kernel, Mat& corr,
+            Size corrsize, int ctype,
+            Point anchor, double delta, int borderType )
+        {
+            const double blockScale = 4.5;
+            const int minBlockSize = 256;
+            std::vector<uchar> buf;
+
+            Mat kernel = _kernel;
+            int depth = img.depth(), cn = img.channels();
+            int tdepth = kernel.depth(), tcn = kernel.channels();
+            int cdepth = CV_MAT_DEPTH(ctype), ccn = CV_MAT_CN(ctype);
+
+            corr.create(corrsize, ctype);
+
+            int maxDepth = depth > CV_8S ? CV_64F : std::max(std::max(CV_32F, tdepth), cdepth);
+            Size blocksize, dftsize;
+
+            dftsize.width = 320;
+            dftsize.height = 320;
+
+            blocksize.width = 256;
+            blocksize.height = 256;
+
+            Mat dftTempl( dftsize, maxDepth );
+            Mat dftImg( dftsize, maxDepth );
+
+            int i, k, bufSize = 0;
+            buf.resize(bufSize);
+
+            // compute DFT of each template plane
+            Mat src = kernel;
+            Mat dst(dftTempl, Rect(0, 0, dftsize.width, dftsize.height));
+            Mat dst1(dftTempl, Rect(0, 0, kernel.cols, kernel.rows));
+
+            if( dst.cols > kernel.cols )
+            {
+                Mat part(dst, Range(0, kernel.rows), Range(kernel.cols, dst.cols));
+                part = Scalar::all(0);
+            }
+            dft(dst, dst, 0, kernel.rows);
+
+            Size wholeSize = img.size();
+            Point roiofs(0,0);
+            Mat img0 = img;
+
+            if( !(borderType & BORDER_ISOLATED) )
+            {
+                img.locateROI(wholeSize, roiofs);
+                img0.adjustROI(0, 0, 0, 0);
+            }
+            borderType |= BORDER_ISOLATED;
+
+            // calculate correlation by blocks
+            int x = 0;
+            int y = 0;
+
+            Size bsz(256, 256);
+            Size dsz(256 + 54, 256 + 54);
+            int x0 = -27, y0 = -27;
+            int x1 = 0, y1 = 0;
+            int x2 = 256 + 27;
+            int y2 = 256 + 27;
+            Mat src0(img0, Range(y1, y2), Range(x1, x2));
+            Mat dst(dftImg, Rect(0, 0, dsz.width, dsz.height));
+            Mat dst1(dftImg, Rect(x1-x0, y1-y0, x2-x1, y2-y1));
+            Mat cdst(corr, Rect(x, y, bsz.width, bsz.height));
+
+            Mat src = src0;
+            dftImg = Scalar::all(0);
+
+            copyMakeBorder(dst1, dst, 27, dst.rows-dst1.rows-27,
+                27, dst.cols-dst1.cols-(x1-x0), borderType);
+
+            dft( dftImg, dftImg, 0, dsz.height );
+            Mat dftTempl1(dftTempl, Rect(0, tcn > 1 ? k*dftsize.height : 0,
+                dftsize.width, dftsize.height));
+            mulSpectrums(dftImg, dftTempl1, dftImg, 0, true);
+            dft( dftImg, dftImg, DFT_INVERSE + DFT_SCALE, bsz.height );
+
+            src = dftImg(Rect(0, 0, bsz.width, bsz.height));
+            src.convertTo(cdst, cdepth, 1, delta);
+        }
     }
 }

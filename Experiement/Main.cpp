@@ -307,9 +307,10 @@ void EdgeMatchingCrossValidation(const System::String& imageSetPath, const EdgeM
 
     vector<EdgeMatching::Info> transforms(imageNum);
     printf("Compute " + matching.GetName() + "...\n");
-    #pragma omp parallel for
+    EdgeMatching machine = matching;
+    #pragma omp parallel for private(machine)
     for (int i = 0; i < imageNum; i++)
-        transforms[i] = matching.GetFeatureWithPreprocess(images[i].Item1(), true);
+        transforms[i] = machine.GetFeatureWithPreprocess(images[i].Item1(), true);
 
     vector<Tuple<vector<EdgeMatching::Info>, vector<EdgeMatching::Info>, vector<size_t>>> pass = 
         RandomSplit(transforms, fold);
@@ -391,8 +392,8 @@ int main()
     //LocalFeatureCrossValidation("oracles_png", SC(), 1000);
     //printf("\n");
 
-    LocalFeatureCrossValidation("oracles_png", SCP(), 1000);
-    printf("\n");
+    //LocalFeatureCrossValidation("oracles_png", SCP(), 1000);
+    //printf("\n");
 
     //LocalFeatureCrossValidation("oracles_png", SHOG(), 500);
     //printf("\n");
@@ -415,8 +416,8 @@ int main()
     //EdgeMatchingCrossValidation("oracles_png", CM());
     //printf("\n");
 
-    //EdgeMatchingCrossValidation("oracles_png", OCM());
-    //printf("\n");
+    EdgeMatchingCrossValidation("oracles_png", OCM());
+    printf("\n");
 
     //EdgeMatchingCrossValidation("oracles_png", Hitmap());
     //printf("\n");
