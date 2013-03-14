@@ -396,18 +396,17 @@ namespace System
             Size dsz(256 + 54, 256 + 54);
             int x0 = -27, y0 = -27;
             int x1 = 0, y1 = 0;
-            int x2 = 256 + 27;
-            int y2 = 256 + 27;
+            int x2 = 256;
+            int y2 = 256;
             Mat src0(img0, Range(y1, y2), Range(x1, x2));
-            Mat dst(dftImg, Rect(0, 0, dsz.width, dsz.height));
-            Mat dst1(dftImg, Rect(x1-x0, y1-y0, x2-x1, y2-y1));
-            Mat cdst(corr, Rect(x, y, bsz.width, bsz.height));
+            Mat dst(dftImg, Rect(0, 0, 256 + 54, 256 + 54));
+            Mat dst1(dftImg, Rect(27, 27, 256, 256));
+            Mat cdst(corr, Rect(0, 0, 256, 256));
 
             Mat src = src0;
             dftImg = Scalar::all(0);
 
-            copyMakeBorder(dst1, dst, 27, dst.rows-dst1.rows-27,
-                27, dst.cols-dst1.cols-(x1-x0), borderType);
+            copyMakeBorder(dst1, dst, 27, 27, 27, 27, borderType);
 
             dft( dftImg, dftImg, 0, dsz.height );
             Mat dftTempl1(dftTempl, Rect(0, tcn > 1 ? k*dftsize.height : 0,
