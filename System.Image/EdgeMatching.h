@@ -144,8 +144,7 @@ namespace System
         inline vector<vector<Point>> OCM::GetChannels(const Mat& sketchImage, int orientNum)
         {
             int sigma = 9, lambda = 24, ksize = sigma * 6 + 1;
-            if (cache.size() != orientNum)
-                cache.resize(orientNum);
+            cache.resize(orientNum);
 
             for (int i = 0; i < orientNum; i++)
             {
@@ -189,7 +188,7 @@ namespace System
             vector<vector<Point>> channels = GetChannels(sketchImage, 6);
             Info result(channels.size());
 
-            for (int i = 0; i < channels.size(); i++)
+            for (size_t i = 0; i < channels.size(); i++)
             {
                 Mat dt(sketchImage.size(), CV_32F);
 
@@ -205,6 +204,7 @@ namespace System
                         {
                             double distance = (m - channels[i][j].y) * (m - channels[i][j].y) + 
                                 (n - channels[i][j].x) * (n - channels[i][j].x);
+
                             dt.at<float>(m, n) = min(distance, (double)dt.at<float>(m, n));
                         }
                     }
@@ -264,10 +264,10 @@ namespace System
                 const Mat& vMat = v[i].Item2();
 
                 for (size_t i = 0; i < uPoints.size(); i++)
-                    uToV += vMat.at<uchar>(uPoints[i].y, uPoints[i].x);
+                    uToV += vMat.at<float>(uPoints[i].y, uPoints[i].x);
 
                 for (size_t i = 0; i < vPoints.size(); i++)
-                    vToU += uMat.at<uchar>(vPoints[i].y, vPoints[i].x);
+                    vToU += uMat.at<float>(vPoints[i].y, vPoints[i].x);
 
                 uPointNum += uPoints.size();
                 vPointNum += vPoints.size();
@@ -279,6 +279,7 @@ namespace System
         inline vector<vector<Point>> Hitmap::GetChannels(const Mat& sketchImage, int orientNum)
         {
             int sigma = 9, lambda = 24, ksize = sigma * 6 + 1;
+            cache.resize(orientNum);
 
             for (int i = 0; i < orientNum; i++)
             {
@@ -322,9 +323,10 @@ namespace System
             vector<vector<Point>> channels = GetChannels(sketchImage, 6);
             Info result(channels.size());
 
-            for (int i = 0; i < channels.size(); i++)
+            for (size_t i = 0; i < channels.size(); i++)
             {
-                Mat dt = Mat::zeros(sketchImage.size(), CV_8U);
+                Mat dt(sketchImage.size(), CV_32F);
+                dt = Scalar::all(0);
 
                 for (size_t j = 0; j < channels[i].size(); j++)
                 {
@@ -336,7 +338,7 @@ namespace System
                                 (n - channels[i][j].x) * (n - channels[i][j].x));
 
                             if (distance <= maxDistance)
-                                dt.at<uchar>(m, n) = 1;
+                                dt.at<float>(m, n) = 1;
                         }
                     }
                 }

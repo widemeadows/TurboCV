@@ -752,7 +752,7 @@ namespace System
 
         ///////////////////////////////////////////////////////////////////////
 
-        // Histogram of Shape Context
+        // Shape Context
         class SC : public LocalFeature
         {
         protected:
@@ -835,8 +835,8 @@ namespace System
 
         ///////////////////////////////////////////////////////////////////////
 
-        // Histogram of Shape Context
-        class SCP : public LocalFeature
+        // Points Based Shape Context
+        class PSC : public LocalFeature
         {
         protected:
             virtual LocalFeatureVec GetFeature(const Mat& sketchImage) const;
@@ -848,7 +848,7 @@ namespace System
                 const vector<double>& logDistances, int angleNum);
         };
 
-        inline LocalFeatureVec SCP::GetFeature(const Mat& sketchImage) const
+        inline LocalFeatureVec PSC::GetFeature(const Mat& sketchImage) const
         {
             double tmp[] = { 0, 0.125, 0.25, 0.5, 1, 2 };
             vector<double> logDistances(tmp, tmp + sizeof(tmp) / sizeof(double));
@@ -867,7 +867,7 @@ namespace System
             return feature;
         }
 
-        inline Descriptor SCP::GetDescriptor(const Point& pivot, const vector<Point>& pivots,
+        inline Descriptor PSC::GetDescriptor(const Point& pivot, const vector<Point>& pivots,
             const vector<double>& logDistances, int angleNum)
         {
             int pivotNum = pivots.size();

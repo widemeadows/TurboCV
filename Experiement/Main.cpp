@@ -183,7 +183,7 @@ void LocalFeatureCrossValidation(const System::String& imageSetPath, const Local
         fprintf(file, "Fold %d Accuracy: %f\n", i + 1, passResult[i]);
     fprintf(file, "Average: %f, Standard Deviation: %f\n", Math::Mean(passResult), 
         Math::StandardDeviation(passResult));
-    printf("Average: %f, Standard Deviation: %f\n", Math::Mean(passResult), 
+    printf("\nAverage: %f, Standard Deviation: %f\n", Math::Mean(passResult), 
         Math::StandardDeviation(passResult));
     fclose(file);
 
@@ -277,7 +277,7 @@ void GlobalFeatureCrossValidation(const System::String& imageSetPath, const Glob
         fprintf(file, "Fold %d Accuracy: %f\n", i + 1, passResult[i]);
     fprintf(file, "Average: %f, Standard Deviation: %f\n", Math::Mean(passResult), 
         Math::StandardDeviation(passResult));
-    printf("Average: %f, Standard Deviation: %f\n", Math::Mean(passResult), 
+    printf("\nAverage: %f, Standard Deviation: %f\n", Math::Mean(passResult), 
         Math::StandardDeviation(passResult));
 
     fclose(file);
@@ -362,7 +362,7 @@ void EdgeMatchingCrossValidation(const System::String& imageSetPath, const EdgeM
         fprintf(file, "Fold %d Accuracy: %f\n", i + 1, passResult[i]);
     fprintf(file, "Average: %f, Standard Deviation: %f\n", Math::Mean(passResult), 
         Math::StandardDeviation(passResult));
-    printf("Average: %f, Standard Deviation: %f\n", Math::Mean(passResult), 
+    printf("\nAverage: %f, Standard Deviation: %f\n", Math::Mean(passResult), 
         Math::StandardDeviation(passResult));
     fclose(file);
 
@@ -381,47 +381,151 @@ void EdgeMatchingCrossValidation(const System::String& imageSetPath, const EdgeM
     fclose(file);
 }
 
-int main()
+void LocalFeatureTest(const System::String& imageSetPath, const LocalFeature& feature, 
+                                 int wordNum, int sampleNum = 1000000, int fold = 3)
 {
-    //LocalFeatureCrossValidation("oracles_png", HOG(), 500);
-    //printf("\n");
+    srand(1);
+    vector<Tuple<Mat, int>> images = GetImages(imageSetPath, CV_LOAD_IMAGE_GRAYSCALE);
+    int imageNum = (int)images.size();
 
-    //LocalFeatureCrossValidation("oracles_png", HOOSC(), 1000);
-    //printf("\n");
+    vector<LocalFeature_f> features(imageNum);
+    printf("Compute " + feature.GetName() + "...\n");
+    #pragma omp parallel for
+    for (int i = 0; i < imageNum; i++)
+        Convert(feature.GetFeatureWithPreprocess(images[i].Item1(), true), features[i]);
 
-    //LocalFeatureCrossValidation("oracles_png", SC(), 1000);
-    //printf("\n");
+    { // Use a block here to destruct words and freqHistograms immediately.
+        printf("Compute Visual Words...\n");
+        vector<Word_f> words = BOV::GetVisualWords(features, wordNum, sampleNum);
 
-    //LocalFeatureCrossValidation("oracles_png", SCP(), 1000);
-    //printf("\n");
+        printf("Compute Frequency Histograms...\n");
+        vector<Histogram> freqHistograms = BOV::GetFrequencyHistograms(features, words);
 
-    //LocalFeatureCrossValidation("oracles_png", SHOG(), 500);
-    //printf("\n");
+        printf("Write To File...\n");
+        System::String savePath = feature.GetName() + "_oracles";
+        FILE* file = fopen(savePath, "w");
+        for (int i = 0; i < freqHistograms.size(); i++)
+        {
+            fprintf(file, "%d", images[i].Item2());
+            for (int j = 0; j < freqHistograms[i].size(); j++)
+                fprintf(file, " %d:%f", j + 1, freqHistograms[i][j]);
+            fprintf(file, "\n");
+        }
+        fclose(file);
+    }
 
-    //LocalFeatureCrossValidation("oracles_png", RHOOSC(), 1000);
-    //printf("\n");
+    vector<Tuple<vector<LocalFeature_f>, vector<LocalFeature_f>, vector<size_t>>> pass = 
+        RandomSplit(features, fold);
+    vector<double> passResult;
+    map<int, double> ap;
+    map<int, int> count;
+    for (int i = 0; i < fold; i++)
+    {
+        printf("\nBegin Fold %d...\n", i + 1);
+        vector<LocalFeature_f>& evaluationSet = pass[i].Item1();
+        vector<LocalFeature_f>& trainingSet = pass[i].Item2();
+        vector<size_t>& pickUpIndexes = pass[i].Item3();
 
-    //LocalFeatureCrossValidation("oracles_png", RSC(), 1000);
-    //printf("\n");
+        printf("Compute Visual Words...\n");
+        vector<Word_f> words = BOV::GetVisualWords(trainingSet, wordNum, sampleNum);
 
-    //LocalFeatureCrossValidation("oracles_png", ASHOG(), 1000);
-    //printf("\n");
+        printf("Compute Frequency Histograms...\n");
+        vector<Histogram> trainingHistograms = BOV::GetFrequencyHistograms(trainingSet, words);
+        vector<Histogram> evaluationHistograms = BOV::GetFrequencyHistograms(evaluationSet, words);
 
-    //LocalFeatureCrossValidation("oracles_png", Gabor(), 500);
-    //printf("\n");
+        vector<int> trainingLabels, evaluationLabels;
+        int counter = 0;
+        for (int j = 0; j < imageNum; j++)
+        {
+            if (counter < pickUpIndexes.size() && j == pickUpIndexes[counter])
+            {
+                evaluationLabels.push_back(images[j].Item2());
+                counter++;
+            }
+            else
+                trainingLabels.push_back(images[j].Item2());
+        }
 
-    //GlobalFeatureCrossValidation("oracles_png", GIST());
-    //printf("\n");
+        KNN<Histogram> knn;
+        pair<double, map<int, double>> precisions = 
+            knn.Evaluate(4, trainingHistograms, trainingLabels, evaluationHistograms, evaluationLabels);
 
-    //EdgeMatchingCrossValidation("oracles_png", CM());
-    //printf("\n");
+        passResult.push_back(precisions.first);
+        for (auto item : precisions.second)
+        {
+            ap[item.first] += item.second;
+            count[item.first]++;
+        }
 
-    //EdgeMatchingCrossValidation("oracles_png", OCM());
-    //printf("\n");
+        printf("Fold %d Accuracy: %f\n", i + 1, precisions.first);
+    }
+
+    System::String savePath = feature.GetName() + "_oracles_knn.out";
+    FILE* file = fopen(savePath, "w");
+
+    for (int i = 0; i < passResult.size(); i++)
+        fprintf(file, "Fold %d Accuracy: %f\n", i + 1, passResult[i]);
+
+    fprintf(file, "Average: %f, Standard Deviation: %f\n", Math::Mean(passResult), 
+        Math::StandardDeviation(passResult));
+    printf("\nAverage: %f, Standard Deviation: %f\n", Math::Mean(passResult), 
+        Math::StandardDeviation(passResult));
+
+    for (auto item : ap)
+        fprintf(file, "Class %d: %f\n", item.first, item.second / count[item.first]);
+
+    fclose(file);
+}
+
+void Batch()
+{
+    LocalFeatureCrossValidation("oracles_png", HOG(), 500);
+    printf("\n");
+
+    LocalFeatureCrossValidation("oracles_png", SHOG(), 500);
+    printf("\n");
+
+    LocalFeatureCrossValidation("oracles_png", ASHOG(), 1000);
+    printf("\n");
+
+    LocalFeatureCrossValidation("oracles_png", HOOSC(), 1000);
+    printf("\n");
+
+    LocalFeatureCrossValidation("oracles_png", RHOOSC(), 1000);
+    printf("\n");
+
+    LocalFeatureCrossValidation("oracles_png", SC(), 1000);
+    printf("\n");
+
+    LocalFeatureCrossValidation("oracles_png", PSC(), 1000);
+    printf("\n");
+
+    LocalFeatureCrossValidation("oracles_png", RSC(), 1000);
+    printf("\n");
+
+    LocalFeatureCrossValidation("oracles_png", Gabor(), 500);
+    printf("\n");
+
+    GlobalFeatureCrossValidation("oracles_png", GIST());
+    printf("\n");
+
+    EdgeMatchingCrossValidation("oracles_png", CM());
+    printf("\n");
+
+    EdgeMatchingCrossValidation("oracles_png", OCM());
+    printf("\n");
 
     EdgeMatchingCrossValidation("oracles_png", Hitmap());
     printf("\n");
+}
 
+int main()
+{
     //LocalFeatureCrossValidation("oracles_png", Test(), 500);
     //printf("\n");
+
+    //LocalFeatureTest("oracles_png", PSC(), 1000);
+    //printf("\n");
+
+    //Mat src = reverse(imread("00003.png", CV_LOAD_IMAGE_GRAYSCALE));
 }
