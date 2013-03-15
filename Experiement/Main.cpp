@@ -416,11 +416,11 @@ int main()
     //EdgeMatchingCrossValidation("oracles_png", CM());
     //printf("\n");
 
-    EdgeMatchingCrossValidation("oracles_png", OCM());
-    printf("\n");
-
-    //EdgeMatchingCrossValidation("oracles_png", Hitmap());
+    //EdgeMatchingCrossValidation("oracles_png", OCM());
     //printf("\n");
+
+    EdgeMatchingCrossValidation("oracles_png", Hitmap());
+    printf("\n");
 
     //LocalFeatureCrossValidation("oracles_png", Test(), 500);
     //printf("\n");

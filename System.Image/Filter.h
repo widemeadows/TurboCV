@@ -213,56 +213,50 @@ namespace System
                 A.convertTo(A, ddepth);
                 B.convertTo(B, ddepth);
             }
+            CV_Assert(B.rows % 2 != 0 && B.cols % 2 != 0);
+
+            int actualType = ddepth == -1 ? A.type() : ddepth;
 
             // reallocate the output array if needed
-            if (ddepth == -1)
-                dst.create(A.rows, A.cols, A.type());
-            else
-                dst.create(A.rows, A.cols, ddepth);
+            dst.create(A.rows, A.cols, actualType);
             Mat C = dst.getMat();
+
+            Size imgSize = Size(A.cols + B.cols - 1, A.rows + B.rows - 1);
 
             // calculate the size of DFT transform
             Size dftSize;
-            dftSize.width = getOptimalDFTSize(A.cols + B.cols - 1);
-            dftSize.height = getOptimalDFTSize(A.rows + B.rows - 1);
+            dftSize.width = getOptimalDFTSize(imgSize.width);
+            dftSize.height = getOptimalDFTSize(imgSize.height);
 
-            // allocate temporary buffers and initialize them with 0's
-            Mat tempA, tempB;
-            if (ddepth == -1)
-            {
-                tempA = Mat(dftSize, A.type(), Scalar::all(0));
-                tempB = Mat(dftSize, B.type(), Scalar::all(0));
-            }
-            else
-            {
-                tempA = Mat(dftSize, ddepth, Scalar::all(0));
-                tempB = Mat(dftSize, ddepth, Scalar::all(0));
-            }
-
-            // copy A and B to the top-left corners of tempA and tempB, respectively
-            Mat roiA(tempA, Rect(0, 0, A.cols, A.rows));
+            // allocate temporary buffers and initialize them
+            Mat tempA = Mat::zeros(dftSize, actualType);
+            Mat roiA(tempA, Rect(B.cols / 2, B.rows / 2, A.cols, A.rows));
             A.copyTo(roiA);
+            copyMakeBorder(roiA, tempA(Rect(0, 0, imgSize.width, imgSize.height)), 
+                B.rows / 2, B.rows / 2, B.cols / 2, B.cols / 2, 
+                BORDER_DEFAULT | BORDER_ISOLATED);
+
+            Mat tempB = Mat::zeros(dftSize, actualType);
             Mat roiB(tempB, Rect(0, 0, B.cols, B.rows));
             B.copyTo(roiB);
 
             // now transform the padded A & B in-place;
             // use "nonzeroRows" hint for faster processing
-            dft(tempA, tempA, 0, A.rows);
+            dft(tempA, tempA, 0, imgSize.height);
             dft(tempB, tempB, 0, B.rows);
 
             // multiply the spectrums;
             // the function handles packed spectrum representations well
-            mulSpectrums(tempA, tempB, tempA, DFT_ROWS);
+            mulSpectrums(tempA, tempB, tempA, 0, true);
 
             // transform the product back from the frequency domain.
             // Even though all the result rows will be non-zero,
             // you need only the first C.rows of them, and thus you
             // pass nonzeroRows == C.rows
-            dft(tempA, tempA, DFT_INVERSE + DFT_SCALE, tempA.rows);
+            dft(tempA, tempA, DFT_INVERSE + DFT_SCALE, C.rows);
 
             // now copy the result back to C.
-            tempA(Rect((tempA.cols - C.cols) / 2, (tempA.rows - C.rows) / 2, 
-                C.cols, C.rows)).copyTo(C);
+            tempA(Rect(0, 0, C.cols, C.rows)).copyTo(C);
         }
 
         class ConvolveDFTWithCache
@@ -276,146 +270,58 @@ namespace System
                     A.convertTo(A, ddepth);
                     B.convertTo(B, ddepth);
                 }
+                CV_Assert(B.rows % 2 != 0 && B.cols % 2 != 0);
+
+                int actualType = ddepth == -1 ? A.type() : ddepth;
 
                 // reallocate the output array if needed
-                if (ddepth == -1)
-                    dst.create(A.rows, A.cols, A.type());
-                else
-                    dst.create(A.rows, A.cols, ddepth);
+                dst.create(A.rows, A.cols, actualType);
                 Mat C = dst.getMat();
+
+                Size imgSize = Size(A.cols + B.cols - 1, A.rows + B.rows - 1);
 
                 // calculate the size of DFT transform
                 Size dftSize;
-                dftSize.width = getOptimalDFTSize(A.cols + B.cols - 1);
-                dftSize.height = getOptimalDFTSize(A.rows + B.rows - 1);
+                dftSize.width = getOptimalDFTSize(imgSize.width);
+                dftSize.height = getOptimalDFTSize(imgSize.height);
 
-                // allocate temporary buffers and initialize them with 0's
-                if (ddepth == -1)
-                {
-                    tempA.create(dftSize, A.type());
-                    tempA = Scalar::all(0);
-                    tempB.create(dftSize, B.type());
-                    tempB = Scalar::all(0);
-                }
-                else
-                {
-                    tempA.create(dftSize, ddepth);
-                    tempA = Scalar::all(0);
-                    tempB.create(dftSize, ddepth);
-                    tempB = Scalar::all(0);
-                }
+                // allocate temporary buffers and initialize them
+                tempA.create(dftSize, actualType);
+                tempA = Scalar::all(0);
 
-                // copy A and B to the top-left corners of tempA and tempB, respectively
-                Mat roiA(tempA, Rect(0, 0, A.cols, A.rows));
+                Mat roiA(tempA, Rect(B.cols / 2, B.rows / 2, A.cols, A.rows));
                 A.copyTo(roiA);
+                copyMakeBorder(roiA, tempA(Rect(0, 0, imgSize.width, imgSize.height)), 
+                    B.rows / 2, B.rows / 2, B.cols / 2, B.cols / 2, 
+                    BORDER_DEFAULT | BORDER_ISOLATED);
+
+                tempB.create(dftSize, actualType);
+                tempB = Scalar::all(0);
+
                 Mat roiB(tempB, Rect(0, 0, B.cols, B.rows));
                 B.copyTo(roiB);
 
                 // now transform the padded A & B in-place;
                 // use "nonzeroRows" hint for faster processing
-                dft(tempA, tempA, 0, A.rows);
+                dft(tempA, tempA, 0, imgSize.height);
                 dft(tempB, tempB, 0, B.rows);
 
                 // multiply the spectrums;
                 // the function handles packed spectrum representations well
-                mulSpectrums(tempA, tempB, tempA, 0);
+                mulSpectrums(tempA, tempB, tempA, 0, true);
 
                 // transform the product back from the frequency domain.
                 // Even though all the result rows will be non-zero,
                 // you need only the first C.rows of them, and thus you
                 // pass nonzeroRows == C.rows
-                dft(tempA, tempA, DFT_INVERSE + DFT_SCALE, tempA.rows);
+                dft(tempA, tempA, DFT_INVERSE + DFT_SCALE, C.rows);
 
                 // now copy the result back to C.
-                tempA(Rect((tempA.cols - C.cols) / 2, (tempA.rows - C.rows) / 2, 
-                    C.cols, C.rows)).copyTo(C);
+                tempA(Rect(0, 0, C.cols, C.rows)).copyTo(C);
             }
 
         private:
             Mat tempA, tempB;
         };
-
-        void crossCorr( const Mat& img, const Mat& _kernel, Mat& corr,
-            Size corrsize, int ctype,
-            Point anchor, double delta, int borderType )
-        {
-            const double blockScale = 4.5;
-            const int minBlockSize = 256;
-            std::vector<uchar> buf;
-
-            Mat kernel = _kernel;
-            int depth = img.depth(), cn = img.channels();
-            int tdepth = kernel.depth(), tcn = kernel.channels();
-            int cdepth = CV_MAT_DEPTH(ctype), ccn = CV_MAT_CN(ctype);
-
-            corr.create(corrsize, ctype);
-
-            int maxDepth = depth > CV_8S ? CV_64F : std::max(std::max(CV_32F, tdepth), cdepth);
-            Size blocksize, dftsize;
-
-            dftsize.width = 320;
-            dftsize.height = 320;
-
-            blocksize.width = 256;
-            blocksize.height = 256;
-
-            Mat dftTempl( dftsize, maxDepth );
-            Mat dftImg( dftsize, maxDepth );
-
-            int i, k, bufSize = 0;
-            buf.resize(bufSize);
-
-            // compute DFT of each template plane
-            Mat src = kernel;
-            Mat dst(dftTempl, Rect(0, 0, dftsize.width, dftsize.height));
-            Mat dst1(dftTempl, Rect(0, 0, kernel.cols, kernel.rows));
-
-            if( dst.cols > kernel.cols )
-            {
-                Mat part(dst, Range(0, kernel.rows), Range(kernel.cols, dst.cols));
-                part = Scalar::all(0);
-            }
-            dft(dst, dst, 0, kernel.rows);
-
-            Size wholeSize = img.size();
-            Point roiofs(0,0);
-            Mat img0 = img;
-
-            if( !(borderType & BORDER_ISOLATED) )
-            {
-                img.locateROI(wholeSize, roiofs);
-                img0.adjustROI(0, 0, 0, 0);
-            }
-            borderType |= BORDER_ISOLATED;
-
-            // calculate correlation by blocks
-            int x = 0;
-            int y = 0;
-
-            Size bsz(256, 256);
-            Size dsz(256 + 54, 256 + 54);
-            int x0 = -27, y0 = -27;
-            int x1 = 0, y1 = 0;
-            int x2 = 256;
-            int y2 = 256;
-            Mat src0(img0, Range(y1, y2), Range(x1, x2));
-            Mat dst(dftImg, Rect(0, 0, 256 + 54, 256 + 54));
-            Mat dst1(dftImg, Rect(27, 27, 256, 256));
-            Mat cdst(corr, Rect(0, 0, 256, 256));
-
-            Mat src = src0;
-            dftImg = Scalar::all(0);
-
-            copyMakeBorder(dst1, dst, 27, 27, 27, 27, borderType);
-
-            dft( dftImg, dftImg, 0, dsz.height );
-            Mat dftTempl1(dftTempl, Rect(0, tcn > 1 ? k*dftsize.height : 0,
-                dftsize.width, dftsize.height));
-            mulSpectrums(dftImg, dftTempl1, dftImg, 0, true);
-            dft( dftImg, dftImg, DFT_INVERSE + DFT_SCALE, bsz.height );
-
-            src = dftImg(Rect(0, 0, bsz.width, bsz.height));
-            src.convertTo(cdst, cdepth, 1, delta);
-        }
     }
 }

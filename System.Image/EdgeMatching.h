@@ -93,7 +93,6 @@ namespace System
             Info GetFeatureWithoutPreprocess(const Mat& sketchImage);
 
             static double GetDistance(const Info& u, const Info& v);
-
             vector<vector<Point>> GetChannels(const Mat& sketchImage, int orientNum);
 
             virtual String GetName() const { return "ocm"; };
@@ -153,6 +152,10 @@ namespace System
                 Mat kernel = getGaborKernel(Size(ksize, ksize), sigma, 
                     CV_PI / orientNum * i, lambda, 1, 0);
 
+                // We don't use filter2D() here since multi-thread programs will 
+                // degenerate into single-thread ones if filter2D() is used frequently.
+                // We guess it's because filter2D() will allocate and then deallocate
+                // lots of Mat structures, which requires mutually exclusive system calls.
                 convolve2D(sketchImage, cache[i], CV_64F, kernel);
                 cache[i] = abs(cache[i]);
             }
@@ -221,25 +224,28 @@ namespace System
         public:
             typedef Vector<Tuple<vector<Point>, Mat>> Info;
 
-            Info GetFeatureWithPreprocess(const Mat& sketchImage, bool thinning = false) const;
-            Info GetFeatureWithoutPreprocess(const Mat& sketchImage) const;
+            Info GetFeatureWithPreprocess(const Mat& sketchImage, bool thinning = false);
+            Info GetFeatureWithoutPreprocess(const Mat& sketchImage);
 
             static double GetDistance(const Info& u, const Info& v);
-
-            static vector<vector<Point>> GetChannels(const Mat& sketchImage, int orientNum);
+            vector<vector<Point>> GetChannels(const Mat& sketchImage, int orientNum);
 
             virtual String GetName() const { return "hitmap"; };
 
         protected:
-            virtual Info Transform(const Mat& sketchImage, double maxDistance = 22) const;
+            virtual Info Transform(const Mat& sketchImage, double maxDistance = 22);
+
+        private:
+            vector<Mat> cache;
+            ConvolveDFTWithCache convolve2D;
         };
 
-        inline Hitmap::Info Hitmap::GetFeatureWithPreprocess(const Mat& sketchImage, bool thinning) const
+        inline Hitmap::Info Hitmap::GetFeatureWithPreprocess(const Mat& sketchImage, bool thinning)
         {
             return Transform(Preprocess(sketchImage, thinning));
         }
 
-        inline Hitmap::Info Hitmap::GetFeatureWithoutPreprocess(const Mat& sketchImage) const
+        inline Hitmap::Info Hitmap::GetFeatureWithoutPreprocess(const Mat& sketchImage)
         {
             return Transform(sketchImage);
         }
@@ -273,17 +279,18 @@ namespace System
         inline vector<vector<Point>> Hitmap::GetChannels(const Mat& sketchImage, int orientNum)
         {
             int sigma = 9, lambda = 24, ksize = sigma * 6 + 1;
-            vector<Mat> gaborResponses;
 
             for (int i = 0; i < orientNum; i++)
             {
                 Mat kernel = getGaborKernel(Size(ksize, ksize), sigma, 
                     CV_PI / orientNum * i, lambda, 1, 0);
 
-                Mat gaborResponse;
-                filter2D(sketchImage, gaborResponse, CV_64F, kernel);
-
-                gaborResponses.push_back(abs(gaborResponse));
+                // We don't use filter2D() here since multi-thread programs will 
+                // degenerate into single-thread ones if filter2D() is used frequently.
+                // We guess it's because filter2D() will allocate and then deallocate
+                // lots of Mat structures, which requires mutually exclusive system calls.
+                convolve2D(sketchImage, cache[i], CV_64F, kernel);
+                cache[i] = abs(cache[i]);
             }
 
             vector<Point> points = GetEdgels(sketchImage);
@@ -296,9 +303,9 @@ namespace System
 
                 for (int j = 0; j < orientNum; j++)
                 {
-                    if (gaborResponses[j].at<double>(points[i].y, points[i].x) > maxResponse)
+                    if (cache[j].at<double>(points[i].y, points[i].x) > maxResponse)
                     {
-                        maxResponse = gaborResponses[j].at<double>(points[i].y, points[i].x);
+                        maxResponse = cache[j].at<double>(points[i].y, points[i].x);
                         index = j;
                     }
                 }
@@ -310,7 +317,7 @@ namespace System
             return channels;
         }
 
-        inline Hitmap::Info Hitmap::Transform(const Mat& sketchImage, double maxDistance) const
+        inline Hitmap::Info Hitmap::Transform(const Mat& sketchImage, double maxDistance)
         {
             vector<vector<Point>> channels = GetChannels(sketchImage, 6);
             Info result(channels.size());
