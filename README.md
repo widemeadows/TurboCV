@@ -17,6 +17,6 @@ TurboCV has functions as follow.
 3. String Processing.  
     This module provides some string related APIs that are missing in the C++ Standard Library. For example, split and type conversion (int to string, string to int, etc).
 
-This toolkit is written **for fun**. Its purpose is to simplify development of "demo programs", not "commercial softwares". Therefore, it may not contains much code to process exceptions and some unimportant details. In addition, the efficiency is not a priority.
+This toolkit is written **for fun**. Its purpose is to simplify development of "demo programs", not "commercial softwares". Therefore, it won't contain many codes to process exceptions or some unimportant details. In addition, the efficiency is not a priority.
 
 ~~*Currently there is no code here. I will commit them after some code cleaning.*~~
