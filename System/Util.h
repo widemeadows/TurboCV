@@ -8,6 +8,21 @@ using namespace std;
 
 namespace System
 {
+    template<typename RandomAccessIterator, typename T> 
+    bool Contains(const RandomAccessIterator& begin, const RandomAccessIterator& end, const T& item)
+    {
+        RandomAccessIterator itr = begin;
+
+        while (itr != end)
+        {
+            if (*itr == item)
+                return true;
+            itr++;
+        }
+
+        return false;
+    }
+
     inline vector<size_t> RandomPermutate(size_t cardNum, size_t pickUpNum)
     {
         assert(cardNum >= pickUpNum);

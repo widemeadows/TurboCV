@@ -267,21 +267,21 @@ namespace System
     class Vector
     {
     public:
-        Vector() : ptr(new vector<T>()) {};
-        Vector(size_t size) : ptr(new vector<T>(size)) {};
+        Vector() : ptr(new vector<T>()) {}
+        Vector(size_t size) : ptr(new vector<T>(size)) {}
 
-        T& operator[](int index) { return (*ptr)[index]; };
-        const T& operator[](int index) const { return (*ptr)[index]; };
+        T& operator[](int index) { return (*ptr)[index]; }
+        const T& operator[](int index) const { return (*ptr)[index]; }
 
         operator const vector<T>&() const { return *ptr; }
 
-        typename vector<T>::iterator begin() const { return ptr->begin(); };
-        typename vector<T>::iterator end() const { return ptr->end(); };
+        typename vector<T>::iterator begin() const { return ptr->begin(); }
+        typename vector<T>::iterator end() const { return ptr->end(); }
 
-        void push_back(const T& item) { ptr->push_back(item); };
-        void clear() { ptr->clear(); };
+        void push_back(const T& item) { ptr->push_back(item); }
+        void clear() { ptr->clear(); }
 
-        size_t size() const { return ptr->size(); };
+        size_t size() const { return ptr->size(); }
 
     private:
         ThreadUnsafeSmartPtr<vector<T>> ptr;

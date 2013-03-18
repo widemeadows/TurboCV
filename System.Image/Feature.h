@@ -449,20 +449,20 @@ namespace System
 
         ///////////////////////////////////////////////////////////////////////
 
-        // LoG-SHOG
-        class ASHOG : public LocalFeature
+        // Log-SHOG
+        class LogSHOG : public LocalFeature
         {
         protected:
             virtual LocalFeatureVec GetFeature(const Mat& sketchImage) const;
 
-            virtual String GetName() const { return "ashog"; };
+            virtual String GetName() const { return "lshog"; };
 
         private:
             static Descriptor GetDescriptor(const vector<Mat>& orientChannels, 
                 const Point& pivot, int blockSize, int cellNum);
         };
 
-        inline LocalFeatureVec ASHOG::GetFeature(const Mat& sketchImage) const
+        inline LocalFeatureVec LogSHOG::GetFeature(const Mat& sketchImage) const
         {
             int orientNum = 4, cellNum = 4, scaleNum = 15;
             double sigmaInit = 0.7, sigmaStep = 1.2;
@@ -498,7 +498,7 @@ namespace System
             return feature;
         }
 
-        inline Descriptor ASHOG::GetDescriptor(const vector<Mat>& orientChannels, 
+        inline Descriptor LogSHOG::GetDescriptor(const vector<Mat>& orientChannels, 
             const Point& pivot, int blockSize, int cellNum)
         {
             int height = orientChannels[0].rows, 
@@ -701,7 +701,13 @@ namespace System
 
             vector<double> distances = Geometry::EulerDistance(center, points);
             vector<double> angles = Geometry::Angle(center, points);
-            double mean = Math::Sum(distances) / (pointNum - 1); // Except pivot
+            
+            double mean;
+            if (Contains(points.begin(), points.end(), center))
+                mean = Math::Sum(distances) / (pointNum - 1); // Except center
+            else
+                mean = Math::Sum(distances) / pointNum;
+
             for (int i = 0; i < pointNum; i++)
                 distances[i] /= mean;
 
@@ -841,10 +847,10 @@ namespace System
         protected:
             virtual LocalFeatureVec GetFeature(const Mat& sketchImage) const;
 
-            virtual String GetName() const { return "scp"; };
+            virtual String GetName() const { return "psc"; };
 
         private:
-            static Descriptor GetDescriptor(const Point& pivot, const vector<Point>& pivots,
+            static Descriptor GetDescriptor(const Point& pivot, const vector<Point>& points,
                 const vector<double>& logDistances, int angleNum);
         };
 
@@ -867,14 +873,14 @@ namespace System
             return feature;
         }
 
-        inline Descriptor PSC::GetDescriptor(const Point& pivot, const vector<Point>& pivots,
+        inline Descriptor PSC::GetDescriptor(const Point& pivot, const vector<Point>& points,
             const vector<double>& logDistances, int angleNum)
         {
-            int pivotNum = pivots.size();
+            int pivotNum = points.size();
             assert(pivotNum > 1);
 
-            vector<double> distances = Geometry::EulerDistance(pivot, pivots);
-            vector<double> angles = Geometry::Angle(pivot, pivots);
+            vector<double> distances = Geometry::EulerDistance(pivot, points);
+            vector<double> angles = Geometry::Angle(pivot, points);
             double mean = Math::Sum(distances) / (pivotNum - 1); // Except pivot
             for (int i = 0; i < pivotNum; i++)
                 distances[i] /= mean;
@@ -884,7 +890,7 @@ namespace System
 
             for (int i = 0; i < pivotNum; i++)
             {
-                if (pivots[i] == pivot)
+                if (points[i] == pivot)
                     continue;
 
                 for (int j = 0; j < distanceNum; j++)
@@ -959,7 +965,13 @@ namespace System
 
             vector<double> distances = Geometry::EulerDistance(center, pivots);
             vector<double> angles = Geometry::Angle(center, pivots);
-	        double mean = Math::Sum(distances) / (pivotNum - 1); // Except pivot
+
+	        double mean;
+            if (Contains(pivots.begin(), pivots.end(), center))
+                mean = Math::Sum(distances) / (pivotNum - 1); // Except pivot
+            else
+                mean = Math::Sum(distances) / pivotNum;
+
 	        for (int i = 0; i < pivotNum; i++)
 		        distances[i] /= mean;
 
@@ -997,6 +1009,95 @@ namespace System
 	        }
 
 	        return descriptor;
+        }
+
+        ///////////////////////////////////////////////////////////////////////
+
+        // Points Based Regularly Sampling Shape Context
+        class PRSC : public LocalFeature
+        {
+        protected:
+            virtual LocalFeatureVec GetFeature(const Mat& sketchImage) const;
+
+            virtual String GetName() const { return "prsc"; };
+
+        private:
+            static Descriptor GetDescriptor(const Point& center, 
+                const vector<Point>& points, const vector<double>& logDistances, int angleNum);
+        };
+
+        inline LocalFeatureVec PRSC::GetFeature(const Mat& sketchImage) const
+        {
+            double tmp[] = { 0, 0.125, 0.25, 0.5, 1, 2 };
+            vector<double> logDistances(tmp, tmp + sizeof(tmp) / sizeof(double));
+            int angleNum = 12, sampleNum = 28;
+
+            Mat orientImage = Gradient::GetGradient(sketchImage).Item2();
+            vector<Point> points = GetEdgels(sketchImage); 
+
+            LocalFeatureVec feature;
+            vector<Point> centers = SampleOnGrid(sketchImage.rows, sketchImage.cols, sampleNum);
+            for (Point center : centers)
+            {
+                Descriptor desc = GetDescriptor(center, points, logDistances, angleNum);
+                feature.push_back(desc);
+            }
+
+            return feature;
+        }
+
+        inline Descriptor PRSC::GetDescriptor(const Point& center, 
+            const vector<Point>& points, const vector<double>& logDistances, int angleNum)
+        {
+            int pointNum = points.size();
+            assert(pointNum > 1);
+
+            vector<double> distances = Geometry::EulerDistance(center, points);
+            vector<double> angles = Geometry::Angle(center, points);
+
+            double mean;
+            if (Contains(points.begin(), points.end(), center))
+                mean = Math::Sum(distances) / (pointNum - 1); // Except pivot
+            else
+                mean = Math::Sum(distances) / pointNum;
+
+            for (int i = 0; i < pointNum; i++)
+                distances[i] /= mean;
+
+            int distanceNum = logDistances.size() - 1;
+            Mat bins = Mat::zeros(distanceNum, angleNum, CV_64F);
+
+            for (int i = 0; i < pointNum; i++)
+            {
+                if (points[i] == center)
+                    continue;
+
+                for (int j = 0; j < distanceNum; j++)
+                {
+                    if (distances[i] >= logDistances[j] && distances[i] < logDistances[j + 1])
+                    {
+                        int a = FindBinIndex(angles[i], 0, 2 * CV_PI, angleNum, true);
+                        bins.at<double>(j, a)++;
+
+                        break;
+                    }
+                }
+            }
+
+            Descriptor descriptor;
+            for (int i = 0; i < distanceNum; i++)
+            {
+                vector<double> ring;
+                for (int j = 0; j < angleNum; j++)
+                    ring.push_back(bins.at<double>(i, j));
+
+                NormOneNormalize(ring.begin(), ring.end());
+
+                for (auto item : ring)
+                    descriptor.push_back(item);
+            }
+
+            return descriptor;
         }
 
         ///////////////////////////////////////////////////////////////////////
