@@ -390,7 +390,7 @@ void LocalFeatureTest(const System::String& imageSetPath, const LocalFeature& fe
 
     vector<LocalFeature_f> features(imageNum);
     printf("Compute " + feature.GetName() + "...\n");
-    //#pragma omp parallel for
+    #pragma omp parallel for
     for (int i = 0; i < imageNum; i++)
         Convert(feature.GetFeatureWithPreprocess(images[i].Item1(), true), features[i]);
 
@@ -488,6 +488,9 @@ void Batch()
     LocalFeatureCrossValidation("oracles_png", LogSHOG(), 500);
     printf("\n");
 
+    GlobalFeatureCrossValidation("oracles_png", GHOG());
+    printf("\n");
+
     LocalFeatureCrossValidation("oracles_png", HOOSC(), 1000);
     printf("\n");
 
@@ -521,11 +524,36 @@ void Batch()
 
 int main()
 {
-    LocalFeatureCrossValidation("oracles_png", RHOOSC(), 1000);
+    LocalFeatureCrossValidation("oracles_png", Test(), 500);
     printf("\n");
 
-    //LocalFeatureTest("oracles_png", PSC(), 1000);
+    //GlobalFeatureCrossValidation("oracles_png", GHOG());
     //printf("\n");
+
+    //LocalFeatureTest("oracles_png", Test(), 1000);
+    //printf("\n");
+
+    //Mat image = Feature::Preprocess(imread("00004.png", CV_LOAD_IMAGE_GRAYSCALE), true);
+
+    //Mat trans = getRotationMatrix2D(Point(image.rows / 2, image.cols / 2), -20, 1);
+    //warpAffine(image, image, trans, image.size());
+    //threshold(image, image, 0.1, 1, CV_THRESH_BINARY);
+    //thin(image, image);
+    //threshold(image, image, 0.1, 255, CV_THRESH_BINARY);
+
+    //vector<Point2f> points;
+    //goodFeaturesToTrack(image, points, 300, 0.05, 3, noArray(), 5);
+
+    //vector<Point> points = SampleFromPoints(GetEdgels(image), (int)(GetEdgels(image).size() * 0.33));
+
+    //Mat tmp;
+    //cvtColor(image, tmp, CV_GRAY2BGR);
+    //for (auto point : points)
+    //{
+    //    circle(tmp, point, 1, Scalar(0, 255, 0));
+    //}
+    //imshow("win", tmp);
+    //waitKey(0);
 
     //system("pause");
 }

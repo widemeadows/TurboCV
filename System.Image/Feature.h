@@ -140,124 +140,47 @@ namespace System
             virtual LocalFeatureVec GetFeature(const Mat& sketchImage) const;
 
             virtual String GetName() const { return "test"; };
-
-        private:
-            static vector<vector<Point>> GetChannels(const Mat& sketchImage, int orientNum)
-            {
-                int sigma = 9, lambda = 24, ksize = sigma * 6 + 1;
-                vector<Mat> gaborResponses;
-
-                for (int i = 0; i < orientNum; i++)
-                {
-                    Mat kernel = getGaborKernel(Size(ksize, ksize), sigma, 
-                        CV_PI / orientNum * i, lambda, 1, 0);
-
-                    Mat gaborResponse;
-                    filter2D(sketchImage, gaborResponse, CV_64F, kernel);
-
-                    gaborResponses.push_back(abs(gaborResponse));
-                }
-
-                vector<Point> points = GetEdgels(sketchImage);
-
-                vector<vector<Point>> channels(orientNum);
-                for (int i = 0; i < points.size(); i++)
-                {
-                    double maxResponse = -INF;
-                    int index = -1;
-
-                    for (int j = 0; j < orientNum; j++)
-                    {
-                        if (gaborResponses[j].at<double>(points[i].y, points[i].x) > maxResponse)
-                        {
-                            maxResponse = gaborResponses[j].at<double>(points[i].y, points[i].x);
-                            index = j;
-                        }
-                    }
-
-                    assert(index >= 0 && index < orientNum);
-                    channels[index].push_back(points[i]);
-                }
-
-                return channels;
-            }
-
-            static Descriptor GetDescriptor(const Point& pivot, const vector<Point>& pivots,
-                const vector<double>& logDistances, int angleNum);
         };
 
         inline LocalFeatureVec Test::GetFeature(const Mat& sketchImage) const
         {
-            double tmp[] = { 0, 0.125, 0.25, 0.5, 1, 2 };
-            vector<double> logDistances(tmp, tmp + sizeof(tmp) / sizeof(double));
-            int angleNum = 12;
+            int orientNum = 6, blockSize = 48;
 
-            vector<vector<Point>> channels = GetChannels(sketchImage, 6);
-            LocalFeatureVec feature;
-            
-            for (int i = 0; i < 6; i++)
+            int kernelSize = blockSize * 2 + 1;
+            Mat tentKernel(kernelSize, kernelSize, CV_64F);
+            for (int i = 0; i < kernelSize; i++)
             {
-                vector<Point>& points = channels[i];
-                if (points.size() < 10)
-                    continue;
-
-                vector<Point> pivots = SampleFromPoints(points, points.size() * 0.33);
-                for (int j = 0; j < pivots.size(); j++)
+                for (int j = 0; j < kernelSize; j++)
                 {
-                    Descriptor descriptor = GetDescriptor(pivots[j], points, logDistances, angleNum);
-                    feature.push_back(descriptor);
+                    double ratio = 1 - sqrt((i - blockSize) * (i - blockSize) + 
+                        (j - blockSize) * (j - blockSize)) / blockSize;
+                    if (ratio < 0)
+                        ratio = 0;
+
+                    tentKernel.at<double>(i, j) = ratio;
                 }
+            }
+
+            vector<Mat> orientChannels = Gradient::GetOrientChannels(sketchImage, orientNum);
+            vector<Mat> filteredOrientChannels(orientNum);
+            for (int i = 0; i < orientNum; i++)
+                filter2D(orientChannels[i], filteredOrientChannels[i], -1, tentKernel);
+
+            vector<Point> points = GetEdgels(sketchImage);
+            vector<Point> pivots = SampleFromPoints(points, (int)(points.size() * 0.33));
+
+            LocalFeatureVec feature;
+            for (int i = 0; i < pivots.size(); i++)
+            {
+                Descriptor desc;
+
+                for (int j = 0; j < orientNum; j++)
+                    desc.push_back(filteredOrientChannels[j].at<double>(pivots[j].y, pivots[j].x));
+
+                feature.push_back(desc);
             }
 
             return feature;
-        }
-
-        inline Descriptor Test::GetDescriptor(const Point& pivot, const vector<Point>& pivots,
-            const vector<double>& logDistances, int angleNum)
-        {
-            int pivotNum = pivots.size();
-            assert(pivotNum > 1);
-
-            vector<double> distances = Geometry::EulerDistance(pivot, pivots);
-            vector<double> angles = Geometry::Angle(pivot, pivots);
-            double mean = Math::Sum(distances) / (pivotNum - 1); // Except pivot
-            for (int i = 0; i < pivotNum; i++)
-                distances[i] /= mean;
-
-            int distanceNum = logDistances.size() - 1;
-            Mat bins = Mat::zeros(distanceNum, angleNum, CV_64F);
-
-            for (int i = 0; i < pivotNum; i++)
-            {
-                if (pivots[i] == pivot)
-                    continue;
-
-                for (int j = 0; j < distanceNum; j++)
-                {
-                    if (distances[i] >= logDistances[j] && distances[i] < logDistances[j + 1])
-                    {
-                        int a = FindBinIndex(angles[i], 0, 2 * CV_PI, angleNum, true);
-                        bins.at<double>(j, a)++;
-
-                        break;
-                    }
-                }
-            }
-
-            Descriptor descriptor;
-            for (int i = 0; i < distanceNum; i++)
-            {
-                vector<double> ring;
-                for (int j = 0; j < angleNum; j++)
-                    ring.push_back(bins.at<double>(i, j));
-
-                NormOneNormalize(ring.begin(), ring.end());
-
-                for (auto item : ring)
-                    descriptor.push_back(item);
-            }
-
-            return descriptor;
         }
 
         ///////////////////////////////////////////////////////////////////////
@@ -555,6 +478,50 @@ namespace System
 
             NormTwoNormalize(desc.begin(), desc.end());
             return desc;
+        }
+
+        ///////////////////////////////////////////////////////////////////////
+
+        // Global HOG
+        class GHOG : public GlobalFeature
+        {
+        protected:
+            virtual GlobalFeatureVec GetFeature(const Mat& sketchImage) const;
+
+            virtual String GetName() const { return "ghog"; };
+        };
+
+        inline GlobalFeatureVec GHOG::GetFeature(const Mat& sketchImage) const
+        {
+            int orientNum = 6, blockSize = 48;
+
+            int kernelSize = blockSize * 2 + 1;
+            Mat tentKernel(kernelSize, kernelSize, CV_64F);
+            for (int i = 0; i < kernelSize; i++)
+            {
+                for (int j = 0; j < kernelSize; j++)
+                {
+                    double ratio = 1 - sqrt((i - blockSize) * (i - blockSize) + 
+                        (j - blockSize) * (j - blockSize)) / blockSize;
+                    if (ratio < 0)
+                        ratio = 0;
+
+                    tentKernel.at<double>(i, j) = ratio;
+                }
+            }
+
+            vector<Mat> orientChannels = Gradient::GetOrientChannels(sketchImage, orientNum);
+            vector<Mat> filteredOrientChannels(orientNum);
+            for (int i = 0; i < orientNum; i++)
+                filter2D(orientChannels[i], filteredOrientChannels[i], -1, tentKernel);
+
+            GlobalFeatureVec feature;
+            for (int i = blockSize / 2 - 1; i < sketchImage.rows; i += blockSize / 2)
+                for (int j = blockSize / 2 - 1; j < sketchImage.cols; j += blockSize / 2)
+                    for (int k = 0; k < orientNum; k++)
+                        feature.push_back(filteredOrientChannels[k].at<double>(i, j));
+
+            return feature;
         }
 
         ///////////////////////////////////////////////////////////////////////
@@ -876,19 +843,19 @@ namespace System
         inline Descriptor PSC::GetDescriptor(const Point& pivot, const vector<Point>& points,
             const vector<double>& logDistances, int angleNum)
         {
-            int pivotNum = points.size();
-            assert(pivotNum > 1);
+            int pointNum = points.size();
+            assert(pointNum > 1);
 
             vector<double> distances = Geometry::EulerDistance(pivot, points);
             vector<double> angles = Geometry::Angle(pivot, points);
-            double mean = Math::Sum(distances) / (pivotNum - 1); // Except pivot
-            for (int i = 0; i < pivotNum; i++)
+            double mean = Math::Sum(distances) / (pointNum - 1);
+            for (int i = 0; i < pointNum; i++)
                 distances[i] /= mean;
 
             int distanceNum = logDistances.size() - 1;
             Mat bins = Mat::zeros(distanceNum, angleNum, CV_64F);
 
-            for (int i = 0; i < pivotNum; i++)
+            for (int i = 0; i < pointNum; i++)
             {
                 if (points[i] == pivot)
                     continue;
