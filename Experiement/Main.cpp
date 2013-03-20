@@ -524,11 +524,11 @@ void Batch()
 
 int main()
 {
-    LocalFeatureCrossValidation("oracles_png", Test(), 500);
-    printf("\n");
-
-    //GlobalFeatureCrossValidation("oracles_png", GHOG());
+    //LocalFeatureCrossValidation("oracles_png", Test(), 500);
     //printf("\n");
+
+    GlobalFeatureCrossValidation("oracles_png", GHOG());
+    printf("\n");
 
     //LocalFeatureTest("oracles_png", Test(), 1000);
     //printf("\n");
@@ -541,18 +541,76 @@ int main()
     //thin(image, image);
     //threshold(image, image, 0.1, 255, CV_THRESH_BINARY);
 
-    //vector<Point2f> points;
-    //goodFeaturesToTrack(image, points, 300, 0.05, 3, noArray(), 5);
+    /*vector<Point> points = GetEdgels(image);
+    vector<int> xCount(image.cols);
 
-    //vector<Point> points = SampleFromPoints(GetEdgels(image), (int)(GetEdgels(image).size() * 0.33));
+    for (auto point : points)
+        xCount[point.x]++;
 
-    //Mat tmp;
-    //cvtColor(image, tmp, CV_GRAY2BGR);
+    for (int i = 1; i < xCount.size(); i++)
+        xCount[i] += xCount[i - 1];
+
+    int blockNum = 4;
+    double xStep = xCount.back() / (double)blockNum;
+
+    vector<int> xSep(blockNum + 1);
+    int tmp = 1;
+    for (int i = 0; i < xCount.size(); i++)
+    {
+        if (xCount[i] >= tmp * xStep)
+        {
+            xSep[tmp++] = i;
+
+            if (tmp == blockNum)
+                break;
+        }
+    }
+    xSep[blockNum] = image.cols - 1;
+
+    Mat ySep(blockNum + 1, blockNum, CV_32S);
+    for (int i = 1; i < xSep.size(); i++)
+    {
+        int prevSep = xSep[i - 1], curSep = xSep[i];
+
+        vector<int> yCount(image.rows);
+        for (auto point : points)
+        {
+            if (prevSep <= point.x && point.x < curSep)
+                yCount[point.y]++;
+        }
+
+        for (int j = 1; j < yCount.size(); j++)
+            yCount[j] += yCount[j - 1];
+
+        double yStep = yCount.back() / (double)blockNum;
+        int tmp = 1;
+        for (int j = 0; j < yCount.size(); j++)
+        {
+            if (yCount[j] >= tmp * yStep)
+            {
+                ySep.at<int>(tmp++, i - 1) = j;
+
+                if (tmp == blockNum)
+                    break;
+            }
+        }
+    }
+
+    cvtColor(image, image, CV_GRAY2BGR);
+
+    for (int i = 1; i < xSep.size() - 1; i++)
+        line(image, Point(xSep[i], 0), Point(xSep[i], image.rows - 1), Scalar(0, 255, 0));
+
+    for (int i = 1; i < ySep.rows - 1; i++)
+        for (int j = 0; j < ySep.cols; j++)
+            line(image, Point(xSep[j], ySep.at<int>(i, j)), Point(xSep[j + 1], ySep.at<int>(i, j)), Scalar(0, 255, 0));*/
+
     //for (auto point : points)
     //{
     //    circle(tmp, point, 1, Scalar(0, 255, 0));
     //}
-    //imshow("win", tmp);
+
+    //imshow("win", image);
     //waitKey(0);
 
     //system("pause");
