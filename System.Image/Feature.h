@@ -134,106 +134,135 @@ namespace System
 
         ///////////////////////////////////////////////////////////////////////
 
-        class Test : public GlobalFeature
+        class Test : public LocalFeature
         {
         protected:
-            virtual GlobalFeatureVec GetFeature(const Mat& sketchImage) const;
+            virtual LocalFeatureVec GetFeature(const Mat& sketchImage) const;
 
             virtual String GetName() const { return "test"; };
+
+        private:
+            static Descriptor GetDescriptor(const vector<Mat>& filteredOrientImages, 
+                const Point& center, int blockSize, int cellNum);
+
+            static vector<Mat> GetChannels(const Mat& sketchImage, int orientNum)
+            {
+                int sigma = 4, lambda = 10, ksize = sigma * 6 + 1;
+                vector<Mat> cache(orientNum);
+
+                //int ksize = 9, halfSize = ksize / 2;
+                for (int i = 0; i < orientNum; i++)
+                {
+                    //Mat kernel = Mat::zeros(ksize, ksize, CV_64F);
+                    //double beginOrient = CV_PI / orientNum * (i - 0.5),
+                    //    endOrient = CV_PI / orientNum * (i + 0.5);
+
+                    //for (int j = 0; j < kernel.rows; j++)
+                    //{
+                    //    for (int k = 0; k < kernel.cols; k++)
+                    //    {
+                    //        if (Geometry::EulerDistance(Point(k, j), Point(halfSize, halfSize)) > halfSize)
+                    //            continue;
+
+                    //        double angle = Geometry::Angle(Point(k, j), Point(halfSize, halfSize));
+
+                    //        if (angle >= beginOrient && angle < endOrient)
+                    //            kernel.at<double>(j, k) = 1;
+
+                    //        angle -= CV_PI;
+                    //        if (angle >= beginOrient && angle < endOrient)
+                    //            kernel.at<double>(j, k) = 1;
+
+                    //        angle -= CV_PI;
+                    //        if (angle >= beginOrient && angle < endOrient)
+                    //            kernel.at<double>(j, k) = 1;
+                    //    }
+                    //}
+
+                    Mat kernel = getGaborKernel(Size(ksize, ksize), sigma, 
+                        CV_PI / orientNum * i, lambda, 1, 0);
+
+                    filter2D(sketchImage, cache[i], CV_64F, kernel);
+                    cache[i] = abs(cache[i]);
+                }
+
+                return cache;
+            }
         };
 
-        inline GlobalFeatureVec Test::GetFeature(const Mat& sketchImage) const
+        inline LocalFeatureVec Test::GetFeature(const Mat& sketchImage) const
         {
-            int orientNum = 8, blockNum = 3;
+            int orientNum = 9, sampleNum = 28, blockSize = 84, cellNum = 4;
 
-            vector<Point> points = GetEdgels(sketchImage);
-            vector<int> xCount(sketchImage.cols);
-
-            for (auto point : points)
-                xCount[point.x]++;
-            for (int i = 1; i < xCount.size(); i++)
-                xCount[i] += xCount[i - 1];
-
-            double xStep = xCount.back() / (double)blockNum;
-            vector<int> xSep(blockNum + 1);
-            int tmp = 1;
-            for (int i = 0; i < xCount.size(); i++)
+            int cellSize = blockSize / cellNum, kernelSize = cellSize * 2 + 1;
+            Mat tentKernel(kernelSize, kernelSize, CV_64F);
+            for (int i = 0; i < kernelSize; i++)
             {
-                if (xCount[i] >= tmp * xStep)
+                for (int j = 0; j < kernelSize; j++)
                 {
-                    xSep[tmp++] = i;
-                    if (tmp == blockNum)
-                        break;
-                }
-            }
-            xSep[blockNum] = sketchImage.cols - 1;
+                    double ratio = 1 - sqrt((i - cellSize) * (i - cellSize) + 
+                        (j - cellSize) * (j - cellSize)) / cellSize;
+                    if (ratio < 0)
+                        ratio = 0;
 
-            Mat ySep = Mat::zeros(blockNum + 1, blockNum, CV_32S);
-            for (int i = 1; i < xSep.size(); i++)
-            {
-                int prevSep = xSep[i - 1], curSep = xSep[i];
-                vector<int> yCount(sketchImage.rows);
-
-                for (auto point : points)
-                {
-                    if (prevSep <= point.x && point.x < curSep)
-                        yCount[point.y]++;
-                }
-                for (int j = 1; j < yCount.size(); j++)
-                    yCount[j] += yCount[j - 1];
-
-                double yStep = yCount.back() / (double)blockNum;
-                int tmp = 1;
-                for (int j = 0; j < yCount.size(); j++)
-                {
-                    if (yCount[j] >= tmp * yStep)
-                    {
-                        ySep.at<int>(tmp++, i - 1) = j;
-                        if (tmp == blockNum)
-                        {
-                            ySep.at<int>(blockNum, i - 1) = sketchImage.rows - 1;
-                            break;
-                        }
-                    }
+                    tentKernel.at<double>(i, j) = ratio;
                 }
             }
 
-            vector<Mat> orientChannels = Gradient::GetOrientChannels(sketchImage, orientNum);
-            GlobalFeatureVec feature;
+            vector<Mat> orientChannels = GetChannels(sketchImage, orientNum);
+            vector<Mat> filteredOrientChannels(orientNum);
+            for (int i = 0; i < orientNum; i++)
+                filter2D(orientChannels[i], filteredOrientChannels[i], -1, tentKernel);
 
-            for (int i = 1; i <= blockNum; i++)
+            LocalFeatureVec feature;
+            vector<Point> centers = SampleOnGrid(sketchImage.rows, sketchImage.cols, sampleNum);
+            for (Point center : centers)
             {
-                for (int j = 1; j <= blockNum; j++)
-                {
-                    for (int k = 0; k < orientNum; k++)
-                    {
-                        int left = xSep[i - 1], 
-                            right = xSep[i],
-                            top = ySep.at<int>(j - 1, i - 1),
-                            bottom = ySep.at<int>(j, i - 1),
-                            centerX = (left + right) / 2,
-                            centerY = (top + bottom) / 2;
-                        double halfW = (right - left) / 2.0, halfH = (bottom - top) / 2.0;
-
-                        double sum = 0;
-                        for (int m = top; m < bottom; m++)
-                        {
-                            for (int n = left; n < right; n++)
-                            {
-                                double ratio = 1 - ((m - centerY) / halfH) * ((n - centerX) / halfW);
-                                if (ratio < 0)
-                                    ratio = 0;
-
-                                sum += orientChannels[k].at<double>(m, n) * ratio;
-                            }
-                        }
-
-                        feature.push_back(sum);
-                    }
-                }
+                Descriptor descriptor = GetDescriptor(filteredOrientChannels, center, 
+                    blockSize, cellNum);
+                feature.push_back(descriptor);
             }
 
             return feature;
+        }
+
+        inline Descriptor Test::GetDescriptor(const vector<Mat>& filteredOrientChannels, 
+            const Point& center, int blockSize, int cellNum)
+        {
+            int height = filteredOrientChannels[0].rows, 
+                width = filteredOrientChannels[0].cols;
+            double cellSize = (double)blockSize / cellNum;
+            int expectedTop = center.y - blockSize / 2,
+                expectedLeft = center.x - blockSize / 2,
+                orientNum = filteredOrientChannels.size();
+            int dims[] = { cellNum, cellNum, orientNum };
+            Mat hist(3, dims, CV_64F);
+
+            for (int i = 0; i < cellNum; i++)
+            {
+                for (int j = 0; j < cellNum; j++)
+                {
+                    for (int k = 0; k < orientNum; k++)
+                    {
+                        int r = (int)(expectedTop + (i + 0.5) * cellSize),
+                            c = (int)(expectedLeft + (j + 0.5) * cellSize);
+
+                        if (r < 0 || r >= height || c < 0 || c >= width)
+                            hist.at<double>(i, j, k) = 0;
+                        else
+                            hist.at<double>(i, j, k) = filteredOrientChannels[k].at<double>(r, c);
+                    }
+                }
+            }
+
+            Descriptor descriptor;
+            for (int i = 0; i < cellNum; i++)
+                for (int j = 0; j < cellNum; j++)
+                    for (int k = 0; k < orientNum; k++)
+                        descriptor.push_back(hist.at<double>(i, j, k));
+
+            NormTwoNormalize(descriptor.begin(), descriptor.end());
+            return descriptor;
         }
 
         ///////////////////////////////////////////////////////////////////////
@@ -546,33 +575,68 @@ namespace System
 
         inline GlobalFeatureVec GHOG::GetFeature(const Mat& sketchImage) const
         {
-            int orientNum = 8, blockSize = 48;
+            int tmp[] = {36, 48, 60, 72};
+            int orientNum = 8;
+            vector<int> blockSizes(tmp, tmp + 4);
 
-            int kernelSize = blockSize * 2 + 1;
-            Mat tentKernel(kernelSize, kernelSize, CV_64F);
-            for (int i = 0; i < kernelSize; i++)
+            vector<vector<Mat>> levels;
+
+            for (int k = 0; k < blockSizes.size(); k++)
             {
-                for (int j = 0; j < kernelSize; j++)
-                {
-                    double ratio = 1 - sqrt((i - blockSize) * (i - blockSize) + 
-                        (j - blockSize) * (j - blockSize)) / blockSize;
-                    if (ratio < 0)
-                        ratio = 0;
+                int blockSize = blockSizes[k];
 
-                    tentKernel.at<double>(i, j) = ratio;
+                int kernelSize = blockSize * 2 + 1;
+                Mat tentKernel(kernelSize, kernelSize, CV_64F);
+                for (int i = 0; i < kernelSize; i++)
+                {
+                    for (int j = 0; j < kernelSize; j++)
+                    {
+                        double ratio = 1 - sqrt((i - blockSize) * (i - blockSize) + 
+                            (j - blockSize) * (j - blockSize)) / blockSize;
+                        if (ratio < 0)
+                            ratio = 0;
+
+                        tentKernel.at<double>(i, j) = ratio;
+                    }
                 }
+                normalize(tentKernel, tentKernel, 1, 0, NORM_L1);
+
+                vector<Mat> orientChannels = Gradient::GetOrientChannels(sketchImage, orientNum);
+                vector<Mat> filteredOrientChannels(orientNum);
+                for (int i = 0; i < orientNum; i++)
+                    filter2D(orientChannels[i], filteredOrientChannels[i], -1, tentKernel);
+
+                levels.push_back(filteredOrientChannels);
             }
 
-            vector<Mat> orientChannels = Gradient::GetOrientChannels(sketchImage, orientNum);
-            vector<Mat> filteredOrientChannels(orientNum);
-            for (int i = 0; i < orientNum; i++)
-                filter2D(orientChannels[i], filteredOrientChannels[i], -1, tentKernel);
-
             GlobalFeatureVec feature;
-            for (int i = blockSize / 2 - 1; i < sketchImage.rows; i += blockSize / 2)
-                for (int j = blockSize / 2 - 1; j < sketchImage.cols; j += blockSize / 2)
+            //for (int i = blockSize / 2 - 1; i < sketchImage.rows; i += blockSize / 2)
+            //    for (int j = blockSize / 2 - 1; j < sketchImage.cols; j += blockSize / 2)
+            //        for (int k = 0; k < orientNum; k++)
+            //            feature.push_back(filteredOrientChannels[k].at<double>(i, j));      
+
+            for (int i = 11; i < sketchImage.rows; i += 24)
+            {
+                for (int j = 11; j < sketchImage.cols; j += 24)
+                {
                     for (int k = 0; k < orientNum; k++)
-                        feature.push_back(filteredOrientChannels[k].at<double>(i, j));      
+                    {
+                        int index = 0;
+                        double maximum = levels[0][k].at<double>(i, j);
+
+                        for (int m = 1; m < levels.size(); m++)
+                        {
+                            if (levels[m][k].at<double>(i, j) > maximum)
+                            {
+                                maximum = levels[m][k].at<double>(i, j);
+                                index = m;
+                            }
+                        }
+
+                        feature.push_back(levels[index][k].at<double>(i, j));
+                    }
+                }
+            }
 
             return feature;
         }

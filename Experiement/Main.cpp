@@ -390,7 +390,7 @@ void LocalFeatureTest(const System::String& imageSetPath, const LocalFeature& fe
 
     vector<LocalFeature_f> features(imageNum);
     printf("Compute " + feature.GetName() + "...\n");
-    #pragma omp parallel for
+    //#pragma omp parallel for
     for (int i = 0; i < imageNum; i++)
         Convert(feature.GetFeatureWithPreprocess(images[i].Item1(), true), features[i]);
 
@@ -524,13 +524,13 @@ void Batch()
 
 int main()
 {
-    //LocalFeatureCrossValidation("oracles_png", Test(), 500);
-    //printf("\n");
-
-    GlobalFeatureCrossValidation("oracles_png", GHOG());
+    LocalFeatureCrossValidation("oracles_png", Test(), 1000);
     printf("\n");
 
-    //LocalFeatureTest("oracles_png", Test(), 1000);
+    //GlobalFeatureCrossValidation("oracles_png", GHOG());
+    //printf("\n");
+
+    //LocalFeatureTest("oracles_png", Test(), 500);
     //printf("\n");
 
     //Mat image = Feature::Preprocess(imread("00004.png", CV_LOAD_IMAGE_GRAYSCALE), true);
@@ -613,5 +613,5 @@ int main()
     //imshow("win", image);
     //waitKey(0);
 
-    //system("pause");
+    system("pause");
 }
