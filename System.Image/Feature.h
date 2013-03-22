@@ -145,40 +145,13 @@ namespace System
             static Descriptor GetDescriptor(const vector<Mat>& filteredOrientImages, 
                 const Point& center, int blockSize, int cellNum);
 
-            static vector<Mat> GetChannels(const Mat& sketchImage, int orientNum)
+            static vector<Mat> GetChannels(const Mat& sketchImage, int orientNum, int sigma)
             {
-                int sigma = 4, lambda = 10, ksize = sigma * 6 + 1;
+                int lambda = (int)(sigma * 24.0 / 9.0), ksize = sigma * 6 + 1;
                 vector<Mat> cache(orientNum);
 
-                //int ksize = 9, halfSize = ksize / 2;
                 for (int i = 0; i < orientNum; i++)
                 {
-                    //Mat kernel = Mat::zeros(ksize, ksize, CV_64F);
-                    //double beginOrient = CV_PI / orientNum * (i - 0.5),
-                    //    endOrient = CV_PI / orientNum * (i + 0.5);
-
-                    //for (int j = 0; j < kernel.rows; j++)
-                    //{
-                    //    for (int k = 0; k < kernel.cols; k++)
-                    //    {
-                    //        if (Geometry::EulerDistance(Point(k, j), Point(halfSize, halfSize)) > halfSize)
-                    //            continue;
-
-                    //        double angle = Geometry::Angle(Point(k, j), Point(halfSize, halfSize));
-
-                    //        if (angle >= beginOrient && angle < endOrient)
-                    //            kernel.at<double>(j, k) = 1;
-
-                    //        angle -= CV_PI;
-                    //        if (angle >= beginOrient && angle < endOrient)
-                    //            kernel.at<double>(j, k) = 1;
-
-                    //        angle -= CV_PI;
-                    //        if (angle >= beginOrient && angle < endOrient)
-                    //            kernel.at<double>(j, k) = 1;
-                    //    }
-                    //}
-
                     Mat kernel = getGaborKernel(Size(ksize, ksize), sigma, 
                         CV_PI / orientNum * i, lambda, 1, 0);
 
@@ -192,7 +165,7 @@ namespace System
 
         inline LocalFeatureVec Test::GetFeature(const Mat& sketchImage) const
         {
-            int orientNum = 9, sampleNum = 28, blockSize = 84, cellNum = 4;
+            int orientNum = 9, sampleNum = 28, blockSize = 88, cellNum = 4;
 
             int cellSize = blockSize / cellNum, kernelSize = cellSize * 2 + 1;
             Mat tentKernel(kernelSize, kernelSize, CV_64F);
@@ -209,10 +182,19 @@ namespace System
                 }
             }
 
-            vector<Mat> orientChannels = GetChannels(sketchImage, orientNum);
-            vector<Mat> filteredOrientChannels(orientNum);
+            vector<Mat> orientChannels1 = GetChannels(sketchImage, orientNum, 4);
+            vector<Mat> orientChannels2 = GetChannels(sketchImage, orientNum, 8);
+            vector<Mat> filteredOrientChannels1(orientNum), filteredOrientChannels2(orientNum);
             for (int i = 0; i < orientNum; i++)
-                filter2D(orientChannels[i], filteredOrientChannels[i], -1, tentKernel);
+            {
+                filter2D(orientChannels1[i], filteredOrientChannels1[i], -1, tentKernel);
+                filter2D(orientChannels2[i], filteredOrientChannels2[i], -1, tentKernel);
+            }
+            vector<Mat> filteredOrientChannels;
+            for (int i = 0; i < orientNum; i++)
+                filteredOrientChannels.push_back(filteredOrientChannels1[i]);
+            for (int i = 0; i < orientNum; i++)
+                filteredOrientChannels.push_back(filteredOrientChannels2[i]);
 
             LocalFeatureVec feature;
             vector<Point> centers = SampleOnGrid(sketchImage.rows, sketchImage.cols, sampleNum);
