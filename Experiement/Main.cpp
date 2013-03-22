@@ -93,6 +93,7 @@ Tuple<vector<double>, vector<double>> ROC(const vector<double>& distances,
     return CreateTuple(DR, FPR);
 }
 
+template<typename LocalFeature>
 void LocalFeatureCrossValidation(const System::String& imageSetPath, const LocalFeature& feature, 
                                  int wordNum, int sampleNum = 1000000, int fold = 3)
 {
@@ -102,9 +103,10 @@ void LocalFeatureCrossValidation(const System::String& imageSetPath, const Local
 
     vector<LocalFeature_f> features(imageNum);
     printf("Compute " + feature.GetName() + "...\n");
-    #pragma omp parallel for
+    LocalFeature machine = feature;
+    #pragma omp parallel for private(machine)
     for (int i = 0; i < imageNum; i++)
-        Convert(feature.GetFeatureWithPreprocess(images[i].Item1(), true), features[i]);
+        Convert(machine.GetFeatureWithPreprocess(images[i].Item1(), true), features[i]);
 
     { // Use a block here to destruct words and freqHistograms immediately.
         printf("Compute Visual Words...\n");
@@ -202,6 +204,7 @@ void LocalFeatureCrossValidation(const System::String& imageSetPath, const Local
     fclose(file);
 }
 
+template<typename GlobalFeature>
 void GlobalFeatureCrossValidation(const System::String& imageSetPath, const GlobalFeature& feature, 
                                   int fold = 3)
 {
@@ -211,9 +214,10 @@ void GlobalFeatureCrossValidation(const System::String& imageSetPath, const Glob
 
     vector<GlobalFeature_f> features(imageNum);
     printf("Compute " + feature.GetName() + "...\n");
-    #pragma omp parallel for
+    GlobalFeature machine = feature;
+    #pragma omp parallel for private(machine)
     for (int i = 0; i < imageNum; i++)
-        Convert(feature.GetFeatureWithPreprocess(images[i].Item1(), true), features[i]);
+        Convert(machine.GetFeatureWithPreprocess(images[i].Item1(), true), features[i]);
 
     printf("Write To File...\n");
     System::String savePath = feature.GetName() + "_oracles";
@@ -381,6 +385,7 @@ void EdgeMatchingCrossValidation(const System::String& imageSetPath, const EdgeM
     fclose(file);
 }
 
+template<typename LocalFeature>
 void LocalFeatureTest(const System::String& imageSetPath, const LocalFeature& feature, 
                                  int wordNum, int sampleNum = 1000000, int fold = 3)
 {
@@ -390,9 +395,10 @@ void LocalFeatureTest(const System::String& imageSetPath, const LocalFeature& fe
 
     vector<LocalFeature_f> features(imageNum);
     printf("Compute " + feature.GetName() + "...\n");
-    //#pragma omp parallel for
+    LocalFeature machine = feature;
+    //#pragma omp parallel for private(machine)
     for (int i = 0; i < imageNum; i++)
-        Convert(feature.GetFeatureWithPreprocess(images[i].Item1(), true), features[i]);
+        Convert(machine.GetFeatureWithPreprocess(images[i].Item1(), true), features[i]);
 
     { // Use a block here to destruct words and freqHistograms immediately.
         printf("Compute Visual Words...\n");

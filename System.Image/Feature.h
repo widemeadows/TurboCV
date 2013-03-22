@@ -91,20 +91,20 @@ namespace System
         class LocalFeature : public Feature
         {
         public:
-            LocalFeatureVec GetFeatureWithPreprocess(const Mat& sketchImage, bool thinning = false) const;
-            LocalFeatureVec GetFeatureWithoutPreprocess(const Mat& sketchImage) const;
+            LocalFeatureVec GetFeatureWithPreprocess(const Mat& sketchImage, bool thinning = false);
+            LocalFeatureVec GetFeatureWithoutPreprocess(const Mat& sketchImage);
 
         protected:
-            virtual LocalFeatureVec GetFeature(const Mat& sketchImage) const = 0;
+            virtual LocalFeatureVec GetFeature(const Mat& sketchImage) = 0;
         };
 
         inline LocalFeatureVec LocalFeature::GetFeatureWithPreprocess(const Mat& sketchImage, 
-            bool thinning) const
+            bool thinning)
         {
             return GetFeature(Preprocess(sketchImage, thinning));
         }
 
-        inline LocalFeatureVec LocalFeature::GetFeatureWithoutPreprocess(const Mat& sketchImage) const
+        inline LocalFeatureVec LocalFeature::GetFeatureWithoutPreprocess(const Mat& sketchImage)
         {
             return GetFeature(sketchImage);
         }
@@ -114,20 +114,20 @@ namespace System
         class GlobalFeature : public Feature
         {
         public:
-            GlobalFeatureVec GetFeatureWithPreprocess(const Mat& sketchImage, bool thinning = false) const;
-            GlobalFeatureVec GetFeatureWithoutPreprocess(const Mat& sketchImage) const;
+            GlobalFeatureVec GetFeatureWithPreprocess(const Mat& sketchImage, bool thinning = false);
+            GlobalFeatureVec GetFeatureWithoutPreprocess(const Mat& sketchImage);
 
         protected:
-            virtual GlobalFeatureVec GetFeature(const Mat& sketchImage) const = 0;
+            virtual GlobalFeatureVec GetFeature(const Mat& sketchImage) = 0;
         };
 
         inline GlobalFeatureVec GlobalFeature::GetFeatureWithPreprocess(const Mat& sketchImage, 
-            bool thinning) const
+            bool thinning)
         {
             return GetFeature(Preprocess(sketchImage, thinning));
         }
 
-        inline GlobalFeatureVec GlobalFeature::GetFeatureWithoutPreprocess(const Mat& sketchImage) const
+        inline GlobalFeatureVec GlobalFeature::GetFeatureWithoutPreprocess(const Mat& sketchImage)
         {
             return GetFeature(sketchImage);
         }
@@ -136,8 +136,8 @@ namespace System
 
         class Test : public LocalFeature
         {
-        protected:
-            virtual LocalFeatureVec GetFeature(const Mat& sketchImage) const;
+        public:
+            virtual LocalFeatureVec GetFeature(const Mat& sketchImage);
 
             virtual String GetName() const { return "test"; };
 
@@ -145,17 +145,20 @@ namespace System
             static Descriptor GetDescriptor(const vector<Mat>& filteredOrientImages, 
                 const Point& center, int blockSize, int cellNum);
 
-            static vector<Mat> GetChannels(const Mat& sketchImage, int orientNum, int sigma)
+            ConvolveDFTWithCache convolve2D;
+            vector<Mat> cache;
+
+            vector<Mat> GetChannels(const Mat& sketchImage, int orientNum)
             {
-                int lambda = (int)(sigma * 24.0 / 9.0), ksize = sigma * 6 + 1;
-                vector<Mat> cache(orientNum);
+                int sigma = 4, lambda = 10, ksize = sigma * 6 + 1;
+                cache.resize(orientNum);
 
                 for (int i = 0; i < orientNum; i++)
                 {
                     Mat kernel = getGaborKernel(Size(ksize, ksize), sigma, 
                         CV_PI / orientNum * i, lambda, 1, 0);
 
-                    filter2D(sketchImage, cache[i], CV_64F, kernel);
+                    convolve2D(sketchImage, cache[i], CV_64F, kernel);
                     cache[i] = abs(cache[i]);
                 }
 
@@ -163,9 +166,9 @@ namespace System
             }
         };
 
-        inline LocalFeatureVec Test::GetFeature(const Mat& sketchImage) const
+        inline LocalFeatureVec Test::GetFeature(const Mat& sketchImage)
         {
-            int orientNum = 9, sampleNum = 28, blockSize = 88, cellNum = 4;
+            int orientNum = 8, sampleNum = 28, blockSize = 92, cellNum = 4;
 
             int cellSize = blockSize / cellNum, kernelSize = cellSize * 2 + 1;
             Mat tentKernel(kernelSize, kernelSize, CV_64F);
@@ -182,19 +185,10 @@ namespace System
                 }
             }
 
-            vector<Mat> orientChannels1 = GetChannels(sketchImage, orientNum, 4);
-            vector<Mat> orientChannels2 = GetChannels(sketchImage, orientNum, 8);
-            vector<Mat> filteredOrientChannels1(orientNum), filteredOrientChannels2(orientNum);
+            vector<Mat> orientChannels = GetChannels(sketchImage, orientNum);
+            vector<Mat> filteredOrientChannels(orientNum);
             for (int i = 0; i < orientNum; i++)
-            {
-                filter2D(orientChannels1[i], filteredOrientChannels1[i], -1, tentKernel);
-                filter2D(orientChannels2[i], filteredOrientChannels2[i], -1, tentKernel);
-            }
-            vector<Mat> filteredOrientChannels;
-            for (int i = 0; i < orientNum; i++)
-                filteredOrientChannels.push_back(filteredOrientChannels1[i]);
-            for (int i = 0; i < orientNum; i++)
-                filteredOrientChannels.push_back(filteredOrientChannels2[i]);
+                filter2D(orientChannels[i], filteredOrientChannels[i], -1, tentKernel);
 
             LocalFeatureVec feature;
             vector<Point> centers = SampleOnGrid(sketchImage.rows, sketchImage.cols, sampleNum);
@@ -252,8 +246,8 @@ namespace System
         // Histogram of Gradient
         class HOG : public LocalFeature
         {
-        protected:
-            virtual LocalFeatureVec GetFeature(const Mat& sketchImage) const;
+        public:
+            virtual LocalFeatureVec GetFeature(const Mat& sketchImage);
             
             virtual String GetName() const { return "hog"; };
 
@@ -262,7 +256,7 @@ namespace System
                 const Point& center, int blockSize, int cellNum);
         };
 
-        inline LocalFeatureVec HOG::GetFeature(const Mat& sketchImage) const
+        inline LocalFeatureVec HOG::GetFeature(const Mat& sketchImage)
         {
             int orientNum = 4, sampleNum = 28, blockSize = 92, cellNum = 4;
 
@@ -342,8 +336,8 @@ namespace System
         // Shape Based HOG
         class SHOG : public LocalFeature
         {
-        protected:
-            virtual LocalFeatureVec GetFeature(const Mat& sketchImage) const;
+        public:
+            virtual LocalFeatureVec GetFeature(const Mat& sketchImage);
 
             virtual String GetName() const { return "shog"; };
 
@@ -352,7 +346,7 @@ namespace System
                 const Point& pivot, const vector<Point>& points, int cellNum);
         };
 
-        inline LocalFeatureVec SHOG::GetFeature(const Mat& sketchImage) const
+        inline LocalFeatureVec SHOG::GetFeature(const Mat& sketchImage)
         {
             int orientNum = 4, cellNum = 4;
 
@@ -439,8 +433,8 @@ namespace System
         // Log-SHOG
         class LogSHOG : public LocalFeature
         {
-        protected:
-            virtual LocalFeatureVec GetFeature(const Mat& sketchImage) const;
+        public:
+            virtual LocalFeatureVec GetFeature(const Mat& sketchImage);
 
             virtual String GetName() const { return "lshog"; };
 
@@ -449,7 +443,7 @@ namespace System
                 const Point& pivot, int blockSize, int cellNum);
         };
 
-        inline LocalFeatureVec LogSHOG::GetFeature(const Mat& sketchImage) const
+        inline LocalFeatureVec LogSHOG::GetFeature(const Mat& sketchImage)
         {
             int orientNum = 4, cellNum = 4, scaleNum = 15;
             double sigmaInit = 0.7, sigmaStep = 1.2;
@@ -549,13 +543,13 @@ namespace System
         // Global HOG
         class GHOG : public GlobalFeature
         {
-        protected:
-            virtual GlobalFeatureVec GetFeature(const Mat& sketchImage) const;
+        public:
+            virtual GlobalFeatureVec GetFeature(const Mat& sketchImage);
 
             virtual String GetName() const { return "ghog"; };
         };
 
-        inline GlobalFeatureVec GHOG::GetFeature(const Mat& sketchImage) const
+        inline GlobalFeatureVec GHOG::GetFeature(const Mat& sketchImage)
         {
             int tmp[] = {36, 48, 60, 72};
             int orientNum = 8;
@@ -628,8 +622,8 @@ namespace System
         // Histogram of Oriented Shape Context
         class HOOSC : public LocalFeature
         {
-        protected:
-            virtual LocalFeatureVec GetFeature(const Mat& sketchImage) const;
+        public:
+            virtual LocalFeatureVec GetFeature(const Mat& sketchImage);
             
             virtual String GetName() const { return "hoosc"; };
 
@@ -639,7 +633,7 @@ namespace System
                 const vector<double>& logDistances, int angleNum, int orientNum);
         };
 
-        inline LocalFeatureVec HOOSC::GetFeature(const Mat& sketchImage) const
+        inline LocalFeatureVec HOOSC::GetFeature(const Mat& sketchImage)
         {
             double tmp[] = { 0, 0.125, 0.25, 0.5, 1, 2 };
             vector<double> logDistances(tmp, tmp + sizeof(tmp) / sizeof(double));
@@ -726,8 +720,8 @@ namespace System
         // Regularly Sampling HOOSC
         class RHOOSC : public LocalFeature
         {
-        protected:
-            virtual LocalFeatureVec GetFeature(const Mat& sketchImage) const;
+        public:
+            virtual LocalFeatureVec GetFeature(const Mat& sketchImage);
 
             virtual String GetName() const { return "rhoosc"; };
 
@@ -737,7 +731,7 @@ namespace System
                 const vector<double>& logDistances, int angleNum, int orientNum);
         };
 
-        inline LocalFeatureVec RHOOSC::GetFeature(const Mat& sketchImage) const
+        inline LocalFeatureVec RHOOSC::GetFeature(const Mat& sketchImage)
         {
             double tmp[] = { 0, 0.125, 0.25, 0.5, 1, 2 };
             vector<double> logDistances(tmp, tmp + sizeof(tmp) / sizeof(double));
@@ -827,8 +821,8 @@ namespace System
         // Shape Context
         class SC : public LocalFeature
         {
-        protected:
-            virtual LocalFeatureVec GetFeature(const Mat& sketchImage) const;
+        public:
+            virtual LocalFeatureVec GetFeature(const Mat& sketchImage);
             
             virtual String GetName() const { return "sc"; };
 
@@ -837,7 +831,7 @@ namespace System
                 const vector<double>& logDistances, int angleNum);
         };
 
-        inline LocalFeatureVec SC::GetFeature(const Mat& sketchImage) const
+        inline LocalFeatureVec SC::GetFeature(const Mat& sketchImage)
         {
             double tmp[] = { 0, 0.125, 0.25, 0.5, 1, 2 };
             vector<double> logDistances(tmp, tmp + sizeof(tmp) / sizeof(double));
@@ -910,8 +904,8 @@ namespace System
         // Points Based Shape Context
         class PSC : public LocalFeature
         {
-        protected:
-            virtual LocalFeatureVec GetFeature(const Mat& sketchImage) const;
+        public:
+            virtual LocalFeatureVec GetFeature(const Mat& sketchImage);
 
             virtual String GetName() const { return "psc"; };
 
@@ -920,7 +914,7 @@ namespace System
                 const vector<double>& logDistances, int angleNum);
         };
 
-        inline LocalFeatureVec PSC::GetFeature(const Mat& sketchImage) const
+        inline LocalFeatureVec PSC::GetFeature(const Mat& sketchImage)
         {
             double tmp[] = { 0, 0.125, 0.25, 0.5, 1, 2 };
             vector<double> logDistances(tmp, tmp + sizeof(tmp) / sizeof(double));
@@ -992,8 +986,8 @@ namespace System
         // Regularly Sampling Shape Context
         class RSC : public LocalFeature
         {
-        protected:
-            virtual LocalFeatureVec GetFeature(const Mat& sketchImage) const;
+        public:
+            virtual LocalFeatureVec GetFeature(const Mat& sketchImage);
 
             virtual String GetName() const { return "rsc"; };
             
@@ -1002,7 +996,7 @@ namespace System
                 const vector<Point>& pivots, const vector<double>& logDistances, int angleNum);
         };
 
-        inline LocalFeatureVec RSC::GetFeature(const Mat& sketchImage) const
+        inline LocalFeatureVec RSC::GetFeature(const Mat& sketchImage)
         {
             double tmp[] = { 0, 0.125, 0.25, 0.5, 1, 2 };
             vector<double> logDistances(tmp, tmp + sizeof(tmp) / sizeof(double));
@@ -1082,8 +1076,8 @@ namespace System
         // Points Based Regularly Sampling Shape Context
         class PRSC : public LocalFeature
         {
-        protected:
-            virtual LocalFeatureVec GetFeature(const Mat& sketchImage) const;
+        public:
+            virtual LocalFeatureVec GetFeature(const Mat& sketchImage);
 
             virtual String GetName() const { return "prsc"; };
 
@@ -1092,7 +1086,7 @@ namespace System
                 const vector<Point>& points, const vector<double>& logDistances, int angleNum);
         };
 
-        inline LocalFeatureVec PRSC::GetFeature(const Mat& sketchImage) const
+        inline LocalFeatureVec PRSC::GetFeature(const Mat& sketchImage)
         {
             double tmp[] = { 0, 0.125, 0.25, 0.5, 1, 2 };
             vector<double> logDistances(tmp, tmp + sizeof(tmp) / sizeof(double));
@@ -1171,8 +1165,8 @@ namespace System
         // Average Gabor Responses
         class Gabor : public LocalFeature
         {
-        protected:
-            virtual LocalFeatureVec GetFeature(const Mat& sketchImage) const;
+        public:
+            virtual LocalFeatureVec GetFeature(const Mat& sketchImage);
 
             virtual String GetName() const { return "gabor"; };
             
@@ -1181,7 +1175,7 @@ namespace System
                 const Point& center, int blockSize, int cellNum);
         };
 
-        inline LocalFeatureVec Gabor::GetFeature(const Mat& sketchImage) const
+        inline LocalFeatureVec Gabor::GetFeature(const Mat& sketchImage)
         {
             int sampleNum = 28, blockSize = 92, cellNum = 4;
             int tmp[] = { 8, 8, 8, 8 };
@@ -1261,8 +1255,8 @@ namespace System
         // Model the Shape of Scene
         class GIST : public GlobalFeature
         {
-        protected:
-            virtual GlobalFeatureVec GetFeature(const Mat& sketchImage) const;
+        public:
+            virtual GlobalFeatureVec GetFeature(const Mat& sketchImage);
 
             virtual String GetName() const { return "gist"; };
 
@@ -1271,7 +1265,7 @@ namespace System
                 const vector<int>& orientNumPerScale);
         };
 
-        inline GlobalFeatureVec GIST::GetFeature(const Mat& sketchImage) const
+        inline GlobalFeatureVec GIST::GetFeature(const Mat& sketchImage)
         {
             int blockNum = 4;
             int tmp[] = { 8, 8, 8, 8 };
