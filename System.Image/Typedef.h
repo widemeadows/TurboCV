@@ -28,9 +28,9 @@ namespace System
 
             for (auto descriptor : src)
             {
-                Descriptor_f tmp;
-                for (auto item : descriptor)
-                    tmp.push_back((float)item);
+                Descriptor_f tmp(descriptor.size());
+                for (int i = 0; i < descriptor.size(); i++)
+                    tmp[i] = (float)descriptor[i];
 
                 dst.push_back(tmp);
             }

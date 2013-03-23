@@ -145,7 +145,6 @@ namespace System
             static Descriptor GetDescriptor(const vector<Mat>& filteredOrientImages, 
                 const Point& center, int blockSize, int cellNum);
 
-            ConvolveDFTWithCache convolve2D;
             vector<Mat> cache;
 
             vector<Mat> GetChannels(const Mat& sketchImage, int orientNum)
@@ -158,7 +157,7 @@ namespace System
                     Mat kernel = getGaborKernel(Size(ksize, ksize), sigma, 
                         CV_PI / orientNum * i, lambda, 1, 0);
 
-                    convolve2D(sketchImage, cache[i], CV_64F, kernel);
+                    filter2D(sketchImage, cache[i], CV_64F, kernel);
                     cache[i] = abs(cache[i]);
                 }
 
