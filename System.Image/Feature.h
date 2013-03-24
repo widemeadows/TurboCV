@@ -167,7 +167,7 @@ namespace System
 
         inline LocalFeatureVec Test::GetFeature(const Mat& sketchImage)
         {
-            int orientNum = 9, sampleNum = 28, blockSize = 92, cellNum = 4;
+            int orientNum = 9, sampleNum = 28, blockSize = 96, cellNum = 4;
 
             int cellSize = blockSize / cellNum, kernelSize = cellSize * 2 + 1;
             Mat tentKernel(kernelSize, kernelSize, CV_64F);
