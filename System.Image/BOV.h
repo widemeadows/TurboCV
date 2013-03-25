@@ -130,5 +130,35 @@ namespace System
         {
             return GetFrequencyHistograms(features, GetVisualWords(features, clusterNum, sampleNum));
         }
+
+        class IDF
+        {
+        public:
+            static vector<double> GetWeights(const vector<Histogram>& histograms)
+            {
+                if (histograms.size() == 0)
+                    return vector<double>();
+
+                size_t histNum = histograms.size(), histSize = histograms[0].size();
+                vector<double> mean(histSize), deviation(histSize);
+
+                for (size_t i = 0; i < histNum; i++)
+                {
+                    for (size_t j = 0; j < histSize; j++)
+                    {
+                        mean[j] += histograms[i][j];
+                        deviation[j] += histograms[i][j] * histograms[i][j];
+                    }
+                }
+
+                for (size_t i = 0; i < histSize; i++)
+                {
+                    mean[i] /= histNum;
+                    deviation[i] = sqrt((deviation[i] - histNum * mean[i] * mean[i]) / histNum);
+                }
+
+                return deviation;
+            }
+        };
     }
 }

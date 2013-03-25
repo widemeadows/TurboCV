@@ -139,7 +139,7 @@ namespace System
         public:
             virtual LocalFeatureVec GetFeature(const Mat& sketchImage);
 
-            virtual String GetName() const { return "test"; };
+            virtual String GetName() const { return "test@1200"; };
 
         private:
             static Descriptor GetDescriptor(const vector<Mat>& filteredOrientImages, 
@@ -167,7 +167,7 @@ namespace System
 
         inline LocalFeatureVec Test::GetFeature(const Mat& sketchImage)
         {
-            int orientNum = 9, sampleNum = 28, blockSize = 96, cellNum = 4;
+            int orientNum = 9, sampleNum = 28, blockSize = 92, cellNum = 4;
 
             int cellSize = blockSize / cellNum, kernelSize = cellSize * 2 + 1;
             Mat tentKernel(kernelSize, kernelSize, CV_64F);
@@ -550,68 +550,34 @@ namespace System
 
         inline GlobalFeatureVec GHOG::GetFeature(const Mat& sketchImage)
         {
-            int tmp[] = {36, 48, 60, 72};
-            int orientNum = 8;
-            vector<int> blockSizes(tmp, tmp + 4);
+            int orientNum = 8, blockSize = 48;
 
-            vector<vector<Mat>> levels;
-
-            for (int k = 0; k < blockSizes.size(); k++)
+            int kernelSize = blockSize * 2 + 1;
+            Mat tentKernel(kernelSize, kernelSize, CV_64F);
+            for (int i = 0; i < kernelSize; i++)
             {
-                int blockSize = blockSizes[k];
-
-                int kernelSize = blockSize * 2 + 1;
-                Mat tentKernel(kernelSize, kernelSize, CV_64F);
-                for (int i = 0; i < kernelSize; i++)
+                for (int j = 0; j < kernelSize; j++)
                 {
-                    for (int j = 0; j < kernelSize; j++)
-                    {
-                        double ratio = 1 - sqrt((i - blockSize) * (i - blockSize) + 
-                            (j - blockSize) * (j - blockSize)) / blockSize;
-                        if (ratio < 0)
-                            ratio = 0;
+                    double ratio = 1 - sqrt((i - blockSize) * (i - blockSize) + 
+                        (j - blockSize) * (j - blockSize)) / blockSize;
+                    if (ratio < 0)
+                        ratio = 0;
 
-                        tentKernel.at<double>(i, j) = ratio;
-                    }
+                    tentKernel.at<double>(i, j) = ratio;
                 }
-                normalize(tentKernel, tentKernel, 1, 0, NORM_L1);
-
-                vector<Mat> orientChannels = Gradient::GetOrientChannels(sketchImage, orientNum);
-                vector<Mat> filteredOrientChannels(orientNum);
-                for (int i = 0; i < orientNum; i++)
-                    filter2D(orientChannels[i], filteredOrientChannels[i], -1, tentKernel);
-
-                levels.push_back(filteredOrientChannels);
             }
+            normalize(tentKernel, tentKernel, 1, 0, NORM_L1);
+
+            vector<Mat> orientChannels = Gradient::GetOrientChannels(sketchImage, orientNum);
+            vector<Mat> filteredOrientChannels(orientNum);
+            for (int i = 0; i < orientNum; i++)
+                filter2D(orientChannels[i], filteredOrientChannels[i], -1, tentKernel);
 
             GlobalFeatureVec feature;
-            //for (int i = blockSize / 2 - 1; i < sketchImage.rows; i += blockSize / 2)
-            //    for (int j = blockSize / 2 - 1; j < sketchImage.cols; j += blockSize / 2)
-            //        for (int k = 0; k < orientNum; k++)
-            //            feature.push_back(filteredOrientChannels[k].at<double>(i, j));      
-
-            for (int i = 11; i < sketchImage.rows; i += 24)
-            {
-                for (int j = 11; j < sketchImage.cols; j += 24)
-                {
+            for (int i = blockSize / 2 - 1; i < sketchImage.rows; i += blockSize / 2)
+                for (int j = blockSize / 2 - 1; j < sketchImage.cols; j += blockSize / 2)
                     for (int k = 0; k < orientNum; k++)
-                    {
-                        int index = 0;
-                        double maximum = levels[0][k].at<double>(i, j);
-
-                        for (int m = 1; m < levels.size(); m++)
-                        {
-                            if (levels[m][k].at<double>(i, j) > maximum)
-                            {
-                                maximum = levels[m][k].at<double>(i, j);
-                                index = m;
-                            }
-                        }
-
-                        feature.push_back(levels[index][k].at<double>(i, j));
-                    }
-                }
-            }
+                        feature.push_back(filteredOrientChannels[k].at<double>(i, j));      
 
             return feature;
         }

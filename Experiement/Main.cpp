@@ -396,29 +396,9 @@ void LocalFeatureTest(const System::String& imageSetPath, const LocalFeature& fe
     vector<LocalFeature_f> features(imageNum);
     printf("Compute " + feature.GetName() + "...\n");
     LocalFeature machine = feature;
-    //#pragma omp parallel for private(machine)
+    #pragma omp parallel for private(machine)
     for (int i = 0; i < imageNum; i++)
         Convert(machine.GetFeatureWithPreprocess(images[i].Item1(), true), features[i]);
-
-    { // Use a block here to destruct words and freqHistograms immediately.
-        printf("Compute Visual Words...\n");
-        vector<Word_f> words = BOV::GetVisualWords(features, wordNum, sampleNum);
-
-        printf("Compute Frequency Histograms...\n");
-        vector<Histogram> freqHistograms = BOV::GetFrequencyHistograms(features, words);
-
-        printf("Write To File...\n");
-        System::String savePath = feature.GetName() + "_oracles";
-        FILE* file = fopen(savePath, "w");
-        for (int i = 0; i < freqHistograms.size(); i++)
-        {
-            fprintf(file, "%d", images[i].Item2());
-            for (int j = 0; j < freqHistograms[i].size(); j++)
-                fprintf(file, " %d:%f", j + 1, freqHistograms[i][j]);
-            fprintf(file, "\n");
-        }
-        fclose(file);
-    }
 
     vector<Tuple<vector<LocalFeature_f>, vector<LocalFeature_f>, vector<size_t>>> pass = 
         RandomSplit(features, fold);
@@ -438,6 +418,15 @@ void LocalFeatureTest(const System::String& imageSetPath, const LocalFeature& fe
         printf("Compute Frequency Histograms...\n");
         vector<Histogram> trainingHistograms = BOV::GetFrequencyHistograms(trainingSet, words);
         vector<Histogram> evaluationHistograms = BOV::GetFrequencyHistograms(evaluationSet, words);
+
+        //printf("Calculate Weights...\n");
+        //vector<double> weights = IDF::GetWeights(trainingHistograms);
+        //for (size_t i = 0; i < trainingHistograms.size(); i++)
+        //    for (size_t j = 0; j < trainingHistograms[0].size(); j++)
+        //        trainingHistograms[i][j] *= weights[j];
+        //for (size_t i = 0; i < evaluationHistograms.size(); i++)
+        //    for (size_t j = 0; j < evaluationHistograms[0].size(); j++)
+        //        evaluationHistograms[i][j] *= weights[j];
 
         vector<int> trainingLabels, evaluationLabels;
         int counter = 0;
@@ -530,14 +519,14 @@ void Batch()
 
 int main()
 {
-    LocalFeatureCrossValidation("oracles_png", Test(), 1000);
-    printf("\n");
+    //LocalFeatureCrossValidation("oracles_png", Test(), 1000);
+    //printf("\n");
 
     //GlobalFeatureCrossValidation("oracles_png", GHOG());
     //printf("\n");
 
-    //LocalFeatureTest("oracles_png", Test(), 500);
-    //printf("\n");
+    LocalFeatureTest("oracles_png", Test(), 1200);
+    printf("\n");
 
     //Mat image = Feature::Preprocess(imread("00004.png", CV_LOAD_IMAGE_GRAYSCALE), true);
 
