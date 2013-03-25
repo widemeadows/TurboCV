@@ -432,11 +432,11 @@ void LocalFeatureTest(const System::String& imageSetPath, const LocalFeature& fe
                 trainingLabels.push_back(images[j].Item2());
         }
 
-        printf("Perform LDA...\n");
-        pair<vector<Histogram>, vector<Histogram>> result = LDAOperator::ComputeLDA(
-            trainingHistograms, trainingLabels, 1000, evaluationHistograms);
-        trainingHistograms = result.first;
-        evaluationHistograms = result.second;
+        //printf("Perform LDA...\n");
+        //pair<vector<Histogram>, vector<Histogram>> result = LDAOperator::ComputeLDA(
+        //    trainingHistograms, trainingLabels, 1000, evaluationHistograms);
+        //trainingHistograms = result.first;
+        //evaluationHistograms = result.second;
 
         KNN<Histogram> knn;
         pair<double, map<int, double>> precisions = 
@@ -522,7 +522,7 @@ int main()
     //GlobalFeatureCrossValidation("oracles_png", GHOG());
     //printf("\n");
 
-    LocalFeatureTest("oracles_png", Test(), 1200);
+    LocalFeatureTest("oracles_png", Test(), 1500);
     printf("\n");
 
     //Mat image = Feature::Preprocess(imread("00004.png", CV_LOAD_IMAGE_GRAYSCALE), true);
