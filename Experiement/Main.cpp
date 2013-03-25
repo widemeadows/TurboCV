@@ -419,15 +419,6 @@ void LocalFeatureTest(const System::String& imageSetPath, const LocalFeature& fe
         vector<Histogram> trainingHistograms = BOV::GetFrequencyHistograms(trainingSet, words);
         vector<Histogram> evaluationHistograms = BOV::GetFrequencyHistograms(evaluationSet, words);
 
-        //printf("Calculate Weights...\n");
-        //vector<double> weights = IDF::GetWeights(trainingHistograms);
-        //for (size_t i = 0; i < trainingHistograms.size(); i++)
-        //    for (size_t j = 0; j < trainingHistograms[0].size(); j++)
-        //        trainingHistograms[i][j] *= weights[j];
-        //for (size_t i = 0; i < evaluationHistograms.size(); i++)
-        //    for (size_t j = 0; j < evaluationHistograms[0].size(); j++)
-        //        evaluationHistograms[i][j] *= weights[j];
-
         vector<int> trainingLabels, evaluationLabels;
         int counter = 0;
         for (int j = 0; j < imageNum; j++)
@@ -440,6 +431,12 @@ void LocalFeatureTest(const System::String& imageSetPath, const LocalFeature& fe
             else
                 trainingLabels.push_back(images[j].Item2());
         }
+
+        printf("Perform LDA...\n");
+        pair<vector<Histogram>, vector<Histogram>> result = LDAOperator::ComputeLDA(
+            trainingHistograms, trainingLabels, 1000, evaluationHistograms);
+        trainingHistograms = result.first;
+        evaluationHistograms = result.second;
 
         KNN<Histogram> knn;
         pair<double, map<int, double>> precisions = 

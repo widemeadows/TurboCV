@@ -4,6 +4,7 @@
 #include "Feature.h"
 #include "Typedef.h"
 #include <cv.h>
+#include <contrib\contrib.hpp>
 using namespace std;
 
 namespace System
@@ -131,33 +132,95 @@ namespace System
             return GetFrequencyHistograms(features, GetVisualWords(features, clusterNum, sampleNum));
         }
 
-        class IDF
+        //class IDF
+        //{
+        //public:
+        //    static vector<double> GetWeights(const vector<Histogram>& histograms)
+        //    {
+        //        if (histograms.size() == 0)
+        //            return vector<double>();
+
+        //        size_t histNum = histograms.size(), histSize = histograms[0].size();
+        //        vector<double> mean(histSize), deviation(histSize);
+
+        //        for (size_t i = 0; i < histNum; i++)
+        //        {
+        //            for (size_t j = 0; j < histSize; j++)
+        //            {
+        //                mean[j] += histograms[i][j];
+        //                deviation[j] += histograms[i][j] * histograms[i][j];
+        //            }
+        //        }
+
+        //        for (size_t i = 0; i < histSize; i++)
+        //        {
+        //            mean[i] /= histNum;
+        //            deviation[i] = sqrt((deviation[i] - histNum * mean[i] * mean[i]) / histNum);
+        //        }
+
+        //        vector<pair<double, int>> sorted(histSize);
+        //        for (size_t i = 0; i < histSize; i++)
+        //            sorted[i] = make_pair(deviation[i], i);
+
+        //        sort(sorted.begin(), sorted.end());
+
+        //        for (size_t i = 0; i < 200; i++)
+        //            deviation[sorted[i].second] = 0;
+
+        //        return deviation;
+        //    }
+        //};
+
+        class LDAOperator
         {
         public:
-            static vector<double> GetWeights(const vector<Histogram>& histograms)
+            static vector<Histogram> ComputeLDA(const vector<Histogram>& data,
+                const vector<int>& labels, int componentNum)
             {
-                if (histograms.size() == 0)
-                    return vector<double>();
+                Mat convert(data.size(), data[0].size(), CV_64F);
+                for (int i = 0; i < data.size(); i++)
+                    for (int j = 0; j < data[i].size(); j++)
+                        convert.at<double>(i, j) = data[i][j];
 
-                size_t histNum = histograms.size(), histSize = histograms[0].size();
-                vector<double> mean(histSize), deviation(histSize);
+                LDA lda(data, labels, componentNum);
 
-                for (size_t i = 0; i < histNum; i++)
-                {
-                    for (size_t j = 0; j < histSize; j++)
-                    {
-                        mean[j] += histograms[i][j];
-                        deviation[j] += histograms[i][j] * histograms[i][j];
-                    }
-                }
+                Mat result = lda.project(data);
 
-                for (size_t i = 0; i < histSize; i++)
-                {
-                    mean[i] /= histNum;
-                    deviation[i] = sqrt((deviation[i] - histNum * mean[i] * mean[i]) / histNum);
-                }
+                vector<Histogram> tmp(result.rows);
+                for (int i = 0; i < result.rows; i++)
+                    for (int j = 0; j < result.cols; j++)
+                        tmp[i].push_back(result.at<double>(i, j));
 
-                return deviation;
+                return tmp;
+            }
+
+            static pair<vector<Histogram>, vector<Histogram>> ComputeLDA(
+                const vector<Histogram>& trainingData, const vector<int>& labels,
+                int componentNum, const vector<Histogram>& evaluationData)
+            {
+                Mat convert1(trainingData.size(), trainingData[0].size(), CV_64F),
+                    convert2(evaluationData.size(), evaluationData[0].size(), CV_64F);
+                for (int i = 0; i < trainingData.size(); i++)
+                    for (int j = 0; j < trainingData[i].size(); j++)
+                        convert1.at<double>(i, j) = trainingData[i][j];
+                for (int i = 0; i < evaluationData.size(); i++)
+                    for (int j = 0; j < evaluationData[i].size(); j++)
+                        convert2.at<double>(i, j) = evaluationData[i][j];
+
+                LDA lda(convert1, labels, componentNum);
+
+                Mat result1 = lda.project(convert1);
+                Mat result2 = lda.project(convert2);
+
+                vector<Histogram> tmp1(result1.rows), tmp2(result2.rows);
+                for (int i = 0; i < result1.rows; i++)
+                    for (int j = 0; j < result1.cols; j++)
+                        tmp1[i].push_back(result1.at<double>(i, j));
+                for (int i = 0; i < result2.rows; i++)
+                    for (int j = 0; j < result2.cols; j++)
+                        tmp2[i].push_back(result2.at<double>(i, j));
+
+                return make_pair(tmp1, tmp2);
             }
         };
     }

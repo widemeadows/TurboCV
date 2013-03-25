@@ -139,7 +139,7 @@ namespace System
         public:
             virtual LocalFeatureVec GetFeature(const Mat& sketchImage);
 
-            virtual String GetName() const { return "test@1200"; };
+            virtual String GetName() const { return "test@1200IDF"; };
 
         private:
             static Descriptor GetDescriptor(const vector<Mat>& filteredOrientImages, 
