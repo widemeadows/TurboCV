@@ -139,11 +139,14 @@ namespace System
         public:
             virtual LocalFeatureVec GetFeature(const Mat& sketchImage);
 
-            virtual String GetName() const { return "test@1500"; };
+            virtual String GetName() const { return "test@1500v2"; };
 
         private:
-            static Descriptor GetDescriptor(const vector<Mat>& filteredOrientImages, 
+            static Descriptor GetDescriptor1(const vector<Mat>& filteredOrientImages, 
                 const Point& center, int blockSize, int cellNum);
+
+            static Descriptor GetDescriptor2(const vector<Mat>& orientImages, const Point& center, 
+                const Mat& weights, int blockSize, int cellNum);
 
             vector<Mat> cache;
 
@@ -185,15 +188,22 @@ namespace System
             }
 
             vector<Mat> orientChannels = GetChannels(sketchImage, orientNum);
-            vector<Mat> filteredOrientChannels(orientNum);
-            for (int i = 0; i < orientNum; i++)
-                filter2D(orientChannels[i], filteredOrientChannels[i], -1, tentKernel);
+            //vector<Mat> filteredOrientChannels(orientNum);
+            //for (int i = 0; i < orientNum; i++)
+            //    filter2D(orientChannels[i], filteredOrientChannels[i], -1, tentKernel);
 
             LocalFeatureVec feature;
             vector<Point> centers = SampleOnGrid(sketchImage.rows, sketchImage.cols, sampleNum);
+            //for (Point center : centers)
+            //{
+            //    Descriptor descriptor = GetDescriptor1(filteredOrientChannels, center, 
+            //        blockSize, cellNum);
+            //    feature.push_back(descriptor);
+            //}
+
             for (Point center : centers)
             {
-                Descriptor descriptor = GetDescriptor(filteredOrientChannels, center, 
+                Descriptor descriptor = GetDescriptor2(orientChannels, center, tentKernel,
                     blockSize, cellNum);
                 feature.push_back(descriptor);
             }
@@ -201,12 +211,12 @@ namespace System
             return feature;
         }
 
-        inline Descriptor Test::GetDescriptor(const vector<Mat>& filteredOrientChannels, 
+        inline Descriptor Test::GetDescriptor1(const vector<Mat>& filteredOrientChannels, 
             const Point& center, int blockSize, int cellNum)
         {
             int height = filteredOrientChannels[0].rows, 
                 width = filteredOrientChannels[0].cols;
-            double cellSize = (double)blockSize / cellNum;
+            int cellSize = blockSize / cellNum;
             int expectedTop = center.y - blockSize / 2,
                 expectedLeft = center.x - blockSize / 2,
                 orientNum = filteredOrientChannels.size();
@@ -226,6 +236,64 @@ namespace System
                             hist.at<double>(i, j, k) = 0;
                         else
                             hist.at<double>(i, j, k) = filteredOrientChannels[k].at<double>(r, c);
+                    }
+                }
+            }
+
+            Descriptor descriptor;
+            for (int i = 0; i < cellNum; i++)
+                for (int j = 0; j < cellNum; j++)
+                    for (int k = 0; k < orientNum; k++)
+                        descriptor.push_back(hist.at<double>(i, j, k));
+
+            NormTwoNormalize(descriptor.begin(), descriptor.end());
+            return descriptor;
+        }
+
+        inline Descriptor Test::GetDescriptor2(const vector<Mat>& orientChannels, 
+            const Point& center, const Mat& weights, int blockSize, int cellNum)
+        {
+            int height = orientChannels[0].rows, 
+                width = orientChannels[0].cols;
+            int cellSize = blockSize / cellNum;
+            int expectedTop = center.y - blockSize / 2,
+                expectedLeft = center.x - blockSize / 2,
+                orientNum = orientChannels.size();
+            int dims[] = { cellNum, cellNum, orientNum };
+            Mat hist(3, dims, CV_64F);
+
+            int kernelSize = weights.rows;
+            Mat tmp(kernelSize, kernelSize, CV_64F);
+
+            for (int i = 0; i < cellNum; i++)
+            {
+                for (int j = 0; j < cellNum; j++)
+                {
+                    for (int k = 0; k < orientNum; k++)
+                    {
+                        int r = (int)(expectedTop + (i + 0.5) * cellSize),
+                            c = (int)(expectedLeft + (j + 0.5) * cellSize);
+
+                        if (r < 0 || r >= height || c < 0 || c >= width)
+                            hist.at<double>(i, j, k) = 0;
+                        else
+                        {
+                            tmp = Scalar::all(0);
+
+                            for (int m = 0; m < kernelSize; m++)
+                            {
+                                for (int n = 0; n < kernelSize; n++)
+                                {
+                                    int y = r - cellSize + m, x = c - cellSize + n;
+                                    if (y < 0 || y >= height || x < 0 || x >= width)
+                                        continue;
+
+                                    tmp.at<double>(m, n) = orientChannels[k].at<double>(y, x);
+                                }
+                            }
+
+                            hist.at<double>(i, j, k) = tmp.dot(weights);
+                        }
                     }
                 }
             }

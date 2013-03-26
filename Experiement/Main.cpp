@@ -525,8 +525,6 @@ int main()
     LocalFeatureTest("oracles_png", Test(), 1500);
     printf("\n");
 
-    //Mat image = Feature::Preprocess(imread("00004.png", CV_LOAD_IMAGE_GRAYSCALE), true);
-
     //Mat trans = getRotationMatrix2D(Point(image.rows / 2, image.cols / 2), -20, 1);
     //warpAffine(image, image, trans, image.size());
     //threshold(image, image, 0.1, 1, CV_THRESH_BINARY);
