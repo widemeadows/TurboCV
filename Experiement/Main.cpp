@@ -412,12 +412,45 @@ void LocalFeatureTest(const System::String& imageSetPath, const LocalFeature& fe
         vector<LocalFeature_f>& trainingSet = pass[i].Item2();
         vector<size_t>& pickUpIndexes = pass[i].Item3();
 
+        vector<LocalFeature_f> evaluationSet1(evaluationSet.begin(), 
+            evaluationSet.begin() + evaluationSet.size() / 2);
+        vector<LocalFeature_f> evaluationSet2(evaluationSet.begin() + evaluationSet.size() / 2,
+            evaluationSet.end());
+
+        vector<LocalFeature_f> trainingSet1(trainingSet.begin(), 
+            trainingSet.begin() + trainingSet.size() / 2);
+        vector<LocalFeature_f> trainingSet2(trainingSet.begin() + trainingSet.size() / 2,
+            trainingSet.end());
+
         printf("Compute Visual Words...\n");
-        vector<Word_f> words = BOV::GetVisualWords(trainingSet, wordNum, sampleNum);
+        //vector<Word_f> words = BOV::GetVisualWords(trainingSet, wordNum, sampleNum);
+
+        vector<Word_f> words1 = BOV::GetVisualWords(trainingSet1, wordNum, sampleNum);
+        vector<Word_f> words2 = BOV::GetVisualWords(trainingSet2, wordNum, sampleNum);
 
         printf("Compute Frequency Histograms...\n");
-        vector<Histogram> trainingHistograms = BOV::GetFrequencyHistograms(trainingSet, words);
-        vector<Histogram> evaluationHistograms = BOV::GetFrequencyHistograms(evaluationSet, words);
+        //vector<Histogram> trainingHistograms = BOV::GetFrequencyHistograms(trainingSet, words);
+        //vector<Histogram> evaluationHistograms = BOV::GetFrequencyHistograms(evaluationSet, words);
+
+        vector<Histogram> trainingHistograms1 = BOV::GetFrequencyHistograms(trainingSet1, words1);
+        vector<Histogram> trainingHistograms2 = BOV::GetFrequencyHistograms(trainingSet2, words2);
+
+        vector<Histogram> evaluationHistograms1 = BOV::GetFrequencyHistograms(evaluationSet1, words1);
+        vector<Histogram> evaluationHistograms2 = BOV::GetFrequencyHistograms(evaluationSet2, words2);
+
+        vector<Histogram> trainingHistograms(trainingSet.size()), evaluationHistograms(evaluationSet.size());
+
+        for (int i = 0; i < trainingSet.size(); i++)
+        {
+            trainingHistograms[i].push_back(trainingHistograms1[i].begin(), trainingHistograms1[i].end());
+            trainingHistograms[i].push_back(trainingHistograms2[i].begin(), trainingHistograms2[i].end());
+        }
+
+        for (int i = 0; i < evaluationSet.size(); i++)
+        {
+            evaluationHistograms[i].push_back(evaluationHistograms1[i].begin(), evaluationHistograms1[i].end());
+            evaluationHistograms[i].push_back(evaluationHistograms2[i].begin(), evaluationHistograms2[i].end());
+        }
 
         vector<int> trainingLabels, evaluationLabels;
         int counter = 0;

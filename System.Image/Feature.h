@@ -145,8 +145,9 @@ namespace System
             static Descriptor GetDescriptor1(const vector<Mat>& filteredOrientImages, 
                 const Point& center, int blockSize, int cellNum);
 
-            static Descriptor GetDescriptor2(const vector<Mat>& orientImages, const Point& center, 
-                const Mat& weights, int blockSize, int cellNum);
+            static Descriptor GetDescriptor2(const vector<Mat>& orientImages, 
+                const vector<Mat>& filterOrientChannels,
+                const Point& center, const Mat& weights, int blockSize, int cellNum);
 
             vector<Mat> cache;
 
@@ -186,25 +187,26 @@ namespace System
                     tentKernel.at<double>(i, j) = ratio;
                 }
             }
+            normalize(tentKernel, tentKernel, 1, 0, NORM_L1);
 
             vector<Mat> orientChannels = GetChannels(sketchImage, orientNum);
-            //vector<Mat> filteredOrientChannels(orientNum);
-            //for (int i = 0; i < orientNum; i++)
-            //    filter2D(orientChannels[i], filteredOrientChannels[i], -1, tentKernel);
+            vector<Mat> filteredOrientChannels(orientNum);
+            for (int i = 0; i < orientNum; i++)
+                filter2D(orientChannels[i], filteredOrientChannels[i], -1, tentKernel);
 
             LocalFeatureVec feature;
             vector<Point> centers = SampleOnGrid(sketchImage.rows, sketchImage.cols, sampleNum);
-            //for (Point center : centers)
-            //{
-            //    Descriptor descriptor = GetDescriptor1(filteredOrientChannels, center, 
-            //        blockSize, cellNum);
-            //    feature.push_back(descriptor);
-            //}
+            for (Point center : centers)
+            {
+                Descriptor descriptor = GetDescriptor1(filteredOrientChannels, center, 
+                    blockSize, cellNum);
+                feature.push_back(descriptor);
+            }
 
             for (Point center : centers)
             {
-                Descriptor descriptor = GetDescriptor2(orientChannels, center, tentKernel,
-                    blockSize, cellNum);
+                Descriptor descriptor = GetDescriptor2(orientChannels, filteredOrientChannels,
+                    center, tentKernel, blockSize, cellNum);
                 feature.push_back(descriptor);
             }
 
@@ -251,6 +253,7 @@ namespace System
         }
 
         inline Descriptor Test::GetDescriptor2(const vector<Mat>& orientChannels, 
+            const vector<Mat>& filterOrientChannels,
             const Point& center, const Mat& weights, int blockSize, int cellNum)
         {
             int height = orientChannels[0].rows, 
@@ -288,11 +291,13 @@ namespace System
                                     if (y < 0 || y >= height || x < 0 || x >= width)
                                         continue;
 
-                                    tmp.at<double>(m, n) = orientChannels[k].at<double>(y, x);
+                                    tmp.at<double>(m, n) = orientChannels[k].at<double>(y, x) - 
+                                        filterOrientChannels[k].at<double>(r, c);
+                                    tmp.at<double>(m, n) *= tmp.at<double>(m, n);
                                 }
                             }
-
-                            hist.at<double>(i, j, k) = tmp.dot(weights);
+                            
+                            hist.at<double>(i, j, k) = sqrt(tmp.dot(weights));
                         }
                     }
                 }

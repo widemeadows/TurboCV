@@ -279,6 +279,8 @@ namespace System
         typename vector<T>::iterator end() const { return ptr->end(); }
 
         void push_back(const T& item) { ptr->push_back(item); }
+        void push_back(typename const vector<T>::iterator& begin,
+            typename const vector<T>::iterator& end) { ptr->insert(ptr->end(), begin, end); }
         void clear() { ptr->clear(); }
 
         size_t size() const { return ptr->size(); }
