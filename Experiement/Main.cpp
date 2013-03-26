@@ -93,6 +93,29 @@ Tuple<vector<double>, vector<double>> ROC(const vector<double>& distances,
     return CreateTuple(DR, FPR);
 }
 
+void NormlizeDeviation(vector<Histogram> vecs)
+{
+    Histogram mean(vecs[0].size());
+    double deviation = 0;
+
+    for (size_t i = 0; i < vecs.size(); i++)
+        for (size_t j = 0; j < vecs[i].size(); j++)
+            mean[j] += vecs[i][j];
+    
+    for (size_t i = 0; i < mean.size(); i++)
+        mean[i] /= vecs.size();
+
+    for (size_t i = 0; i < vecs.size(); i++)
+        for (size_t j = 0; j < vecs[i].size(); j++)
+            deviation += (vecs[i][j] - mean[j]) * (vecs[i][j] - mean[j]);
+
+    deviation = sqrt(deviation / vecs.size());
+
+    for (size_t i = 0; i < vecs.size(); i++)
+        for (size_t j = 0; j < vecs[i].size(); j++)
+            vecs[i][j] /= deviation;
+}
+
 template<typename LocalFeature>
 void LocalFeatureCrossValidation(const System::String& imageSetPath, const LocalFeature& feature, 
                                  int wordNum, int sampleNum = 1000000, int fold = 3)
@@ -412,15 +435,25 @@ void LocalFeatureTest(const System::String& imageSetPath, const LocalFeature& fe
         vector<LocalFeature_f>& trainingSet = pass[i].Item2();
         vector<size_t>& pickUpIndexes = pass[i].Item3();
 
-        vector<LocalFeature_f> evaluationSet1(evaluationSet.begin(), 
-            evaluationSet.begin() + evaluationSet.size() / 2);
-        vector<LocalFeature_f> evaluationSet2(evaluationSet.begin() + evaluationSet.size() / 2,
-            evaluationSet.end());
+        vector<LocalFeature_f> evaluationSet1(evaluationSet.size());
+        vector<LocalFeature_f> evaluationSet2(evaluationSet.size());
+        for (int i = 0; i < evaluationSet.size(); i++)
+        {
+            evaluationSet1[i].push_back(evaluationSet[i].begin(), 
+                evaluationSet[i].begin() + evaluationSet[i].size() / 2);
+            evaluationSet2[i].push_back(evaluationSet[i].begin() + evaluationSet[i].size() / 2, 
+                evaluationSet[i].end());
+        }
 
-        vector<LocalFeature_f> trainingSet1(trainingSet.begin(), 
-            trainingSet.begin() + trainingSet.size() / 2);
-        vector<LocalFeature_f> trainingSet2(trainingSet.begin() + trainingSet.size() / 2,
-            trainingSet.end());
+        vector<LocalFeature_f> trainingSet1(trainingSet.size());
+        vector<LocalFeature_f> trainingSet2(trainingSet.size());
+        for (int i = 0; i < trainingSet.size(); i++)
+        {
+            trainingSet1[i].push_back(trainingSet[i].begin(), 
+                trainingSet[i].begin() + trainingSet[i].size() / 2);
+            trainingSet2[i].push_back(trainingSet[i].begin() + trainingSet[i].size() / 2, 
+                trainingSet[i].end());
+        }
 
         printf("Compute Visual Words...\n");
         //vector<Word_f> words = BOV::GetVisualWords(trainingSet, wordNum, sampleNum);
@@ -442,13 +475,19 @@ void LocalFeatureTest(const System::String& imageSetPath, const LocalFeature& fe
 
         for (int i = 0; i < trainingSet.size(); i++)
         {
+            NormlizeDeviation(trainingHistograms1);
             trainingHistograms[i].push_back(trainingHistograms1[i].begin(), trainingHistograms1[i].end());
+
+            NormlizeDeviation(trainingHistograms2);
             trainingHistograms[i].push_back(trainingHistograms2[i].begin(), trainingHistograms2[i].end());
         }
 
         for (int i = 0; i < evaluationSet.size(); i++)
         {
+            NormlizeDeviation(evaluationHistograms1);
             evaluationHistograms[i].push_back(evaluationHistograms1[i].begin(), evaluationHistograms1[i].end());
+
+            NormlizeDeviation(evaluationHistograms2);
             evaluationHistograms[i].push_back(evaluationHistograms2[i].begin(), evaluationHistograms2[i].end());
         }
 
