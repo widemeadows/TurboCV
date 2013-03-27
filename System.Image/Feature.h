@@ -139,14 +139,13 @@ namespace System
         public:
             virtual LocalFeatureVec GetFeature(const Mat& sketchImage);
 
-            virtual String GetName() const { return "test@1500v2norm"; };
+            virtual String GetName() const { return "test@1500v2abs"; };
 
         private:
             static Descriptor GetDescriptor1(const vector<Mat>& filteredOrientImages, 
                 const Point& center, int blockSize, int cellNum);
 
             static Descriptor GetDescriptor2(const vector<Mat>& orientImages, 
-                const vector<Mat>& filterOrientChannels,
                 const Point& center, const Mat& weights, int blockSize, int cellNum);
 
             vector<Mat> cache;
@@ -187,7 +186,7 @@ namespace System
                     tentKernel.at<double>(i, j) = ratio;
                 }
             }
-            normalize(tentKernel, tentKernel, 1, 0, NORM_L1);
+            //normalize(tentKernel, tentKernel, 1, 0, NORM_L1);
 
             vector<Mat> orientChannels = GetChannels(sketchImage, orientNum);
             vector<Mat> filteredOrientChannels(orientNum);
@@ -205,8 +204,8 @@ namespace System
 
             for (Point center : centers)
             {
-                Descriptor descriptor = GetDescriptor2(orientChannels, filteredOrientChannels,
-                    center, tentKernel, blockSize, cellNum);
+                Descriptor descriptor = GetDescriptor2(orientChannels, center, 
+                    tentKernel, blockSize, cellNum);
                 feature.push_back(descriptor);
             }
 
@@ -253,7 +252,6 @@ namespace System
         }
 
         inline Descriptor Test::GetDescriptor2(const vector<Mat>& orientChannels, 
-            const vector<Mat>& filterOrientChannels,
             const Point& center, const Mat& weights, int blockSize, int cellNum)
         {
             int height = orientChannels[0].rows, 
@@ -282,6 +280,8 @@ namespace System
                         else
                         {
                             tmp = Scalar::all(0);
+                            int counter = 0;
+                            double mean = 0;
 
                             for (int m = 0; m < kernelSize; m++)
                             {
@@ -291,13 +291,25 @@ namespace System
                                     if (y < 0 || y >= height || x < 0 || x >= width)
                                         continue;
 
-                                    tmp.at<double>(m, n) = orientChannels[k].at<double>(y, x) - 
-                                        filterOrientChannels[k].at<double>(r, c);
-                                    tmp.at<double>(m, n) *= tmp.at<double>(m, n);
+                                    counter++;
+                                    mean += orientChannels[k].at<double>(y, x);
+                                }
+                            }
+
+                            mean /= counter;
+                            for (int m = 0; m < kernelSize; m++)
+                            {
+                                for (int n = 0; n < kernelSize; n++)
+                                {
+                                    int y = r - cellSize + m, x = c - cellSize + n;
+                                    if (y < 0 || y >= height || x < 0 || x >= width)
+                                        continue;
+
+                                    tmp.at<double>(m, n) = abs(orientChannels[k].at<double>(y, x) - mean);
                                 }
                             }
                             
-                            hist.at<double>(i, j, k) = sqrt(tmp.dot(weights));
+                            hist.at<double>(i, j, k) = tmp.dot(weights);
                         }
                     }
                 }
