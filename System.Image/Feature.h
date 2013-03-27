@@ -139,13 +139,14 @@ namespace System
         public:
             virtual LocalFeatureVec GetFeature(const Mat& sketchImage);
 
-            virtual String GetName() const { return "test@1500v2abs"; };
+            virtual String GetName() const { return "test@1500v2norm"; };
 
         private:
             static Descriptor GetDescriptor1(const vector<Mat>& filteredOrientImages, 
                 const Point& center, int blockSize, int cellNum);
 
-            static Descriptor GetDescriptor2(const vector<Mat>& orientImages, 
+            static Descriptor GetDescriptor2(const vector<Mat>& enlargeChannels, 
+                const vector<Mat>& enlargeFilteredChannels,
                 const Point& center, const Mat& weights, int blockSize, int cellNum);
 
             vector<Mat> cache;
@@ -186,7 +187,7 @@ namespace System
                     tentKernel.at<double>(i, j) = ratio;
                 }
             }
-            //normalize(tentKernel, tentKernel, 1, 0, NORM_L1);
+            normalize(tentKernel, tentKernel, 1, 0, NORM_L1);
 
             vector<Mat> orientChannels = GetChannels(sketchImage, orientNum);
             vector<Mat> filteredOrientChannels(orientNum);
@@ -202,10 +203,20 @@ namespace System
                 feature.push_back(descriptor);
             }
 
+            vector<Mat> enlargeChannels(orientNum);
+            for (int i = 0; i < orientNum; i++)
+                copyMakeBorder(orientChannels[i], enlargeChannels[i], cellSize, cellSize, 
+                    cellSize, cellSize, BORDER_DEFAULT | BORDER_ISOLATED);
+
+            vector<Mat> enlargeFilteredChannels(orientNum);
+            for (int i = 0; i < orientNum; i++)
+                copyMakeBorder(filteredOrientChannels[i], enlargeFilteredChannels[i], cellSize, cellSize, 
+                    cellSize, cellSize, BORDER_DEFAULT | BORDER_ISOLATED);
+
             for (Point center : centers)
             {
-                Descriptor descriptor = GetDescriptor2(orientChannels, center, 
-                    tentKernel, blockSize, cellNum);
+                Descriptor descriptor = GetDescriptor2(enlargeChannels, enlargeFilteredChannels,
+                    center, tentKernel, blockSize, cellNum);
                 feature.push_back(descriptor);
             }
 
@@ -251,15 +262,16 @@ namespace System
             return descriptor;
         }
 
-        inline Descriptor Test::GetDescriptor2(const vector<Mat>& orientChannels, 
+        inline Descriptor Test::GetDescriptor2(const vector<Mat>& enlargeChannels, 
+            const vector<Mat>& enlargeFilteredChannels,
             const Point& center, const Mat& weights, int blockSize, int cellNum)
         {
-            int height = orientChannels[0].rows, 
-                width = orientChannels[0].cols;
             int cellSize = blockSize / cellNum;
-            int expectedTop = center.y - blockSize / 2,
-                expectedLeft = center.x - blockSize / 2,
-                orientNum = orientChannels.size();
+            int imageBottom = enlargeFilteredChannels[0].rows - cellSize,
+                imageRight = enlargeFilteredChannels[0].cols - cellSize;
+            int expectedTop = center.y - blockSize / 2 + cellSize,
+                expectedLeft = center.x - blockSize / 2 + cellSize,
+                orientNum = enlargeChannels.size();
             int dims[] = { cellNum, cellNum, orientNum };
             Mat hist(3, dims, CV_64F);
 
@@ -275,42 +287,27 @@ namespace System
                         int r = (int)(expectedTop + (i + 0.5) * cellSize),
                             c = (int)(expectedLeft + (j + 0.5) * cellSize);
 
-                        if (r < 0 || r >= height || c < 0 || c >= width)
-                            hist.at<double>(i, j, k) = 0;
-                        else
+                        if (r < cellSize || c < cellSize || r >= imageBottom || c >= imageRight)
                         {
-                            tmp = Scalar::all(0);
-                            int counter = 0;
-                            double mean = 0;
-
-                            for (int m = 0; m < kernelSize; m++)
-                            {
-                                for (int n = 0; n < kernelSize; n++)
-                                {
-                                    int y = r - cellSize + m, x = c - cellSize + n;
-                                    if (y < 0 || y >= height || x < 0 || x >= width)
-                                        continue;
-
-                                    counter++;
-                                    mean += orientChannels[k].at<double>(y, x);
-                                }
-                            }
-
-                            mean /= counter;
-                            for (int m = 0; m < kernelSize; m++)
-                            {
-                                for (int n = 0; n < kernelSize; n++)
-                                {
-                                    int y = r - cellSize + m, x = c - cellSize + n;
-                                    if (y < 0 || y >= height || x < 0 || x >= width)
-                                        continue;
-
-                                    tmp.at<double>(m, n) = abs(orientChannels[k].at<double>(y, x) - mean);
-                                }
-                            }
-                            
-                            hist.at<double>(i, j, k) = tmp.dot(weights);
+                            hist.at<double>(i, j, k) = 0;
+                            continue;
                         }
+
+                        tmp = Scalar::all(0);
+
+                        for (int m = 0; m < kernelSize; m++)
+                        {
+                            for (int n = 0; n < kernelSize; n++)
+                            {
+                                int y = r - cellSize + m, x = c - cellSize + n;
+
+                                tmp.at<double>(m, n) = enlargeChannels[k].at<double>(y, x) - 
+                                    enlargeFilteredChannels[k].at<double>(r, c);
+                                tmp.at<double>(m, n) *= tmp.at<double>(m, n);
+                            }
+                        }
+
+                        hist.at<double>(i, j, k) = sqrt(tmp.dot(weights));
                     }
                 }
             }

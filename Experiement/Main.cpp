@@ -408,6 +408,49 @@ void EdgeMatchingCrossValidation(const System::String& imageSetPath, const EdgeM
     fclose(file);
 }
 
+vector<double> Boosting(const vector<Histogram>& data, const vector<int>& labels)
+{
+    vector<Tuple<vector<Histogram>, vector<Histogram>, vector<size_t>>> pass = 
+        RandomSplit(data, 3);
+
+    int histSize = data[0].size();
+    vector<double> weights(histSize);
+
+    for (int k = 0; k < histSize; k++)
+    {
+        vector<Histogram>& evaluationSet = pass[0].Item1();
+        vector<Histogram>& trainingSet = pass[0].Item2();
+        vector<size_t>& pickUpIndexes = pass[0].Item3();
+
+        vector<int> trainingLabels, evaluationLabels;
+        int counter = 0;
+        for (int j = 0; j < data.size(); j++)
+        {
+            if (counter < pickUpIndexes.size() && j == pickUpIndexes[counter])
+            {
+                evaluationLabels.push_back(labels[j]);
+                counter++;
+            }
+            else
+                trainingLabels.push_back(labels[j]);
+        }
+
+        vector<Histogram> evaluationData(evaluationSet.size()), trainingData(trainingSet.size());
+        for (int j = 0; j < evaluationSet.size(); j++)
+            evaluationData[j].push_back(evaluationSet[j][k]);
+        for (int j = 0; j < trainingSet.size(); j++)
+            trainingData[j].push_back(trainingSet[j][k]);
+
+        KNN<Histogram> knn;
+        pair<double, map<int, double>> precisions = 
+            knn.Evaluate(4, trainingData, trainingLabels, evaluationData, evaluationLabels);
+
+        weights[k] = precisions.first;
+    }
+
+    return weights;
+}
+
 template<typename LocalFeature>
 void LocalFeatureTest(const System::String& imageSetPath, const LocalFeature& feature, 
                                  int wordNum, int sampleNum = 1000000, int fold = 3)
@@ -473,21 +516,19 @@ void LocalFeatureTest(const System::String& imageSetPath, const LocalFeature& fe
 
         vector<Histogram> trainingHistograms(trainingSet.size()), evaluationHistograms(evaluationSet.size());
 
+        NormlizeDeviation(trainingHistograms1);
+        NormlizeDeviation(trainingHistograms2);
         for (int i = 0; i < trainingSet.size(); i++)
         {
-            NormlizeDeviation(trainingHistograms1);
             trainingHistograms[i].push_back(trainingHistograms1[i].begin(), trainingHistograms1[i].end());
-
-            NormlizeDeviation(trainingHistograms2);
             trainingHistograms[i].push_back(trainingHistograms2[i].begin(), trainingHistograms2[i].end());
         }
 
+        NormlizeDeviation(evaluationHistograms1);
+        NormlizeDeviation(evaluationHistograms2);
         for (int i = 0; i < evaluationSet.size(); i++)
         {
-            NormlizeDeviation(evaluationHistograms1);
             evaluationHistograms[i].push_back(evaluationHistograms1[i].begin(), evaluationHistograms1[i].end());
-
-            NormlizeDeviation(evaluationHistograms2);
             evaluationHistograms[i].push_back(evaluationHistograms2[i].begin(), evaluationHistograms2[i].end());
         }
 
@@ -502,6 +543,16 @@ void LocalFeatureTest(const System::String& imageSetPath, const LocalFeature& fe
             }
             else
                 trainingLabels.push_back(images[j].Item2());
+        }
+
+        vector<double> weights = Boosting(trainingHistograms, trainingLabels);
+        for (int k = 0; k < weights.size(); k++)
+        {
+            for (int i = 0; i < trainingHistograms.size(); i++)
+                trainingHistograms[i][k] *= weights[k];
+
+            for (int i = 0; i < evaluationHistograms.size(); i++)
+                evaluationHistograms[i][k] *= weights[k];
         }
 
         //printf("Perform LDA...\n");
