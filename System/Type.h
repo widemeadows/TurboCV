@@ -275,12 +275,28 @@ namespace System
 
         operator const vector<T>&() const { return *ptr; }
 
+        template<typename U>
+        Vector<T> operator*(const U& factor) const
+        {
+            size_t length = ptr->size();
+            Vector<T> result(length);
+
+            for (size_t i = 0; i < length; i++)
+                result[i] = (*ptr)[i] * factor;
+
+            return result;
+        }
+
         typename vector<T>::iterator begin() const { return ptr->begin(); }
         typename vector<T>::iterator end() const { return ptr->end(); }
 
         void push_back(const T& item) { ptr->push_back(item); }
-        void push_back(typename const vector<T>::iterator& begin,
-            typename const vector<T>::iterator& end) { ptr->insert(ptr->end(), begin, end); }
+        void push_back(const Vector<T>& vec) { ptr->insert(ptr->end(), vec.begin(), vec.end()); }
+        void push_back(typename const vector<T>::iterator& begin, typename const vector<T>::iterator& end) 
+        { 
+            ptr->insert(ptr->end(), begin, end); 
+        }
+
         void clear() { ptr->clear(); }
 
         size_t size() const { return ptr->size(); }

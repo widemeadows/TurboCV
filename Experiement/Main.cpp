@@ -451,6 +451,17 @@ vector<double> Boosting(const vector<Histogram>& data, const vector<int>& labels
     return weights;
 }
 
+template<typename T, typename U>
+vector<T> operator*(const vector<T>& vec, const U& factor)
+{
+    vector<T> result(vec.size());
+
+    for (size_t i = 0; i < vec.size(); i++)
+        result[i] = vec[i] * factor;
+
+    return result;
+}
+
 template<typename LocalFeature>
 void LocalFeatureTest(const System::String& imageSetPath, const LocalFeature& feature, 
                                  int wordNum, int sampleNum = 1000000, int fold = 3)
@@ -478,7 +489,7 @@ void LocalFeatureTest(const System::String& imageSetPath, const LocalFeature& fe
         vector<LocalFeature_f>& trainingSet = pass[i].Item2();
         vector<size_t>& pickUpIndexes = pass[i].Item3();
 
-        vector<LocalFeature_f> evaluationSet1(evaluationSet.size());
+        /*vector<LocalFeature_f> evaluationSet1(evaluationSet.size());
         vector<LocalFeature_f> evaluationSet2(evaluationSet.size());
         for (int i = 0; i < evaluationSet.size(); i++)
         {
@@ -496,19 +507,99 @@ void LocalFeatureTest(const System::String& imageSetPath, const LocalFeature& fe
                 trainingSet[i].begin() + trainingSet[i].size() / 2);
             trainingSet2[i].push_back(trainingSet[i].begin() + trainingSet[i].size() / 2, 
                 trainingSet[i].end());
-        }
+        }*/
 
         printf("Compute Visual Words...\n");
-        //vector<Word_f> words = BOV::GetVisualWords(trainingSet, wordNum, sampleNum);
+        vector<Word_f> words = BOV::GetVisualWords(trainingSet, wordNum, sampleNum);
 
-        vector<Word_f> words1 = BOV::GetVisualWords(trainingSet1, wordNum, sampleNum);
-        vector<Word_f> words2 = BOV::GetVisualWords(trainingSet2, wordNum, sampleNum);
+        //vector<Word_f> words1 = BOV::GetVisualWords(trainingSet1, wordNum, sampleNum);
+        //vector<Word_f> words2 = BOV::GetVisualWords(trainingSet2, wordNum, sampleNum);
 
         printf("Compute Frequency Histograms...\n");
-        //vector<Histogram> trainingHistograms = BOV::GetFrequencyHistograms(trainingSet, words);
-        //vector<Histogram> evaluationHistograms = BOV::GetFrequencyHistograms(evaluationSet, words);
+        vector<Histogram> trainingHistograms = BOV::GetFrequencyHistograms(trainingSet, words) * 4;
+        vector<Histogram> evaluationHistograms = BOV::GetFrequencyHistograms(evaluationSet, words) * 4;
 
-        vector<Histogram> trainingHistograms1 = BOV::GetFrequencyHistograms(trainingSet1, words1);
+        vector<Point> centers = SampleOnGrid(256, 256, 28);
+
+        vector<vector<LocalFeature_f>> parts(4);
+        for (int j = 0; j < trainingSet.size(); j++)
+        {
+            assert(centers.size() == trainingSet[j].size());
+            vector<LocalFeature_f> tmp(4);
+
+            for (int k = 0; k < centers.size(); k++)
+            {
+                if (centers[k].y < 256 / 2)
+                {
+                    if (centers[k].x < 256 / 2)
+                        tmp[0].push_back(trainingSet[j][k]);
+                    else
+                        tmp[1].push_back(trainingSet[j][k]);
+                }
+                else
+                {
+                    if (centers[k].x < 256 / 2)
+                        tmp[2].push_back(trainingSet[j][k]);
+                    else
+                        tmp[3].push_back(trainingSet[j][k]);
+                }
+            }
+
+            for (int k = 0; k < 4; k++)
+                parts[k].push_back(tmp[k]);
+        }
+
+        for (int j = 0; j < 4; j++)
+        {
+            vector<Histogram> result = BOV::GetFrequencyHistograms(parts[j], words);
+            parts[j].clear();
+
+            assert(result.size() == trainingHistograms.size());
+            for (int k = 0; k < result.size(); k++)
+                trainingHistograms[k].push_back(result[k]);
+        }
+
+        for (int j = 0; j < evaluationSet.size(); j++)
+        {
+            assert(centers.size() == evaluationSet[j].size());
+            vector<LocalFeature_f> tmp(4);
+
+            for (int k = 0; k < centers.size(); k++)
+            {
+                if (centers[k].y < 256 / 2)
+                {
+                    if (centers[k].x < 256 / 2)
+                        tmp[0].push_back(evaluationSet[j][k]);
+                    else
+                        tmp[1].push_back(evaluationSet[j][k]);
+                }
+                else
+                {
+                    if (centers[k].x < 256 / 2)
+                        tmp[2].push_back(evaluationSet[j][k]);
+                    else
+                        tmp[3].push_back(evaluationSet[j][k]);
+                }
+            }
+
+            for (int k = 0; k < 4; k++)
+                parts[k].push_back(tmp[k]);
+        }
+
+        for (int j = 0; j < 4; j++)
+        {
+            vector<Histogram> result = BOV::GetFrequencyHistograms(parts[j], words);
+            parts[j].clear();
+
+            assert(result.size() == evaluationHistograms.size());
+            for (int k = 0; k < result.size(); k++)
+                evaluationHistograms[k].push_back(result[k]);
+        }
+
+        assert(trainingHistograms[0].size() == wordNum * 5 &&
+            evaluationHistograms[0].size() == wordNum * 5);
+
+        /*vector<Histogram> trainingHistograms1 = BOV::GetFrequencyHistograms(trainingSet1, words1);
         vector<Histogram> trainingHistograms2 = BOV::GetFrequencyHistograms(trainingSet2, words2);
 
         vector<Histogram> evaluationHistograms1 = BOV::GetFrequencyHistograms(evaluationSet1, words1);
@@ -530,30 +621,30 @@ void LocalFeatureTest(const System::String& imageSetPath, const LocalFeature& fe
         {
             evaluationHistograms[i].push_back(evaluationHistograms1[i].begin(), evaluationHistograms1[i].end());
             evaluationHistograms[i].push_back(evaluationHistograms2[i].begin(), evaluationHistograms2[i].end());
-        }
+        }*/
 
         vector<int> trainingLabels, evaluationLabels;
         int counter = 0;
-        for (int j = 0; j < imageNum; j++)
+        for (int k = 0; k < imageNum; k++)
         {
-            if (counter < pickUpIndexes.size() && j == pickUpIndexes[counter])
+            if (counter < pickUpIndexes.size() && k == pickUpIndexes[counter])
             {
-                evaluationLabels.push_back(images[j].Item2());
+                evaluationLabels.push_back(images[k].Item2());
                 counter++;
             }
             else
-                trainingLabels.push_back(images[j].Item2());
+                trainingLabels.push_back(images[k].Item2());
         }
 
-        vector<double> weights = Boosting(trainingHistograms, trainingLabels);
-        for (int k = 0; k < weights.size(); k++)
-        {
-            for (int i = 0; i < trainingHistograms.size(); i++)
-                trainingHistograms[i][k] *= weights[k];
+        //vector<double> weights = Boosting(trainingHistograms, trainingLabels);
+        //for (int k = 0; k < weights.size(); k++)
+        //{
+        //    for (int i = 0; i < trainingHistograms.size(); i++)
+        //        trainingHistograms[i][k] *= weights[k];
 
-            for (int i = 0; i < evaluationHistograms.size(); i++)
-                evaluationHistograms[i][k] *= weights[k];
-        }
+        //    for (int i = 0; i < evaluationHistograms.size(); i++)
+        //        evaluationHistograms[i][k] *= weights[k];
+        //}
 
         //printf("Perform LDA...\n");
         //pair<vector<Histogram>, vector<Histogram>> result = LDAOperator::ComputeLDA(
@@ -726,5 +817,5 @@ int main()
     //imshow("win", image);
     //waitKey(0);
 
-    system("pause");
+    //system("pause");
 }

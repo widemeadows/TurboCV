@@ -139,7 +139,7 @@ namespace System
         public:
             virtual LocalFeatureVec GetFeature(const Mat& sketchImage);
 
-            virtual String GetName() const { return "test@1500v2norm"; };
+            virtual String GetName() const { return "test@1500hier"; };
 
         private:
             static Descriptor GetDescriptor1(const vector<Mat>& filteredOrientImages, 
@@ -187,7 +187,7 @@ namespace System
                     tentKernel.at<double>(i, j) = ratio;
                 }
             }
-            normalize(tentKernel, tentKernel, 1, 0, NORM_L1);
+            //normalize(tentKernel, tentKernel, 1, 0, NORM_L1);
 
             vector<Mat> orientChannels = GetChannels(sketchImage, orientNum);
             vector<Mat> filteredOrientChannels(orientNum);
@@ -203,22 +203,22 @@ namespace System
                 feature.push_back(descriptor);
             }
 
-            vector<Mat> enlargeChannels(orientNum);
-            for (int i = 0; i < orientNum; i++)
-                copyMakeBorder(orientChannels[i], enlargeChannels[i], cellSize, cellSize, 
-                    cellSize, cellSize, BORDER_DEFAULT | BORDER_ISOLATED);
+            //vector<Mat> enlargeChannels(orientNum);
+            //for (int i = 0; i < orientNum; i++)
+            //    copyMakeBorder(orientChannels[i], enlargeChannels[i], cellSize, cellSize, 
+            //        cellSize, cellSize, BORDER_DEFAULT | BORDER_ISOLATED);
 
-            vector<Mat> enlargeFilteredChannels(orientNum);
-            for (int i = 0; i < orientNum; i++)
-                copyMakeBorder(filteredOrientChannels[i], enlargeFilteredChannels[i], cellSize, cellSize, 
-                    cellSize, cellSize, BORDER_DEFAULT | BORDER_ISOLATED);
+            //vector<Mat> enlargeFilteredChannels(orientNum);
+            //for (int i = 0; i < orientNum; i++)
+            //    copyMakeBorder(filteredOrientChannels[i], enlargeFilteredChannels[i], cellSize, cellSize, 
+            //        cellSize, cellSize, BORDER_DEFAULT | BORDER_ISOLATED);
 
-            for (Point center : centers)
-            {
-                Descriptor descriptor = GetDescriptor2(enlargeChannels, enlargeFilteredChannels,
-                    center, tentKernel, blockSize, cellNum);
-                feature.push_back(descriptor);
-            }
+            //for (Point center : centers)
+            //{
+            //    Descriptor descriptor = GetDescriptor2(enlargeChannels, enlargeFilteredChannels,
+            //        center, tentKernel, blockSize, cellNum);
+            //    feature.push_back(descriptor);
+            //}
 
             return feature;
         }
