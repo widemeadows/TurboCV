@@ -150,6 +150,20 @@ namespace System
 	        return result;
         }
 
+        inline vector<double> linspace(double start, double end, int pointNum)
+        {
+            double size = (end - start) / (pointNum - 1);
+
+            vector<double> result;
+            result.push_back(start);
+            for (int i = 1; i < pointNum - 1; i++)
+                result.push_back(result[i - 1] + size);
+            result.push_back(end);
+
+            assert(result.size() == pointNum);
+            return result;
+        }
+
         inline void imshow(const Mat& image, bool scale = true)
         {
             double maximum = 1e-14, minimum = 1e14;

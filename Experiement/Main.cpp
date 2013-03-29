@@ -30,20 +30,6 @@ inline vector<Tuple<Mat, int>> GetImages(const System::String& imageSetPath,
     return images;
 }
 
-inline vector<double> linspace(double start, double end, int pointNum)
-{
-    double size = (end - start) / (pointNum - 1);
-
-    vector<double> result;
-    result.push_back(start);
-    for (int i = 1; i < pointNum - 1; i++)
-        result.push_back(result[i - 1] + size);
-    result.push_back(end);
-
-    assert(result.size() == pointNum);
-    return result;
-}
-
 Tuple<vector<double>, vector<double>> ROC(const vector<double>& distances, 
     const vector<bool>& relevants)
 {
@@ -462,6 +448,45 @@ vector<T> operator*(const vector<T>& vec, const U& factor)
     return result;
 }
 
+vector<vector<LocalFeature_f>> DivideLocalFeatures(const vector<LocalFeature_f> features)
+{
+    int blockSize = 128;
+
+    vector<Point> wordCenters;
+    for (int i = 1; i <= 3; i++)
+        for (int j = 1; j <= 3; j++)
+            wordCenters.push_back(Point(i * 64, j * 64));
+
+    vector<Point> descPoints = SampleOnGrid(256, 256, 28);
+    assert(descPoints.size() == features[0].size());
+
+    vector<vector<LocalFeature_f>> parts(wordCenters.size());
+    for (int i = 0; i < features.size(); i++)
+    {
+        vector<LocalFeature_f> tmp(wordCenters.size());
+
+        for (int j = 0; j < wordCenters.size(); j++)
+        {
+            int top = wordCenters[j].y - blockSize / 2,
+                bottom = wordCenters[j].y + blockSize / 2,
+                left = wordCenters[j].x - blockSize / 2,
+                right = wordCenters[j].x + blockSize / 2;
+
+            for (int k = 0; k < descPoints.size(); k++)
+            {
+                if (top <= descPoints[k].y && descPoints[k].y < bottom &&
+                    left <= descPoints[k].x && descPoints[k].x < right)
+                    tmp[j].push_back(features[i][k]);
+            }
+        }
+
+        for (int j = 0; j < wordCenters.size(); j++)
+            parts[j].push_back(tmp[j]);
+    }
+
+    return parts;
+}
+
 template<typename LocalFeature>
 void LocalFeatureTest(const System::String& imageSetPath, const LocalFeature& feature, 
                                  int wordNum, int sampleNum = 1000000, int fold = 3)
@@ -519,57 +544,20 @@ void LocalFeatureTest(const System::String& imageSetPath, const LocalFeature& fe
         vector<Histogram> trainingHistograms = BOV::GetFrequencyHistograms(trainingSet, words) * 9;
         vector<Histogram> evaluationHistograms = BOV::GetFrequencyHistograms(evaluationSet, words) * 9;
 
-        vector<Point> centers = SampleOnGrid(256, 256, 28);
-
-        vector<vector<LocalFeature_f>> parts(9);
-        for (int j = 0; j < trainingSet.size(); j++)
-        {
-            assert(centers.size() == trainingSet[j].size());
-            vector<LocalFeature_f> tmp(9);
-
-            for (int k = 0; k < centers.size(); k++)
-            {
-                int r = centers[k].y * 3 / 256,
-                    c = centers[k].x * 3 / 256;
-
-                tmp[r * 3 + c].push_back(trainingSet[j][k]);
-            }
-
-            for (int k = 0; k < tmp.size(); k++)
-                parts[k].push_back(tmp[k]);
-        }
-
+        vector<vector<LocalFeature_f>> parts = DivideLocalFeatures(trainingSet);
         for (int j = 0; j < parts.size(); j++)
         {
             vector<Histogram> result = BOV::GetFrequencyHistograms(parts[j], words);
-            parts[j].clear();
 
             assert(result.size() == trainingHistograms.size());
             for (int k = 0; k < result.size(); k++)
                 trainingHistograms[k].push_back(result[k]);
         }
 
-        for (int j = 0; j < evaluationSet.size(); j++)
-        {
-            assert(centers.size() == evaluationSet[j].size());
-            vector<LocalFeature_f> tmp(9);
-
-            for (int k = 0; k < centers.size(); k++)
-            {
-                int r = centers[k].y * 3 / 256,
-                    c = centers[k].x * 3 / 256;
-
-                tmp[r * 3 + c].push_back(evaluationSet[j][k]);
-            }
-
-            for (int k = 0; k < tmp.size(); k++)
-                parts[k].push_back(tmp[k]);
-        }
-
+        parts = DivideLocalFeatures(evaluationSet);
         for (int j = 0; j < parts.size(); j++)
         {
             vector<Histogram> result = BOV::GetFrequencyHistograms(parts[j], words);
-            parts[j].clear();
 
             assert(result.size() == evaluationHistograms.size());
             for (int k = 0; k < result.size(); k++)

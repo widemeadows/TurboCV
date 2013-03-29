@@ -139,7 +139,7 @@ namespace System
         public:
             virtual LocalFeatureVec GetFeature(const Mat& sketchImage);
 
-            virtual String GetName() const { return "test@1500hier"; };
+            virtual String GetName() const { return "test@1500hier9overlap"; };
 
         private:
             static Descriptor GetDescriptor1(const vector<Mat>& filteredOrientImages, 
