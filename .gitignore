@@ -23,6 +23,7 @@
 *.sdf
 *.opensdf
 *.unsuccessfulbuild
+*.out
 ipch/
 [Oo]bj/
 [Bb]in
