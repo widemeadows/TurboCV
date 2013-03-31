@@ -164,6 +164,58 @@ namespace System
             return result;
         }
 
+        // Params:
+        // 1. distances -- Distances from database images to the query;
+        // 2. relevants -- If image[i] and the query belong to the same category, then relevants[i] is true;
+        // 3. numOfCP -- Number of Control Points.
+        Tuple<vector<double>, vector<double>> ROC(const vector<double>& distances, const vector<bool>& relevants,
+            int numOfCP = 20)
+        {
+            vector<double> positiveDist, negativeDist;
+            for (int i = 0; i < relevants.size(); i++)
+            {
+                if (relevants[i])
+                    positiveDist.push_back(distances[i]);
+                else
+                    negativeDist.push_back(distances[i]);
+            }
+
+            double firstCP = Math::Min(distances);
+            double lastCP = Math::Max(distances);
+            vector<double> plot = linspace(firstCP, lastCP, numOfCP);
+
+            vector<double> TP(numOfCP), FP(numOfCP), TN(numOfCP), FN(numOfCP);
+            for (int i = 0; i < numOfCP; i++)
+            {
+                for (auto item : positiveDist)
+                    if (item <= plot[i])
+                        TP[i]++;
+
+                for (auto item : negativeDist)
+                    if (item <= plot[i])
+                        FP[i]++;
+
+                for (auto item : positiveDist)
+                    if (item > plot[i])
+                        FN[i]++;
+
+                for (auto item : negativeDist)
+                    if (item > plot[i])
+                        TN[i]++;
+
+                assert(TP[i] + FN[i] == positiveDist.size() && FP[i] + TN[i] == negativeDist.size());
+            }
+
+            vector<double> DR, FPR;
+            for (int i = 0; i < numOfCP; i++)
+            {
+                DR.push_back(TP[i] / (TP[i] + FN[i]));
+                FPR.push_back(FP[i] / (FP[i] + TN[i]));
+            }
+
+            return CreateTuple(DR, FPR);
+        }
+
         inline void imshow(const Mat& image, bool scale = true)
         {
             double maximum = 1e-14, minimum = 1e14;
