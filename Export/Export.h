@@ -36,7 +36,7 @@ struct EXPORT_API Matrix
         {
             m[i] = new T[cols];
             for (int j = 0; j < cols; j++)
-                m[i][j] = other[i][j];
+                m[i][j] = other.m[i][j];
         }
     }
 
