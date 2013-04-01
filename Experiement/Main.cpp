@@ -55,7 +55,7 @@ void NormlizeDeviation(vector<Histogram> vecs)
 
 template<typename LocalFeature>
 void LocalFeatureCrossValidation(const System::String& imageSetPath, const LocalFeature& feature, 
-                                 int wordNum, int sampleNum = 1000000, int fold = 3)
+                                 int wordNum, bool thinning = false, int sampleNum = 1000000, int fold = 3)
 {
     srand(1);
     vector<Tuple<Mat, int>> images = GetImages(imageSetPath, CV_LOAD_IMAGE_GRAYSCALE);
@@ -66,7 +66,10 @@ void LocalFeatureCrossValidation(const System::String& imageSetPath, const Local
     LocalFeature machine = feature;
     #pragma omp parallel for private(machine)
     for (int i = 0; i < imageNum; i++)
-        Convert(machine.GetFeatureWithPreprocess(images[i].Item1(), true), features[i]);
+    {
+        Convert(machine.GetFeatureWithPreprocess(images[i].Item1(), thinning), features[i]);
+        images[i].Item1().release();
+    }
 
     { // Use a block here to destruct words and freqHistograms immediately.
         printf("Compute Visual Words...\n");
@@ -76,7 +79,7 @@ void LocalFeatureCrossValidation(const System::String& imageSetPath, const Local
         vector<Histogram> freqHistograms = BOV::GetFrequencyHistograms(features, words);
 
         printf("Write To File...\n");
-        System::String savePath = feature.GetName() + "_oracles";
+        System::String savePath = feature.GetName() + "_" + imageSetPath;
         FILE* file = fopen(savePath, "w");
         for (int i = 0; i < freqHistograms.size(); i++)
         {
@@ -139,7 +142,7 @@ void LocalFeatureCrossValidation(const System::String& imageSetPath, const Local
         }
     }
 
-    System::String savePath = feature.GetName() + "_oracles_knn.out";
+    System::String savePath = feature.GetName() + "_" + imageSetPath + "_knn.out";
     FILE* file = fopen(savePath, "w");
     for (int i = 0; i < passResult.size(); i++)
         fprintf(file, "Fold %d Accuracy: %f\n", i + 1, passResult[i]);
@@ -149,7 +152,7 @@ void LocalFeatureCrossValidation(const System::String& imageSetPath, const Local
         Math::StandardDeviation(passResult));
     fclose(file);
 
-    savePath = feature.GetName() + "_oracles_roc";
+    savePath = feature.GetName() + "_" + imageSetPath + "_roc";
     file = fopen(savePath, "w");
     for (int i = 0; i < DRs.size(); i++)
     {
@@ -166,7 +169,7 @@ void LocalFeatureCrossValidation(const System::String& imageSetPath, const Local
 
 template<typename GlobalFeature>
 void GlobalFeatureCrossValidation(const System::String& imageSetPath, const GlobalFeature& feature, 
-                                  int fold = 3)
+                                  bool thinning = false, int fold = 3)
 {
     srand(1);
     vector<Tuple<Mat, int>> images = GetImages(imageSetPath, CV_LOAD_IMAGE_GRAYSCALE);
@@ -177,10 +180,13 @@ void GlobalFeatureCrossValidation(const System::String& imageSetPath, const Glob
     GlobalFeature machine = feature;
     #pragma omp parallel for private(machine)
     for (int i = 0; i < imageNum; i++)
-        Convert(machine.GetFeatureWithPreprocess(images[i].Item1(), true), features[i]);
+    {
+        Convert(machine.GetFeatureWithPreprocess(images[i].Item1(), thinning), features[i]);
+        images[i].Item1().release();
+    }
 
     printf("Write To File...\n");
-    System::String savePath = feature.GetName() + "_oracles";
+    System::String savePath = feature.GetName() + "_" + imageSetPath;
     FILE* file = fopen(savePath, "w");
     for (int i = 0; i < features.size(); i++)
     {
@@ -235,7 +241,7 @@ void GlobalFeatureCrossValidation(const System::String& imageSetPath, const Glob
         }
     }
 
-    savePath = feature.GetName() + "_oracles_knn.out";
+    savePath = feature.GetName() + "_" + imageSetPath + "_knn.out";
     file = fopen(savePath, "w");
     for (int i = 0; i < passResult.size(); i++)
         fprintf(file, "Fold %d Accuracy: %f\n", i + 1, passResult[i]);
@@ -246,7 +252,7 @@ void GlobalFeatureCrossValidation(const System::String& imageSetPath, const Glob
 
     fclose(file);
 
-    savePath = feature.GetName() + "_oracles_roc";
+    savePath = feature.GetName() + "_" + imageSetPath + "roc";
     file = fopen(savePath, "w");
     for (int i = 0; i < DRs.size(); i++)
     {
@@ -263,7 +269,7 @@ void GlobalFeatureCrossValidation(const System::String& imageSetPath, const Glob
 
 template<typename EdgeMatching>
 void EdgeMatchingCrossValidation(const System::String& imageSetPath, const EdgeMatching& matching,
-                                 int fold = 3)
+                                 bool thinning = false, int fold = 3)
 {
     srand(1);
     vector<Tuple<Mat, int>> images = GetImages(imageSetPath, CV_LOAD_IMAGE_GRAYSCALE);
@@ -274,7 +280,10 @@ void EdgeMatchingCrossValidation(const System::String& imageSetPath, const EdgeM
     EdgeMatching machine = matching;
     #pragma omp parallel for private(machine)
     for (int i = 0; i < imageNum; i++)
-        transforms[i] = machine.GetFeatureWithPreprocess(images[i].Item1(), true);
+    {
+        transforms[i] = machine.GetFeatureWithPreprocess(images[i].Item1(), thinning);
+        images[i].Item1().release();
+    }
 
     vector<Tuple<vector<EdgeMatching::Info>, vector<EdgeMatching::Info>, vector<size_t>>> pass = 
         RandomSplit(transforms, fold);
@@ -320,7 +329,7 @@ void EdgeMatchingCrossValidation(const System::String& imageSetPath, const EdgeM
         }
     }
 
-    System::String savePath = matching.GetName() + "_oracles_knn.out";
+    System::String savePath = matching.GetName() + "_" + imageSetPath + "_knn.out";
     FILE* file = fopen(savePath, "w");
     for (int i = 0; i < passResult.size(); i++)
         fprintf(file, "Fold %d Accuracy: %f\n", i + 1, passResult[i]);
@@ -330,7 +339,7 @@ void EdgeMatchingCrossValidation(const System::String& imageSetPath, const EdgeM
         Math::StandardDeviation(passResult));
     fclose(file);
 
-    savePath = matching.GetName() + "_oracles_roc";
+    savePath = matching.GetName() + "_" + imageSetPath + "_roc";
     file = fopen(savePath, "w");
     for (int i = 0; i < DRs.size(); i++)
     {
@@ -602,48 +611,48 @@ void LocalFeatureTest(const System::String& imageSetPath, const LocalFeature& fe
     fclose(file);
 }
 
-void Batch()
+void Batch(const System::String& imageSetPath, bool thinning = false)
 {
-    LocalFeatureCrossValidation("oracles_png", HOG(), 500);
+    LocalFeatureCrossValidation(imageSetPath, HOG(), 500, thinning);
     printf("\n");
 
-    LocalFeatureCrossValidation("oracles_png", SHOG(), 500);
+    LocalFeatureCrossValidation(imageSetPath, SHOG(), 500, thinning);
     printf("\n");
 
-    LocalFeatureCrossValidation("oracles_png", LogSHOG(), 500);
+    LocalFeatureCrossValidation(imageSetPath, LogSHOG(), 500, thinning);
     printf("\n");
 
-    GlobalFeatureCrossValidation("oracles_png", GHOG());
+    GlobalFeatureCrossValidation(imageSetPath, GHOG(), thinning);
     printf("\n");
 
-    LocalFeatureCrossValidation("oracles_png", HOOSC(), 1000);
+    LocalFeatureCrossValidation(imageSetPath, HOOSC(), 1000, thinning);
     printf("\n");
 
-    LocalFeatureCrossValidation("oracles_png", RHOOSC(), 1000);
+    LocalFeatureCrossValidation(imageSetPath, RHOOSC(), 1000, thinning);
     printf("\n");
 
-    LocalFeatureCrossValidation("oracles_png", SC(), 1000);
+    LocalFeatureCrossValidation(imageSetPath, SC(), 1000, thinning);
     printf("\n");
 
-    LocalFeatureCrossValidation("oracles_png", PSC(), 1000);
+    LocalFeatureCrossValidation(imageSetPath, PSC(), 1000, thinning);
     printf("\n");
 
-    LocalFeatureCrossValidation("oracles_png", RSC(), 1000);
+    LocalFeatureCrossValidation(imageSetPath, RSC(), 1000, thinning);
     printf("\n");
 
-    LocalFeatureCrossValidation("oracles_png", Gabor(), 500);
+    //LocalFeatureCrossValidation(imageSetPath, Gabor(), 500, thinning);
+    //printf("\n");
+
+    GlobalFeatureCrossValidation(imageSetPath, GIST(), thinning);
     printf("\n");
 
-    GlobalFeatureCrossValidation("oracles_png", GIST());
+    EdgeMatchingCrossValidation(imageSetPath, CM(), thinning);
     printf("\n");
 
-    EdgeMatchingCrossValidation("oracles_png", CM());
+    EdgeMatchingCrossValidation(imageSetPath, OCM(), thinning);
     printf("\n");
 
-    EdgeMatchingCrossValidation("oracles_png", OCM());
-    printf("\n");
-
-    EdgeMatchingCrossValidation("oracles_png", Hitmap());
+    EdgeMatchingCrossValidation(imageSetPath, Hitmap(), thinning);
     printf("\n");
 }
 
@@ -655,8 +664,10 @@ int main()
     //GlobalFeatureCrossValidation("oracles_png", GHOG());
     //printf("\n");
 
-    LocalFeatureTest("oracles_png", Test(), 1500);
-    printf("\n");
+    //LocalFeatureTest("oracles_png", Test(), 1500);
+    //printf("\n");
+
+    Batch("sketches", false);
 
     //Mat trans = getRotationMatrix2D(Point(image.rows / 2, image.cols / 2), -20, 1);
     //warpAffine(image, image, trans, image.size());
