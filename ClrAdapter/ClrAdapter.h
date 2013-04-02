@@ -74,13 +74,13 @@ namespace ClrAdapter {
     public ref class Convertor
     {
     public:
-        static Mat<float>^ ToManagedMat(const NativeMat& mat)
+        static Mat<uchar>^ ToManagedMat(const NativeMat& mat)
         {
-            Mat<float>^ result = gcnew Mat<float>(mat.rows, mat.cols);
+            Mat<uchar>^ result = gcnew Mat<uchar>(mat.rows, mat.cols);
 
             for (int i = 0; i < mat.rows; i++)
                 for (int j = 0; j < mat.cols; j++)
-                    result[i, j] = mat.atFLOAT(i, j);
+                    result[i, j] = mat.atUCHAR(i, j);
 
             return result;
         }
@@ -97,14 +97,37 @@ namespace ClrAdapter {
         }
     };
 
-    typedef List<Tuple<List<Point>^, Mat<float>^>^>^ Info;
+    typedef List<Tuple<List<Point>^, Mat<uchar>^>^> Info;
 
 	public ref class EdgeMatching
 	{
     public:
-        static array<Info>^ GetHitmap(List<Mat<uchar>^>^ images, bool thinning)
+        static Info^ GetHitmap(Mat<uchar>^ image, bool thinning)
         {
-            array<Info>^ result = gcnew array<Info>(images->Count);
+            NativeInfo tmp = PerformHitmap(Convertor::ToNativeMat(image), thinning);
+
+            Info^ result = gcnew Info();
+
+            for (int i = 0; i < tmp.size(); i++)
+            {
+                const vector<NativePoint>& item1 = tmp[i].first;
+                const NativeMat& item2 = tmp[i].second;
+
+                List<Point>^ points = gcnew List<Point>();
+                for (int j = 0; j < item1.size(); j++)
+                    points->Add(Point(item1[j]));
+
+                Mat<uchar>^ mat = Convertor::ToManagedMat(item2);
+
+                result->Add(Tuple::Create(points, mat));
+            }
+
+            return result;
+        }
+
+        static array<Info^>^ GetHitmap(List<Mat<uchar>^>^ images, bool thinning)
+        {
+            array<Info^>^ result = gcnew array<Info^>(images->Count);
 
             vector<NativeMat> nativeMats;
             for (int i = 0; i < images->Count; i++)
@@ -114,6 +137,8 @@ namespace ClrAdapter {
 
             for (int i = 0; i < images->Count; i++)
             {
+                result[i] = gcnew List<Tuple<List<Point>^, Mat<uchar>^>^>();
+
                 for (int j = 0; j < tmp[i].size(); j++)
                 {
                     const vector<NativePoint>& item1 = tmp[i][j].first;
@@ -123,7 +148,7 @@ namespace ClrAdapter {
                     for (int k = 0; k < item1.size(); k++)
                         points->Add(Point(item1[k]));
 
-                    Mat<float>^ mat = Convertor::ToManagedMat(item2);
+                    Mat<uchar>^ mat = Convertor::ToManagedMat(item2);
 
                     result[i]->Add(Tuple::Create(points, mat));
                 }
