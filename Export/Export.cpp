@@ -15,6 +15,10 @@ using namespace std;
 
 NativeMat::NativeMat(int rows, int cols, int type)
 {
+    this->rows = rows;
+    this->cols = cols;
+    this->type = type;
+
     if (type == EPT_UCHAR)
     {
         m = new uchar*[rows];
@@ -27,10 +31,6 @@ NativeMat::NativeMat(int rows, int cols, int type)
         for (int i = 0; i < rows; i++)
             ((float**)m)[i] = new float[cols];
     }
-
-    this->rows = rows;
-    this->cols = cols;
-    this->type = type;
 }
 
 NativeMat::NativeMat(const NativeMat& other)
@@ -51,12 +51,12 @@ NativeMat::NativeMat(const NativeMat& other)
     }
     else
     {
-        m = new uchar*[rows];
+        m = new float*[rows];
         for (int i = 0; i < rows; i++)
         {
-            ((uchar**)m)[i] = new uchar[cols];
+            ((float**)m)[i] = new float[cols];
             for (int j = 0; j < cols; j++)
-                ((uchar**)m)[i][j] = ((uchar**)other.m)[i][j];
+                ((float**)m)[i][j] = ((float**)other.m)[i][j];
         }
     }
 }
@@ -145,8 +145,7 @@ void NativeMat::clear()
     }
 }
 
-EXPORT_API vector<pair<vector<NativePoint>, NativeMat>> PerformHitmap(
-    const NativeMat& image, bool thinning)
+EXPORT_API NativeInfo PerformHitmap(const NativeMat& image, bool thinning)
 {
     Hitmap hitmap;
 
@@ -157,7 +156,7 @@ EXPORT_API vector<pair<vector<NativePoint>, NativeMat>> PerformHitmap(
 
     Hitmap::Info tmp = hitmap.GetFeatureWithPreprocess(cvImage, thinning);
 
-    vector<pair<vector<NativePoint>, NativeMat>> result;
+    NativeInfo result;
     for (int i = 0; i < tmp.size(); i++)
     {
         const Tuple<vector<Point>, Mat>& item = tmp[i];
@@ -176,5 +175,16 @@ EXPORT_API vector<pair<vector<NativePoint>, NativeMat>> PerformHitmap(
         result.push_back(make_pair(vec, mat));
     }
 
+    return result;
+}
+
+EXPORT_API vector<NativeInfo> PerformHitmap(const vector<NativeMat>& images, bool thinning)
+{
+    vector<NativeInfo> result(images.size());
+
+    #pragma omp parallel for
+    for (int i = 0; i < images.size(); i++)
+        result[i] = PerformHitmap(images[i], thinning);
+    
     return result;
 }

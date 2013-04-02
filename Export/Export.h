@@ -51,5 +51,7 @@ struct EXPORT_API NativePoint
     int x, y;
 };
 
-EXPORT_API vector<pair<vector<NativePoint>, NativeMat>> PerformHitmap(
-    const NativeMat& image, bool thinning);
+typedef vector<pair<vector<NativePoint>, NativeMat>> NativeInfo;
+
+EXPORT_API NativeInfo PerformHitmap(const NativeMat& image, bool thinning);
+EXPORT_API vector<NativeInfo> PerformHitmap(const vector<NativeMat>& images, bool thinning);

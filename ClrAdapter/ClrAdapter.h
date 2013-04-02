@@ -97,31 +97,39 @@ namespace ClrAdapter {
         }
     };
 
+    typedef List<Tuple<List<Point>^, Mat<float>^>^>^ Info;
+
 	public ref class EdgeMatching
 	{
     public:
-        static List<Tuple<List<Point>^, Mat<float>^>^>^ GetHitmap(Mat<uchar>^ image, bool thinning)
+        static array<Info>^ GetHitmap(List<Mat<uchar>^>^ images, bool thinning)
         {
-            vector<pair<vector<NativePoint>, NativeMat>> result = 
-                PerformHitmap(Convertor::ToNativeMat(image), thinning);
+            array<Info>^ result = gcnew array<Info>(images->Count);
 
-            List<Tuple<List<Point>^, Mat<float>^>^>^ list = 
-                gcnew List<Tuple<List<Point>^, Mat<float>^>^>();
-            for (int i = 0; i < result.size(); i++)
+            vector<NativeMat> nativeMats;
+            for (int i = 0; i < images->Count; i++)
+                nativeMats.push_back(Convertor::ToNativeMat(images[i]));
+
+            vector<NativeInfo> tmp = PerformHitmap(nativeMats, thinning);
+
+            for (int i = 0; i < images->Count; i++)
             {
-                const vector<NativePoint>& item1 = result[i].first;
-                const NativeMat& item2 = result[i].second;
+                for (int j = 0; j < tmp[i].size(); j++)
+                {
+                    const vector<NativePoint>& item1 = tmp[i][j].first;
+                    const NativeMat& item2 = tmp[i][j].second;
 
-                List<Point>^ points = gcnew List<Point>();
-                for (int j = 0; j < item1.size(); j++)
-                    points->Add(Point(item1[j]));
+                    List<Point>^ points = gcnew List<Point>();
+                    for (int k = 0; k < item1.size(); k++)
+                        points->Add(Point(item1[k]));
 
-                Mat<float>^ mat = Convertor::ToManagedMat(item2);
+                    Mat<float>^ mat = Convertor::ToManagedMat(item2);
 
-                list->Add(Tuple::Create(points, mat));
+                    result[i]->Add(Tuple::Create(points, mat));
+                }
             }
 
-            return list;
+            return result;
         }
     };
 }
