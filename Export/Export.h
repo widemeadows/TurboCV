@@ -10,89 +10,39 @@
 #define EXPORT_API __declspec(dllimport)
 #endif
 
-#include "../System/Type.h"
-using namespace System;
+#include <vector>
+#include <map>
+using namespace std;
 
-template<typename T>
-struct EXPORT_API Matrix
+#define EPT_UCHAR   1
+#define EPT_FLOAT   2
+
+typedef unsigned char uchar;
+
+struct EXPORT_API NativeMat
 {
-    Matrix(int rows, int cols)
-    {
-        m = new T*[rows];
-        for (int i = 0; i < rows; i++)
-            m[i] = new T[cols];
-    
-        this->rows = rows;
-        this->cols = cols;
-    }
+    NativeMat(int rows, int cols, int type);
+    NativeMat(const NativeMat& other);
 
-    Matrix(const Matrix& other)
-    {
-        this->rows = other.rows;
-        this->cols = other.cols;
+    ~NativeMat();
 
-        m = new T*[rows];
-        for (int i = 0; i < rows; i++)
-        {
-            m[i] = new T[cols];
-            for (int j = 0; j < cols; j++)
-                m[i][j] = other.m[i][j];
-        }
-    }
+    NativeMat& operator=(const NativeMat& other);
 
-    ~Matrix()
-    {
-        clear();
-    }
+    uchar& atUCHAR(int row, int col);
+    const uchar& atUCHAR(int row, int col) const;
 
-    Matrix& operator=(const Matrix& other)
-    {
-        if (m == other.m)
-            return this;
+    float& atFLOAT(int row, int col);
+    const float& atFLOAT(int row, int col) const;
 
-        if (rows != other.rows || cols != other.cols)
-        {
-            clear();
+    void clear();
 
-            rows = other.rows;
-            cols = other.cols;
-
-            m = new T*[rows];
-            for (int i = 0; i < rows; i++)
-                m[i] = new T[cols];
-        }
-        
-        for (int i = 0; i < rows; i++)
-            for (int j = 0; j < cols; j++)
-                m[i][j] = other.m[i][j];
-
-        return this;
-    }
-
-    T& at(int row, int col)
-    {
-        return m[row][col];
-    }
-
-    const T& at(int row, int col) const
-    {
-        return m[row][col];
-    }
-
-    void clear()
-    {
-        for (int i = 0; i < rows; i++)
-            delete[] m[i];
-        delete[] m;
-    }
-
-    T** m;
-    int rows, cols;
+    void* m;
+    int rows, cols, type;
 };
 
-struct EXPORT_API Position
+struct EXPORT_API NativePoint
 {
-    Position(int x, int y)
+    NativePoint(int x, int y)
     {
         this->x = x;
         this->y = y;
@@ -101,8 +51,5 @@ struct EXPORT_API Position
     int x, y;
 };
 
-typedef unsigned char uchar;
-
-EXPORT_API vector<pair<vector<Position>, Matrix<float>>> PerformHitmap(
-    const Matrix<uchar>& image, bool thinning);
-
+EXPORT_API vector<pair<vector<NativePoint>, NativeMat>> PerformHitmap(
+    const NativeMat& image, bool thinning);
