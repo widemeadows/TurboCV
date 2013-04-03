@@ -613,29 +613,29 @@ void LocalFeatureTest(const System::String& imageSetPath, const LocalFeature& fe
 
 void Batch(const System::String& imageSetPath, bool thinning = false)
 {
-    LocalFeatureCrossValidation(imageSetPath, HOG(), 500, thinning);
-    printf("\n");
+    //LocalFeatureCrossValidation(imageSetPath, HOG(), 500, thinning);
+    //printf("\n");
 
-    LocalFeatureCrossValidation(imageSetPath, RHOG(), 500, thinning);
-    printf("\n");
+    //LocalFeatureCrossValidation(imageSetPath, RHOG(), 500, thinning);
+    //printf("\n");
 
-    LocalFeatureCrossValidation(imageSetPath, SHOG(), 500, thinning);
-    printf("\n");
+    //LocalFeatureCrossValidation(imageSetPath, SHOG(), 500, thinning);
+    //printf("\n");
 
-    LocalFeatureCrossValidation(imageSetPath, LogSHOG(), 500, thinning);
-    printf("\n");
+    //LocalFeatureCrossValidation(imageSetPath, LogSHOG(), 500, thinning);
+    //printf("\n");
 
-    GlobalFeatureCrossValidation(imageSetPath, GHOG(), thinning);
-    printf("\n");
+    //GlobalFeatureCrossValidation(imageSetPath, GHOG(), thinning);
+    //printf("\n");
 
-    LocalFeatureCrossValidation(imageSetPath, HOOSC(), 1000, thinning);
-    printf("\n");
+    //LocalFeatureCrossValidation(imageSetPath, HOOSC(), 1000, thinning);
+    //printf("\n");
 
-    LocalFeatureCrossValidation(imageSetPath, RHOOSC(), 1000, thinning);
-    printf("\n");
+    //LocalFeatureCrossValidation(imageSetPath, RHOOSC(), 1000, thinning);
+    //printf("\n");
 
-    LocalFeatureCrossValidation(imageSetPath, SC(), 1000, thinning);
-    printf("\n");
+    //LocalFeatureCrossValidation(imageSetPath, SC(), 1000, thinning);
+    //printf("\n");
 
     LocalFeatureCrossValidation(imageSetPath, PSC(), 1000, thinning);
     printf("\n");
@@ -649,17 +649,17 @@ void Batch(const System::String& imageSetPath, bool thinning = false)
     //LocalFeatureCrossValidation(imageSetPath, Gabor(), 500, thinning);
     //printf("\n");
 
-    GlobalFeatureCrossValidation(imageSetPath, GIST(), thinning);
-    printf("\n");
+    //GlobalFeatureCrossValidation(imageSetPath, GIST(), thinning);
+    //printf("\n");
 
-    EdgeMatchingCrossValidation(imageSetPath, CM(), thinning);
-    printf("\n");
+    //EdgeMatchingCrossValidation(imageSetPath, CM(), thinning);
+    //printf("\n");
 
-    EdgeMatchingCrossValidation(imageSetPath, OCM(), thinning);
-    printf("\n");
+    //EdgeMatchingCrossValidation(imageSetPath, OCM(), thinning);
+    //printf("\n");
 
-    EdgeMatchingCrossValidation(imageSetPath, Hitmap(), thinning);
-    printf("\n");
+    //EdgeMatchingCrossValidation(imageSetPath, Hitmap(), thinning);
+    //printf("\n");
 }
 
 int main()
@@ -670,11 +670,11 @@ int main()
     //GlobalFeatureCrossValidation("oracles_png", GHOG());
     //printf("\n");
 
-    LocalFeatureTest("oracles_png", Test(), 1500);
-    printf("\n");
+    //LocalFeatureTest("oracles_png", Test(), 1500);
+    //printf("\n");
 
     //Batch("sketches", false);
-    //Batch("oracles", true);
+    Batch("oracles", true);
 
     //Mat trans = getRotationMatrix2D(Point(image.rows / 2, image.cols / 2), -20, 1);
     //warpAffine(image, image, trans, image.size());
