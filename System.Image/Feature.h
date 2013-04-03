@@ -329,15 +329,107 @@ namespace System
         {
         public:
             virtual LocalFeatureVec GetFeature(const Mat& sketchImage);
-            
+
             virtual String GetName() const { return "hog"; };
+
+        private:
+            static Descriptor GetDescriptor(const vector<Mat>& filteredOrientImages, 
+                const Point& center, int cellSize, int cellNum);
+        };
+
+        inline LocalFeatureVec HOG::GetFeature(const Mat& sketchImage)
+        {
+            int orientNum = 4, cellSize = 23, cellNum = 4;
+
+            int kernelSize = cellSize * 2 + 1;
+            Mat tentKernel(kernelSize, kernelSize, CV_64F);
+            for (int i = 0; i < kernelSize; i++)
+            {
+                for (int j = 0; j < kernelSize; j++)
+                {
+                    double ratio = 1 - sqrt((i - cellSize) * (i - cellSize) + 
+                        (j - cellSize) * (j - cellSize)) / cellSize;
+                    if (ratio < 0)
+                        ratio = 0;
+
+                    tentKernel.at<double>(i, j) = ratio;
+                }
+            }
+
+            vector<Mat> orientChannels = Gradient::GetOrientChannels(sketchImage, orientNum);
+            vector<Mat> filteredOrientChannels(orientNum);
+            for (int i = 0; i < orientNum; i++)
+                filter2D(orientChannels[i], filteredOrientChannels[i], -1, tentKernel);
+
+            LocalFeatureVec feature;
+            for (int i = 0; i < sketchImage.rows; i += cellSize)
+            {
+                for (int j = 0; j < sketchImage.cols; j += cellSize)
+                {
+                    Descriptor descriptor = GetDescriptor(filteredOrientChannels, Point(j, i), 
+                        cellSize, cellNum);
+                    feature.push_back(descriptor);
+                }
+            }
+
+            return feature;
+        }
+
+        inline Descriptor HOG::GetDescriptor(const vector<Mat>& filteredOrientChannels, 
+            const Point& center, int cellSize, int cellNum)
+        {
+            int height = filteredOrientChannels[0].rows, 
+                width = filteredOrientChannels[0].cols;
+            int blockSize = cellSize * cellNum;
+            int expectedTop = center.y - blockSize / 2,
+                expectedLeft = center.x - blockSize / 2,
+                orientNum = filteredOrientChannels.size();
+            int dims[] = { cellNum, cellNum, orientNum };
+            Mat hist(3, dims, CV_64F);
+
+            for (int i = 0; i < cellNum; i++)
+            {
+                for (int j = 0; j < cellNum; j++)
+                {
+                    for (int k = 0; k < orientNum; k++)
+                    {
+                        int r = (int)(expectedTop + (i + 0.5) * cellSize),
+                            c = (int)(expectedLeft + (j + 0.5) * cellSize);
+
+                        if (r < 0 || r >= height || c < 0 || c >= width)
+                            hist.at<double>(i, j, k) = 0;
+                        else
+                            hist.at<double>(i, j, k) = filteredOrientChannels[k].at<double>(r, c);
+                    }
+                }
+            }
+
+            Descriptor descriptor;
+            for (int i = 0; i < cellNum; i++)
+                for (int j = 0; j < cellNum; j++)
+                    for (int k = 0; k < orientNum; k++)
+                        descriptor.push_back(hist.at<double>(i, j, k));
+
+            NormTwoNormalize(descriptor.begin(), descriptor.end());
+            return descriptor;
+        }
+
+        ///////////////////////////////////////////////////////////////////////
+
+        // Regularly Sampling HOG
+        class RHOG : public LocalFeature
+        {
+        public:
+            virtual LocalFeatureVec GetFeature(const Mat& sketchImage);
+            
+            virtual String GetName() const { return "rhog"; };
 
         private:
             static Descriptor GetDescriptor(const vector<Mat>& filteredOrientImages, 
                 const Point& center, int blockSize, int cellNum);
         };
 
-        inline LocalFeatureVec HOG::GetFeature(const Mat& sketchImage)
+        inline LocalFeatureVec RHOG::GetFeature(const Mat& sketchImage)
         {
             int orientNum = 4, sampleNum = 28, blockSize = 92, cellNum = 4;
 
@@ -373,7 +465,7 @@ namespace System
             return feature;
         }
 
-        inline Descriptor HOG::GetDescriptor(const vector<Mat>& filteredOrientChannels, 
+        inline Descriptor RHOG::GetDescriptor(const vector<Mat>& filteredOrientChannels, 
             const Point& center, int blockSize, int cellNum)
         {
             int height = filteredOrientChannels[0].rows, 

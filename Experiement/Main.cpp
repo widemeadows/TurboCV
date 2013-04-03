@@ -252,7 +252,7 @@ void GlobalFeatureCrossValidation(const System::String& imageSetPath, const Glob
 
     fclose(file);
 
-    savePath = feature.GetName() + "_" + imageSetPath + "roc";
+    savePath = feature.GetName() + "_" + imageSetPath + "_roc";
     file = fopen(savePath, "w");
     for (int i = 0; i < DRs.size(); i++)
     {
@@ -616,6 +616,9 @@ void Batch(const System::String& imageSetPath, bool thinning = false)
     LocalFeatureCrossValidation(imageSetPath, HOG(), 500, thinning);
     printf("\n");
 
+    LocalFeatureCrossValidation(imageSetPath, RHOG(), 500, thinning);
+    printf("\n");
+
     LocalFeatureCrossValidation(imageSetPath, SHOG(), 500, thinning);
     printf("\n");
 
@@ -640,6 +643,9 @@ void Batch(const System::String& imageSetPath, bool thinning = false)
     LocalFeatureCrossValidation(imageSetPath, RSC(), 1000, thinning);
     printf("\n");
 
+    LocalFeatureCrossValidation(imageSetPath, PRSC(), 1000, thinning);
+    printf("\n");
+
     //LocalFeatureCrossValidation(imageSetPath, Gabor(), 500, thinning);
     //printf("\n");
 
@@ -658,17 +664,17 @@ void Batch(const System::String& imageSetPath, bool thinning = false)
 
 int main()
 {
-    //LocalFeatureCrossValidation("oracles_png", Test(), 1000);
+    //LocalFeatureCrossValidation("sketches", HOG(), 500);
     //printf("\n");
 
     //GlobalFeatureCrossValidation("oracles_png", GHOG());
     //printf("\n");
 
-    //LocalFeatureTest("oracles_png", Test(), 1500);
-    //printf("\n");
+    LocalFeatureTest("oracles_png", Test(), 1500);
+    printf("\n");
 
     //Batch("sketches", false);
-    Batch("oracles", false);
+    //Batch("oracles", true);
 
     //Mat trans = getRotationMatrix2D(Point(image.rows / 2, image.cols / 2), -20, 1);
     //warpAffine(image, image, trans, image.size());
