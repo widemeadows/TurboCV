@@ -674,7 +674,7 @@ int main()
     //printf("\n");
 
     //Batch("sketches", false);
-    Batch("oracles", true);
+    //Batch("oracles", true);
 
     //Mat trans = getRotationMatrix2D(Point(image.rows / 2, image.cols / 2), -20, 1);
     //warpAffine(image, image, trans, image.size());
