@@ -670,8 +670,8 @@ int main()
     //GlobalFeatureCrossValidation("oracles_png", GHOG());
     //printf("\n");
 
-    //LocalFeatureTest("oracles_png", Test(), 1500);
-    //printf("\n");
+    LocalFeatureTest("oracles_png", Test(), 1500);
+    printf("\n");
 
     //Batch("sketches", false);
     //Batch("oracles", true);
