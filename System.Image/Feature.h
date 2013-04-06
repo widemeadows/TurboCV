@@ -724,34 +724,42 @@ namespace System
 
         inline GlobalFeatureVec GHOG::GetFeature(const Mat& sketchImage)
         {
-            int orientNum = 8, blockSize = 48;
-
-            int kernelSize = blockSize * 2 + 1;
-            Mat tentKernel(kernelSize, kernelSize, CV_64F);
-            for (int i = 0; i < kernelSize; i++)
-            {
-                for (int j = 0; j < kernelSize; j++)
-                {
-                    double ratio = 1 - sqrt((i - blockSize) * (i - blockSize) + 
-                        (j - blockSize) * (j - blockSize)) / blockSize;
-                    if (ratio < 0)
-                        ratio = 0;
-
-                    tentKernel.at<double>(i, j) = ratio;
-                }
-            }
-            normalize(tentKernel, tentKernel, 1, 0, NORM_L1);
-
-            vector<Mat> orientChannels = Gradient::GetOrientChannels(sketchImage, orientNum);
-            vector<Mat> filteredOrientChannels(orientNum);
-            for (int i = 0; i < orientNum; i++)
-                filter2D(orientChannels[i], filteredOrientChannels[i], -1, tentKernel);
-
+            int orientNum = 8, block = 48;
             GlobalFeatureVec feature;
-            for (int i = blockSize / 2 - 1; i < sketchImage.rows; i += blockSize / 2)
-                for (int j = blockSize / 2 - 1; j < sketchImage.cols; j += blockSize / 2)
-                    for (int k = 0; k < orientNum; k++)
-                        feature.push_back(filteredOrientChannels[k].at<double>(i, j));      
+
+            for (int k = 1; k < 3; k++)
+            {
+                int blockSize = block * k;
+
+                int kernelSize = blockSize * 2 + 1;
+                Mat tentKernel(kernelSize, kernelSize, CV_64F);
+                for (int i = 0; i < kernelSize; i++)
+                {
+                    for (int j = 0; j < kernelSize; j++)
+                    {
+                        double ratio = 1 - sqrt((i - blockSize) * (i - blockSize) + 
+                            (j - blockSize) * (j - blockSize)) / blockSize;
+                        if (ratio < 0)
+                            ratio = 0;
+
+                        tentKernel.at<double>(i, j) = ratio;
+                    }
+                }
+                normalize(tentKernel, tentKernel, 1, 0, NORM_L1);
+
+                vector<Mat> orientChannels = Gradient::GetOrientChannels(sketchImage, orientNum);
+                vector<Mat> filteredOrientChannels(orientNum);
+                for (int i = 0; i < orientNum; i++)
+                    filter2D(orientChannels[i], filteredOrientChannels[i], -1, tentKernel);
+
+
+                for (int i = blockSize / 2 - 1; i < sketchImage.rows; i += blockSize)
+                    for (int j = blockSize / 2 - 1; j < sketchImage.cols; j += blockSize)
+                        for (int k = 0; k < orientNum; k++)
+                            feature.push_back(filteredOrientChannels[k].at<double>(i, j));  
+            }
+
+                
 
             return feature;
         }
