@@ -286,7 +286,7 @@ void EdgeMatchingCrossValidation(const System::String& imageSetPath, const EdgeM
     }
 
     printf("Write To File...\n");
-    System::String savePath = feature.GetName() + "_" + imageSetPath;
+    System::String savePath = matching.GetName() + "_" + imageSetPath;
     FILE* file = fopen(savePath, "w");
     for (int i = 0; i < transforms.size(); i++)
     {
@@ -295,8 +295,8 @@ void EdgeMatchingCrossValidation(const System::String& imageSetPath, const EdgeM
         {
             if (i != j)
             {
-                fprintf(file, " %d:%f", images[i].Item2() == images[i].Item1() ? 1 : 0, 
-                    EdgeMatching::GetDistance(images[i], images[j]));
+                fprintf(file, " %d:%f", images[i].Item2() == images[j].Item2() ? 1 : 0, 
+                    EdgeMatching::GetDistance(transforms[i], transforms[j]));
             }
         }
         fprintf(file, "\n");
@@ -347,8 +347,8 @@ void EdgeMatchingCrossValidation(const System::String& imageSetPath, const EdgeM
         }
     }
 
-    System::String savePath = matching.GetName() + "_" + imageSetPath + "_knn.out";
-    FILE* file = fopen(savePath, "w");
+    savePath = matching.GetName() + "_" + imageSetPath + "_knn.out";
+    file = fopen(savePath, "w");
     for (int i = 0; i < passResult.size(); i++)
         fprintf(file, "Fold %d Accuracy: %f\n", i + 1, passResult[i]);
     fprintf(file, "Average: %f, Standard Deviation: %f\n", Math::Mean(passResult), 
@@ -655,14 +655,14 @@ void Batch(const System::String& imageSetPath, bool thinning = false)
     //LocalFeatureCrossValidation(imageSetPath, SC(), 1000, thinning);
     //printf("\n");
 
-    LocalFeatureCrossValidation(imageSetPath, PSC(), 1000, thinning);
-    printf("\n");
+    //LocalFeatureCrossValidation(imageSetPath, PSC(), 1000, thinning);
+    //printf("\n");
 
-    LocalFeatureCrossValidation(imageSetPath, RSC(), 1000, thinning);
-    printf("\n");
+    //LocalFeatureCrossValidation(imageSetPath, RSC(), 1000, thinning);
+    //printf("\n");
 
-    LocalFeatureCrossValidation(imageSetPath, PRSC(), 1000, thinning);
-    printf("\n");
+    //LocalFeatureCrossValidation(imageSetPath, PRSC(), 1000, thinning);
+    //printf("\n");
 
     //LocalFeatureCrossValidation(imageSetPath, Gabor(), 500, thinning);
     //printf("\n");
@@ -670,14 +670,14 @@ void Batch(const System::String& imageSetPath, bool thinning = false)
     //GlobalFeatureCrossValidation(imageSetPath, GIST(), thinning);
     //printf("\n");
 
-    //EdgeMatchingCrossValidation(imageSetPath, CM(), thinning);
-    //printf("\n");
+    EdgeMatchingCrossValidation(imageSetPath, CM(), thinning);
+    printf("\n");
 
-    //EdgeMatchingCrossValidation(imageSetPath, OCM(), thinning);
-    //printf("\n");
+    EdgeMatchingCrossValidation(imageSetPath, OCM(), thinning);
+    printf("\n");
 
-    //EdgeMatchingCrossValidation(imageSetPath, Hitmap(), thinning);
-    //printf("\n");
+    EdgeMatchingCrossValidation(imageSetPath, Hitmap(), thinning);
+    printf("\n");
 }
 
 int main()
@@ -685,13 +685,13 @@ int main()
     //LocalFeatureCrossValidation("sketches", HOG(), 500);
     //printf("\n");
 
-    GlobalFeatureCrossValidation("oracles_png", GHOG());
-    printf("\n");
+    //GlobalFeatureCrossValidation("oracles_png", GHOG());
+    //printf("\n");
 
     //LocalFeatureTest("oracles_png", Test(), 1500);
     //printf("\n");
 
-    //Batch("sketches", false);
+    Batch("sketches", false);
     //Batch("oracles", true);
 
     //Mat trans = getRotationMatrix2D(Point(image.rows / 2, image.cols / 2), -20, 1);
