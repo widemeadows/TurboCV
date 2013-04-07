@@ -285,8 +285,19 @@ void EdgeMatchingCrossValidation(const System::String& imageSetPath, const EdgeM
         images[i].Item1().release();
     }
 
+    Mat distanceMatrix(transforms.size(), transforms.size() - 1, CV_64F);
+    #pragma omp parallel for
+    for (int i = 0; i < imageNum; i++)
+    {
+        for (int j = 0; j < imageNum; j++)
+        {
+            if (i != j)
+                distanceMatrix.at<double>(i, j) = EdgeMatching::GetDistance(transforms[i], transforms[j]);
+        }
+    }
+
     printf("Write To File...\n");
-    System::String savePath = matching.GetName() + "_" + imageSetPath;
+    System::String savePath = matching.GetName() + "_" + imageSetPath + "_matrix";
     FILE* file = fopen(savePath, "w");
     for (int i = 0; i < transforms.size(); i++)
     {
@@ -296,12 +307,13 @@ void EdgeMatchingCrossValidation(const System::String& imageSetPath, const EdgeM
             if (i != j)
             {
                 fprintf(file, " %d:%f", images[i].Item2() == images[j].Item2() ? 1 : 0, 
-                    EdgeMatching::GetDistance(transforms[i], transforms[j]));
+                    distanceMatrix.at<double>(i, j));
             }
         }
         fprintf(file, "\n");
     }
     fclose(file);
+    distanceMatrix.release();
 
     vector<Tuple<vector<EdgeMatching::Info>, vector<EdgeMatching::Info>, vector<size_t>>> pass = 
         RandomSplit(transforms, fold);
@@ -691,8 +703,8 @@ int main()
     //LocalFeatureTest("oracles_png", Test(), 1500);
     //printf("\n");
 
-    Batch("sketches", false);
-    //Batch("oracles", true);
+    //Batch("sketches", false);
+    Batch("oracles", true);
 
     //Mat trans = getRotationMatrix2D(Point(image.rows / 2, image.cols / 2), -20, 1);
     //warpAffine(image, image, trans, image.size());
