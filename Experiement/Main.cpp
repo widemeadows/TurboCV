@@ -285,6 +285,24 @@ void EdgeMatchingCrossValidation(const System::String& imageSetPath, const EdgeM
         images[i].Item1().release();
     }
 
+    printf("Write To File...\n");
+    System::String savePath = feature.GetName() + "_" + imageSetPath;
+    FILE* file = fopen(savePath, "w");
+    for (int i = 0; i < transforms.size(); i++)
+    {
+        fprintf(file, "%d", images[i].Item2());
+        for (int j = 0; j < transforms.size(); j++)
+        {
+            if (i != j)
+            {
+                fprintf(file, " %d:%f", images[i].Item2() == images[i].Item1() ? 1 : 0, 
+                    EdgeMatching::GetDistance(images[i], images[j]));
+            }
+        }
+        fprintf(file, "\n");
+    }
+    fclose(file);
+
     vector<Tuple<vector<EdgeMatching::Info>, vector<EdgeMatching::Info>, vector<size_t>>> pass = 
         RandomSplit(transforms, fold);
     vector<vector<double>> DRs(imageNum), FPRs(imageNum);
