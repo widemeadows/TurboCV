@@ -67,12 +67,22 @@ namespace System
 
             for (size_t i = 0; i < points.size(); i++)
             {
-                for (int m = 0; m < dt.rows; m++)
+                int left = (int)floor(points[i].x - maxDistance),
+                    right = (int)ceil(points[i].x + maxDistance),
+                    top = (int)floor(points[i].y - maxDistance),
+                    bottom = (int)ceil(points[i].y + maxDistance);
+                left = left < 0 ? 0 : left;
+                right = right > dt.cols ? dt.cols : right;
+                top = top < 0 ? 0 : top;
+                bottom = bottom > dt.rows ? dt.rows : bottom;
+
+                for (int m = top; m < bottom; m++)
                 {
-                    for (int n = 0; n < dt.cols; n++)
+                    for (int n = left; n < right; n++)
                     {
                         double distance = (m - points[i].y) * (m - points[i].y) + 
                             (n - points[i].x) * (n - points[i].x);
+
                         dt.at<double>(m, n) = min(distance, dt.at<double>(m, n));
                     }
                 }
@@ -93,16 +103,12 @@ namespace System
             Info GetFeatureWithoutPreprocess(const Mat& sketchImage);
 
             static double GetDistance(const Info& u, const Info& v);
-            vector<vector<Point>> GetChannels(const Mat& sketchImage, int orientNum);
+            static vector<vector<Point>> GetChannels(const Mat& sketchImage, int orientNum);
 
             virtual String GetName() const { return "ocm"; };
 
         protected:
             virtual Info Transform(const Mat& sketchImage, double maxDistance = 40);
-
-        private:
-            vector<Mat> cache;
-            ConvolveDFTWithCache convolve2D;
         };
 
         inline OCM::Info OCM::GetFeatureWithPreprocess(const Mat& sketchImage, bool thinning)
@@ -144,19 +150,15 @@ namespace System
         inline vector<vector<Point>> OCM::GetChannels(const Mat& sketchImage, int orientNum)
         {
             int sigma = 9, lambda = 24, ksize = sigma * 6 + 1;
-            cache.resize(orientNum);
+            vector<Mat> tmp(orientNum);
 
             for (int i = 0; i < orientNum; i++)
             {
                 Mat kernel = getGaborKernel(Size(ksize, ksize), sigma, 
                     CV_PI / orientNum * i, lambda, 1, 0);
 
-                // We don't use filter2D() here since multi-thread programs will 
-                // degenerate into single-thread ones if filter2D() is used frequently.
-                // We guess it's because filter2D() will allocate and then deallocate
-                // lots of Mat structures, which requires mutually exclusive system calls.
-                convolve2D(sketchImage, cache[i], CV_64F, kernel);
-                cache[i] = abs(cache[i]);
+                filter2D(sketchImage, tmp[i], CV_64F, kernel);
+                tmp[i] = abs(tmp[i]);
             }
 
             vector<Point> points = GetEdgels(sketchImage);
@@ -169,9 +171,9 @@ namespace System
 
                 for (int j = 0; j < orientNum; j++)
                 {
-                    if (cache[j].at<double>(points[i].y, points[i].x) > maxResponse)
+                    if (tmp[j].at<double>(points[i].y, points[i].x) > maxResponse)
                     {
-                        maxResponse = cache[j].at<double>(points[i].y, points[i].x);
+                        maxResponse = tmp[j].at<double>(points[i].y, points[i].x);
                         index = j;
                     }
                 }
@@ -198,9 +200,18 @@ namespace System
 
                 for (size_t j = 0; j < channels[i].size(); j++)
                 {
-                    for (int m = 0; m < dt.rows; m++)
+                    int left = (int)floor(channels[i][j].x - maxDistance),
+                        right = (int)ceil(channels[i][j].x + maxDistance),
+                        top = (int)floor(channels[i][j].y - maxDistance),
+                        bottom = (int)ceil(channels[i][j].y + maxDistance);
+                    left = left < 0 ? 0 : left;
+                    right = right > dt.cols ? dt.cols : right;
+                    top = top < 0 ? 0 : top;
+                    bottom = bottom > dt.rows ? dt.rows : bottom;
+
+                    for (int m = top; m < bottom; m++)
                     {
-                        for (int n = 0; n < dt.cols; n++)
+                        for (int n = left; n < right; n++)
                         {
                             double distance = (m - channels[i][j].y) * (m - channels[i][j].y) + 
                                 (n - channels[i][j].x) * (n - channels[i][j].x);
@@ -228,16 +239,12 @@ namespace System
             Info GetFeatureWithoutPreprocess(const Mat& sketchImage);
 
             static double GetDistance(const Info& u, const Info& v);
-            vector<vector<Point>> GetChannels(const Mat& sketchImage, int orientNum);
+            static vector<vector<Point>> GetChannels(const Mat& sketchImage, int orientNum);
 
             virtual String GetName() const { return "hitmap"; };
 
         protected:
             virtual Info Transform(const Mat& sketchImage, double maxDistance = 22);
-
-        private:
-            vector<Mat> cache;
-            ConvolveDFTWithCache convolve2D;
         };
 
         inline Hitmap::Info Hitmap::GetFeatureWithPreprocess(const Mat& sketchImage, bool thinning)
@@ -264,10 +271,10 @@ namespace System
                 const Mat& vMat = v[i].Item2();
 
                 for (size_t i = 0; i < uPoints.size(); i++)
-                    uToV += vMat.at<uchar>(uPoints[i].y, uPoints[i].x);
+                    uToV += vMat.at<float>(uPoints[i].y, uPoints[i].x);
 
                 for (size_t i = 0; i < vPoints.size(); i++)
-                    vToU += uMat.at<uchar>(vPoints[i].y, vPoints[i].x);
+                    vToU += uMat.at<float>(vPoints[i].y, vPoints[i].x);
 
                 uPointNum += uPoints.size();
                 vPointNum += vPoints.size();
@@ -279,19 +286,15 @@ namespace System
         inline vector<vector<Point>> Hitmap::GetChannels(const Mat& sketchImage, int orientNum)
         {
             int sigma = 9, lambda = 24, ksize = sigma * 6 + 1;
-            cache.resize(orientNum);
+            vector<Mat> tmp(orientNum);
 
             for (int i = 0; i < orientNum; i++)
             {
                 Mat kernel = getGaborKernel(Size(ksize, ksize), sigma, 
                     CV_PI / orientNum * i, lambda, 1, 0);
 
-                // We don't use filter2D() here since multi-thread programs will 
-                // degenerate into single-thread ones if filter2D() is used frequently.
-                // We guess it's because filter2D() will allocate and then deallocate
-                // lots of Mat structures, which requires mutually exclusive system calls.
-                convolve2D(sketchImage, cache[i], CV_64F, kernel);
-                cache[i] = abs(cache[i]);
+                filter2D(sketchImage, tmp[i], CV_64F, kernel);
+                tmp[i] = abs(tmp[i]);
             }
 
             vector<Point> points = GetEdgels(sketchImage);
@@ -304,9 +307,9 @@ namespace System
 
                 for (int j = 0; j < orientNum; j++)
                 {
-                    if (cache[j].at<double>(points[i].y, points[i].x) > maxResponse)
+                    if (tmp[j].at<double>(points[i].y, points[i].x) > maxResponse)
                     {
-                        maxResponse = cache[j].at<double>(points[i].y, points[i].x);
+                        maxResponse = tmp[j].at<double>(points[i].y, points[i].x);
                         index = j;
                     }
                 }
@@ -325,7 +328,7 @@ namespace System
 
             for (size_t i = 0; i < channels.size(); i++)
             {
-                Mat dt(sketchImage.size(), CV_8U);
+                Mat dt(sketchImage.size(), CV_32F);
                 dt = Scalar::all(0);
 
                 for (size_t j = 0; j < channels[i].size(); j++)
@@ -347,7 +350,7 @@ namespace System
                                 (n - channels[i][j].x) * (n - channels[i][j].x));
 
                             if (distance <= maxDistance)
-                                dt.at<uchar>(m, n) = 1;
+                                dt.at<float>(m, n) = 1;
                         }
                     }
                 }
