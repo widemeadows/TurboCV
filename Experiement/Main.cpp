@@ -676,9 +676,6 @@ void Batch(const System::String& imageSetPath, bool thinning = false)
     LocalFeatureCrossValidation(imageSetPath, PRSC(), 1000, thinning);
     printf("\n");
 
-    //LocalFeatureCrossValidation(imageSetPath, Gabor(), 500, thinning);
-    //printf("\n");
-
     GlobalFeatureCrossValidation(imageSetPath, GIST(), thinning);
     printf("\n");
 
@@ -699,6 +696,9 @@ int main()
 
     //GlobalFeatureCrossValidation("oracles_png", GHOG());
     //printf("\n");
+
+    EdgeMatchingCrossValidation("oracles", Hitmap(), true);
+    printf("\n");
 
     //LocalFeatureTest("oracles_png", Test(), 1500);
     //printf("\n");

@@ -186,41 +186,5 @@ EXPORT_API vector<NativeInfo> PerformHitmap(const vector<NativeMat>& images, boo
     for (int i = 0; i < images.size(); i++)
         result[i] = PerformHitmap(images[i], thinning);
 
-    /*Hitmap hitmap;
-    vector<Hitmap::Info> tmp(images.size());
-
-    #pragma omp parallel for private(hitmap)
-    for (int i = 0; i < images.size(); i++)
-    {
-        Mat cvImage(images[i].rows, images[i].cols, CV_8U);
-        for (int i = 0; i < images[i].rows; i++)
-            for (int j = 0; j < images[i].cols; j++)
-                cvImage.at<uchar>(i, j) = images[i].atUCHAR(i, j);
-
-        tmp[i] = hitmap.GetFeatureWithPreprocess(cvImage, thinning);
-    }
-
-    vector<NativeInfo> result(images.size());
-    for (int i = 0; i < images.size(); i++)
-    {
-        for (int j = 0; j < tmp[i].size(); j++)
-        {
-            const Tuple<vector<Point>, Mat>& item = tmp[i][j];
-            const vector<Point>& item1 = item.Item1();
-            const Mat& item2 = item.Item2();
-
-            vector<NativePoint> vec;
-            for (int k = 0; k < item1.size(); k++)
-                vec.push_back(NativePoint(item1[k].x, item1[k].y));
-
-            NativeMat mat(item2.rows, item2.cols, EPT_UCHAR);
-            for (int m = 0; m < item2.rows; m++)
-                for (int n = 0; n < item2.cols; n++)
-                    mat.atUCHAR(m, n) = item2.at<uchar>(m, n);
-
-            result[i].push_back(make_pair(vec, mat));
-        }
-    }*/
-    
     return result;
 }

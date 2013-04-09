@@ -330,9 +330,18 @@ namespace System
 
                 for (size_t j = 0; j < channels[i].size(); j++)
                 {
-                    for (int m = 0; m < dt.rows; m++)
+                    int left = (int)floor(channels[i][j].x - maxDistance),
+                        right = (int)ceil(channels[i][j].x + maxDistance),
+                        top = (int)floor(channels[i][j].y - maxDistance),
+                        bottom = (int)ceil(channels[i][j].y + maxDistance);
+                    left = left < 0 ? 0 : left;
+                    right = right > dt.cols ? dt.cols : right;
+                    top = top < 0 ? 0 : top;
+                    bottom = bottom > dt.rows ? dt.rows : bottom;
+
+                    for (int m = top; m < bottom; m++)
                     {
-                        for (int n = 0; n < dt.cols; n++)
+                        for (int n = left; n < right; n++)
                         {
                             double distance = sqrt((m - channels[i][j].y) * (m - channels[i][j].y) + 
                                 (n - channels[i][j].x) * (n - channels[i][j].x));
