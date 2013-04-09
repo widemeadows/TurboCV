@@ -3,8 +3,11 @@
 #pragma once
 
 #include "../Export/Export.h"
+#using <System.Runtime.Serialization.dll>
+
 using namespace System;
 using namespace System::Collections::Generic;
+using namespace System::Runtime::Serialization;
 
 namespace ClrAdapter {
 
@@ -27,6 +30,7 @@ namespace ClrAdapter {
     };
 
     generic<typename T>
+    [DataContract]
     public ref class Mat
     {
     public:
@@ -37,19 +41,45 @@ namespace ClrAdapter {
             this->data = gcnew array<T, 2>(rows, cols);
         }
 
+        [DataMember]
         property int Rows
         {
             int get()
             {
                 return rows;
             }
-        }
 
+            void set(int value)
+            {
+                rows = value;
+            }
+        }
+        
+        [DataMember]
         property int Cols
         {
             int get()
             {
                 return cols;
+            }
+
+            void set(int value)
+            {
+                cols = value;
+            }
+        }
+
+        [DataMember]
+        property array<T, 2>^ Data
+        {
+            array<T, 2>^ get()
+            {
+                return data;
+            }
+
+            void set(array<T, 2>^ value)
+            {
+                data = value;
             }
         }
 
