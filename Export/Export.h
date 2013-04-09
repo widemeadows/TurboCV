@@ -28,11 +28,17 @@ struct EXPORT_API NativeMat
 
     NativeMat& operator=(const NativeMat& other);
 
-    uchar& atUCHAR(int row, int col);
-    const uchar& atUCHAR(int row, int col) const;
+    template<typename T>
+    T& at(int row, int col)
+    {
+        return ((T**)m)[row][col];
+    }
 
-    float& atFLOAT(int row, int col);
-    const float& atFLOAT(int row, int col) const;
+    template<typename T>
+    const T& at(int row, int col) const
+    {
+        return ((T**)m)[row][col];
+    }
 
     void clear();
 

@@ -80,7 +80,7 @@ namespace ClrAdapter {
 
             for (int i = 0; i < mat.rows; i++)
                 for (int j = 0; j < mat.cols; j++)
-                    result[i, j] = mat.atUCHAR(i, j);
+                    result[i, j] = mat.at<uchar>(i, j);
 
             return result;
         }
@@ -91,7 +91,7 @@ namespace ClrAdapter {
 
             for (int i = 0; i < result.rows; i++)
                 for (int j = 0; j < result.cols; j++)
-                    result.atUCHAR(i, j) = mat[i, j];
+                    result.at<uchar>(i, j) = mat[i, j];
 
             return result;
         }

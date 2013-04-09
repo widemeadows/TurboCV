@@ -109,26 +109,6 @@ NativeMat& NativeMat::operator=(const NativeMat& other)
     return *this;
 }
 
-uchar& NativeMat::atUCHAR(int row, int col)
-{
-    return ((uchar**)m)[row][col];
-}
-
-const uchar& NativeMat::atUCHAR(int row, int col) const
-{
-    return ((uchar**)m)[row][col];
-}
-
-float& NativeMat::atFLOAT(int row, int col)
-{
-    return ((float**)m)[row][col];
-}
-
-const float& NativeMat::atFLOAT(int row, int col) const
-{
-    return ((float**)m)[row][col];
-}
-
 void NativeMat::clear()
 {
     if (type == EPT_UCHAR)
@@ -152,7 +132,7 @@ EXPORT_API NativeInfo PerformHitmap(const NativeMat& image, bool thinning)
     Mat cvImage(image.rows, image.cols, CV_8U);
     for (int i = 0; i < image.rows; i++)
         for (int j = 0; j < image.cols; j++)
-            cvImage.at<uchar>(i, j) = image.atUCHAR(i, j);
+            cvImage.at<uchar>(i, j) = image.at<uchar>(i, j);
 
     Hitmap::Info tmp = hitmap.GetFeatureWithPreprocess(cvImage, thinning);
 
@@ -170,7 +150,7 @@ EXPORT_API NativeInfo PerformHitmap(const NativeMat& image, bool thinning)
         NativeMat mat(item2.rows, item2.cols, EPT_UCHAR);
         for (int j = 0; j < item2.rows; j++)
             for (int k = 0; k < item2.cols; k++)
-                mat.atUCHAR(j, k) = item2.at<uchar>(j, k);
+                mat.at<uchar>(j, k) = item2.at<uchar>(j, k);
 
         result.push_back(make_pair(vec, mat));
     }
