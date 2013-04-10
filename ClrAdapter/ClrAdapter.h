@@ -38,17 +38,19 @@ namespace ClrAdapter {
         {
             this->rows = rows;
             this->cols = cols;
-            this->data = gcnew array<T, 2>(rows, cols);
+            this->data = gcnew array<T>(rows * cols);
         }
 
         [DataMember]
         property int Rows
         {
+        public:
             int get()
             {
                 return rows;
             }
 
+        protected:
             void set(int value)
             {
                 rows = value;
@@ -58,11 +60,13 @@ namespace ClrAdapter {
         [DataMember]
         property int Cols
         {
+        public:
             int get()
             {
                 return cols;
             }
 
+        private:
             void set(int value)
             {
                 cols = value;
@@ -70,14 +74,16 @@ namespace ClrAdapter {
         }
 
         [DataMember]
-        property array<T, 2>^ Data
+        property array<T>^ Data
         {
-            array<T, 2>^ get()
+        public:
+            array<T>^ get()
             {
                 return data;
             }
 
-            void set(array<T, 2>^ value)
+        private:
+            void set(array<T>^ value)
             {
                 data = value;
             }
@@ -87,17 +93,17 @@ namespace ClrAdapter {
         {
             T get(int r, int c)
             {
-                return data[r, c];
+                return data[r * cols + c];
             }
 
             void set(int r, int c, T value)
             {
-                data[r, c] = value;
+                data[r * cols + c] = value;
             }
         }
 
     private:
-        array<T, 2>^ data;
+        array<T>^ data;
         int rows, cols;
     };
 
