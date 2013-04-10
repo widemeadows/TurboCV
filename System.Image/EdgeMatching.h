@@ -271,10 +271,10 @@ namespace System
                 const Mat& vMat = v[i].Item2();
 
                 for (size_t i = 0; i < uPoints.size(); i++)
-                    uToV += vMat.at<float>(uPoints[i].y, uPoints[i].x);
+                    uToV += vMat.at<uchar>(uPoints[i].y, uPoints[i].x);
 
                 for (size_t i = 0; i < vPoints.size(); i++)
-                    vToU += uMat.at<float>(vPoints[i].y, vPoints[i].x);
+                    vToU += uMat.at<uchar>(vPoints[i].y, vPoints[i].x);
 
                 uPointNum += uPoints.size();
                 vPointNum += vPoints.size();
@@ -328,7 +328,7 @@ namespace System
 
             for (size_t i = 0; i < channels.size(); i++)
             {
-                Mat dt(sketchImage.size(), CV_32F);
+                Mat dt(sketchImage.size(), CV_8U);
                 dt = Scalar::all(0);
 
                 for (size_t j = 0; j < channels[i].size(); j++)
@@ -350,7 +350,7 @@ namespace System
                                 (n - channels[i][j].x) * (n - channels[i][j].x));
 
                             if (distance <= maxDistance)
-                                dt.at<float>(m, n) = 1;
+                                dt.at<uchar>(m, n) = 1;
                         }
                     }
                 }
