@@ -241,7 +241,7 @@ namespace System
             static double GetDistance(const Info& u, const Info& v);
             static vector<vector<Point>> GetChannels(const Mat& sketchImage, int orientNum);
 
-            virtual String GetName() const { return "hitmap"; };
+            virtual String GetName() const { return "hit"; };
 
         protected:
             virtual Info Transform(const Mat& sketchImage, double maxDistance = 22);
