@@ -697,7 +697,7 @@ int main()
     //GlobalFeatureCrossValidation("oracles_png", GHOG());
     //printf("\n");
 
-    EdgeMatchingCrossValidation("oracles", OCM(), true);
+    EdgeMatchingCrossValidation("oracles", Hitmap(), true);
     printf("\n");
 
     //LocalFeatureTest("oracles_png", Test(), 1500);
