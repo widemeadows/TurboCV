@@ -703,6 +703,9 @@ int main()
     //LocalFeatureTest("oracles_png", Test(), 1500);
     //printf("\n");
 
+    LocalFeatureTest("oracles_png", Test(), 1500);
+    printf("\n");
+
     //Batch("sketches", false);
     //Batch("oracles", true);
 
