@@ -9,6 +9,8 @@
 using namespace cv;
 using namespace std;
 
+namespace TurboCV
+{
 namespace System
 {
     namespace ML
@@ -257,4 +259,5 @@ namespace System
             unordered_map<int, int> _dataNumPerClass;
         };
     }
+}
 }

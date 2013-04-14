@@ -4,6 +4,8 @@
 #include <string>
 using namespace std;
 
+namespace TurboCV
+{
 namespace System
 {
     class SystemException : public exception
@@ -38,4 +40,5 @@ namespace System
         ArgumentOutOfRangeException() : ArgumentException("Argument is Out of Range") {};
         ArgumentOutOfRangeException(const string& message) : ArgumentException(message) {};
     };
+}
 }

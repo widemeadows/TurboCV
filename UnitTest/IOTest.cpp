@@ -4,8 +4,8 @@
 #include "../System/FileSystem.h"
 #include <algorithm>
 using namespace Microsoft::VisualStudio::CppUnitTestFramework;
-using namespace System;
-using namespace System::IO;
+using namespace TurboCV::System;
+using namespace TurboCV::System::IO;
 using namespace std;
 
 namespace UnitTest

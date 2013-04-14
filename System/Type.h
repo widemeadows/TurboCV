@@ -7,6 +7,8 @@
 #include "String.h"
 using namespace std;
 
+namespace TurboCV
+{
 namespace System
 {
     class Int
@@ -304,4 +306,5 @@ namespace System
     private:
         ThreadUnsafeSmartPtr<vector<T>> ptr;
     };
+}
 }

@@ -8,8 +8,8 @@
 #include <cv.h>
 #include <vector>
 #include <map>
-using namespace System;
-using namespace System::Image;
+using namespace TurboCV::System;
+using namespace TurboCV::System::Image;
 using namespace cv;
 using namespace std;
 

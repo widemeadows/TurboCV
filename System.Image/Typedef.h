@@ -3,6 +3,8 @@
 #include "../System/Type.h"
 using namespace std;
 
+namespace TurboCV
+{
 namespace System
 {
     namespace Image
@@ -44,4 +46,5 @@ namespace System
                 dst.push_back((float)item);
         }
     }
+}
 }

@@ -7,6 +7,8 @@
 #include <contrib\contrib.hpp>
 using namespace std;
 
+namespace TurboCV
+{
 namespace System
 {
     namespace Image
@@ -224,4 +226,5 @@ namespace System
             }
         };
     }
+}
 }

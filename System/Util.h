@@ -6,6 +6,8 @@
 #include "Type.h"
 using namespace std;
 
+namespace TurboCV
+{
 namespace System
 {
     template<typename RandomAccessIterator, typename T> 
@@ -124,4 +126,5 @@ namespace System
 
         return result;
     }
+}
 }

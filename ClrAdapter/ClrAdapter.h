@@ -107,7 +107,7 @@ namespace ClrAdapter {
         int rows, cols;
     };
 
-    public ref class Convertor
+    private ref class Convertor
     {
     public:
         static Mat<uchar>^ ToManagedMat(const NativeMat& mat)
@@ -133,11 +133,11 @@ namespace ClrAdapter {
         }
     };
 
-    typedef List<Tuple<List<Point>^, Mat<uchar>^>^> Info;
-
 	public ref class EdgeMatching
 	{
     public:
+        typedef List<Tuple<List<Point>^, Mat<uchar>^>^> Info;
+
         static Info^ GetHitmap(Mat<uchar>^ image, bool thinning)
         {
             NativeInfo tmp = PerformHitmap(Convertor::ToNativeMat(image), thinning);
@@ -191,6 +191,85 @@ namespace ClrAdapter {
             }
 
             return result;
+        }
+    };
+
+    public ref class LocalFeature
+    {
+    public:
+        enum class Type
+        {
+            RHOG
+        };
+
+        typedef List<float> Word;
+        typedef List<double> Histogram; 
+
+        static Tuple<List<Word^>^, List<Histogram^>^>^ Train(Type type, List<Mat<uchar>^>^ images, int wordNum, bool thinning)
+        {
+            LocalFeatureType nativeType;
+
+            switch (type)
+            {
+            case Type::RHOG:
+                nativeType = EPT_RHOG;
+                break;
+            default:
+                break;
+            }
+
+            vector<NativeMat> nativeMats;
+            for (int i = 0; i < images->Count; i++)
+                nativeMats.push_back(Convertor::ToNativeMat(images[i]));
+
+            pair<vector<NativeWord>, vector<NativeHistogram>> result = LocalFeatureTrain(nativeType, nativeMats, wordNum, thinning);
+            vector<NativeWord>& nativeWords = result.first;
+            vector<NativeHistogram>& nativeHistograms = result.second;
+
+            List<Word^>^ words = gcnew List<Word^>();
+            for (int i = 0; i < nativeWords.size(); i++)
+            {
+                words[i] = gcnew Word();
+                for (int j = 0; j < nativeWords[i].size(); j++)
+                    words[i]->Add(nativeWords[i][j]);
+            }
+
+            List<Histogram^>^ histograms = gcnew List<Histogram^>();
+            for (int i = 0; i < nativeHistograms.size(); i++)
+            {
+                histograms[i] = gcnew Histogram();
+                for (int j = 0; j < nativeHistograms[i].size(); j++)
+                    histograms[i]->Add(nativeHistograms[i][j]);
+            }
+
+            return Tuple::Create(words, histograms);
+        }
+
+        static Histogram^ GetLocalFeature(Type type, Mat<uchar>^ image, List<Word^>^ words, bool thinning)
+        {
+            LocalFeatureType nativeType;
+
+            switch (type)
+            {
+            case Type::RHOG:
+                nativeType = EPT_RHOG;
+                break;
+            default:
+                break;
+            }
+
+            vector<NativeWord> nativeWords(words->Count);
+            for (int i = 0; i < words->Count; i++)
+                for (int j = 0; j < words[i]->Count; i++)
+                    nativeWords[i].push_back(words[i][j]);
+
+            NativeHistogram nativeHistogram = LocalFeaturePredict(nativeType, Convertor::ToNativeMat(image), 
+                nativeWords, thinning);
+            Histogram^ histogram = gcnew Histogram();
+            for (int i = 0; i < nativeHistogram.size(); i++)
+                histogram->Add(nativeHistogram[i]);
+
+            return histogram;
         }
     };
 }

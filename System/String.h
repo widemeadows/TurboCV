@@ -8,6 +8,8 @@
 #include "Exception.h"
 using namespace std;
 
+namespace TurboCV
+{
 namespace System
 {
     class String
@@ -456,4 +458,5 @@ namespace System
     {
         return _length;
     }
+}
 }

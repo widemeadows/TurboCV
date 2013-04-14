@@ -3,24 +3,24 @@
 #include "../System.ML/System.ML.h"
 #include <cv.h>
 #include <highgui.h>
-using namespace System;
-using namespace System::IO;
-using namespace System::Image;
-using namespace System::ML;
+using namespace TurboCV::System;
+using namespace TurboCV::System::IO;
+using namespace TurboCV::System::Image;
+using namespace TurboCV::System::ML;
 using namespace cv;
 
-inline vector<Tuple<Mat, int>> GetImages(const System::String& imageSetPath, 
+inline vector<Tuple<Mat, int>> GetImages(const TurboCV::System::String& imageSetPath, 
     int imageLoadMode = CV_LOAD_IMAGE_GRAYSCALE)
 {
     DirectoryInfo imageSetInfo(imageSetPath);
 
-    vector<System::String> classInfos = imageSetInfo.GetDirectories();
+    vector<TurboCV::System::String> classInfos = imageSetInfo.GetDirectories();
     sort(classInfos.begin(), classInfos.end());
 
     vector<Tuple<Mat, int>> images;
     for (int i = 0; i < classInfos.size(); i++)
     {
-        vector<System::String> fileInfos = DirectoryInfo(classInfos[i]).GetFiles();
+        vector<TurboCV::System::String> fileInfos = DirectoryInfo(classInfos[i]).GetFiles();
         sort(fileInfos.begin(), fileInfos.end());
 
         for (int j = 0; j < fileInfos.size(); j++)
@@ -54,7 +54,7 @@ void NormlizeDeviation(vector<Histogram> vecs)
 }
 
 template<typename LocalFeature>
-void LocalFeatureCrossValidation(const System::String& imageSetPath, const LocalFeature& feature, 
+void LocalFeatureCrossValidation(const TurboCV::System::String& imageSetPath, const LocalFeature& feature, 
                                  int wordNum, bool thinning = false, int sampleNum = 1000000, int fold = 3)
 {
     srand(1);
@@ -79,7 +79,7 @@ void LocalFeatureCrossValidation(const System::String& imageSetPath, const Local
         vector<Histogram> freqHistograms = BOV::GetFrequencyHistograms(features, words);
 
         printf("Write To File...\n");
-        System::String savePath = feature.GetName() + "_" + imageSetPath;
+        TurboCV::System::String savePath = feature.GetName() + "_" + imageSetPath;
         FILE* file = fopen(savePath, "w");
         for (int i = 0; i < freqHistograms.size(); i++)
         {
@@ -142,7 +142,7 @@ void LocalFeatureCrossValidation(const System::String& imageSetPath, const Local
         }
     }
 
-    System::String savePath = feature.GetName() + "_" + imageSetPath + "_knn.out";
+    TurboCV::System::String savePath = feature.GetName() + "_" + imageSetPath + "_knn.out";
     FILE* file = fopen(savePath, "w");
     for (int i = 0; i < passResult.size(); i++)
         fprintf(file, "Fold %d Accuracy: %f\n", i + 1, passResult[i]);
@@ -168,7 +168,7 @@ void LocalFeatureCrossValidation(const System::String& imageSetPath, const Local
 }
 
 template<typename GlobalFeature>
-void GlobalFeatureCrossValidation(const System::String& imageSetPath, const GlobalFeature& feature, 
+void GlobalFeatureCrossValidation(const TurboCV::System::String& imageSetPath, const GlobalFeature& feature, 
                                   bool thinning = false, int fold = 3)
 {
     srand(1);
@@ -186,7 +186,7 @@ void GlobalFeatureCrossValidation(const System::String& imageSetPath, const Glob
     }
 
     printf("Write To File...\n");
-    System::String savePath = feature.GetName() + "_" + imageSetPath;
+    TurboCV::System::String savePath = feature.GetName() + "_" + imageSetPath;
     FILE* file = fopen(savePath, "w");
     for (int i = 0; i < features.size(); i++)
     {
@@ -268,7 +268,7 @@ void GlobalFeatureCrossValidation(const System::String& imageSetPath, const Glob
 }
 
 template<typename EdgeMatching>
-void EdgeMatchingCrossValidation(const System::String& imageSetPath, const EdgeMatching& matching,
+void EdgeMatchingCrossValidation(const TurboCV::System::String& imageSetPath, const EdgeMatching& matching,
                                  bool thinning = false, int fold = 3)
 {
     srand(1);
@@ -297,7 +297,7 @@ void EdgeMatchingCrossValidation(const System::String& imageSetPath, const EdgeM
     }
 
     printf("Write To File...\n");
-    System::String savePath = matching.GetName() + "_" + imageSetPath + "_matrix";
+    TurboCV::System::String savePath = matching.GetName() + "_" + imageSetPath + "_matrix";
     FILE* file = fopen(savePath, "w");
     for (int i = 0; i < transforms.size(); i++)
     {
@@ -478,8 +478,8 @@ vector<vector<LocalFeature_f>> DivideLocalFeatures(const vector<LocalFeature_f> 
 }
 
 template<typename LocalFeature>
-void LocalFeatureTest(const System::String& imageSetPath, const LocalFeature& feature, 
-                                 int wordNum, int sampleNum = 1000000, int fold = 3)
+void LocalFeatureTest(const TurboCV::System::String& imageSetPath, const LocalFeature& feature, 
+                        int wordNum, int sampleNum = 1000000, int fold = 3)
 {
     srand(1);
     vector<Tuple<Mat, int>> images = GetImages(imageSetPath, CV_LOAD_IMAGE_GRAYSCALE);
@@ -641,7 +641,7 @@ void LocalFeatureTest(const System::String& imageSetPath, const LocalFeature& fe
     fclose(file);
 }
 
-void Batch(const System::String& imageSetPath, bool thinning = false)
+void Batch(const TurboCV::System::String& imageSetPath, bool thinning = false)
 {
     LocalFeatureCrossValidation(imageSetPath, HOG(), 500, thinning);
     printf("\n");

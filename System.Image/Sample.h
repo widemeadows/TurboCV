@@ -11,6 +11,8 @@
 using namespace cv;
 using namespace std;
 
+namespace TurboCV
+{
 namespace System
 {
     namespace Image
@@ -69,4 +71,5 @@ namespace System
             return SampleFromPoints(GetEdgels(sketchImage), samplingNum);
         }
     }
+}
 }

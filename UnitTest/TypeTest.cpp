@@ -2,7 +2,7 @@
 #include "CppUnitTest.h"
 #include "../System/Type.h"
 using namespace Microsoft::VisualStudio::CppUnitTestFramework;
-using namespace System;
+using namespace TurboCV::System;
 
 namespace UnitTest
 {        

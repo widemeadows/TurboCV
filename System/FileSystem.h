@@ -3,6 +3,8 @@
 #include <Windows.h>
 #include "String.h"
 
+namespace TurboCV
+{
 namespace System
 {
     namespace IO
@@ -276,4 +278,5 @@ namespace System
             return files;
         }
     }
+}
 }

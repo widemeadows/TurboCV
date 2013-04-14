@@ -5,6 +5,8 @@
 #include <cv.h>
 using namespace cv;
 
+namespace TurboCV
+{
 namespace System
 {
     namespace Image
@@ -63,4 +65,5 @@ namespace System
             return angles;
         }
     }
+}
 }

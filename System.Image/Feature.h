@@ -11,6 +11,8 @@
 using namespace cv;
 using namespace std;
 
+namespace TurboCV
+{
 namespace System
 {
     namespace Image
@@ -1523,4 +1525,5 @@ namespace System
             return gaborsInFreqDomain;
         }
     }
+}
 }

@@ -6,6 +6,8 @@
 #include "Type.h"
 using namespace std;
 
+namespace TurboCV
+{
 namespace System
 {
     class Math
@@ -173,4 +175,5 @@ namespace System
     {
         return GaussianDistance((const vector<T>&)u, (const vector<T>&)v, sigma);
     }
+}
 }

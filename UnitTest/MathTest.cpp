@@ -3,7 +3,7 @@
 #include "../System/Math.h"
 #include <vector>
 using namespace Microsoft::VisualStudio::CppUnitTestFramework;
-using namespace System;
+using namespace TurboCV::System;
 using namespace std;
 
 namespace UnitTest

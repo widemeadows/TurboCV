@@ -6,6 +6,8 @@
 using namespace cv;
 using namespace std;
 
+namespace TurboCV
+{
 namespace System
 {
     namespace Image
@@ -259,4 +261,5 @@ namespace System
             tempA(Rect(0, 0, C.cols, C.rows)).copyTo(C);
         }
     }
+}
 }

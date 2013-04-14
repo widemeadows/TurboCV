@@ -7,6 +7,8 @@
 using namespace std;
 using namespace cv;
 
+namespace TurboCV
+{
 namespace System
 {
     namespace Image
@@ -361,4 +363,5 @@ namespace System
             return result;
         }
     }
+}
 }
