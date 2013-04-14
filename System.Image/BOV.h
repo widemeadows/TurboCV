@@ -22,12 +22,12 @@ namespace System
 
             static vector<Histogram> GetFrequencyHistogram(
                 const vector<LocalFeature_f>& features, size_t clusterNum, size_t sampleNum = INF);
+
+            static Histogram BOV::GetFrequencyHistogram(const LocalFeature_f& feature, 
+                const vector<Word_f>& words);
         
         private:
             static vector<double> GetDistancesToVisualWords(const Descriptor_f& descriptor, 
-                const vector<Word_f>& words);
-
-            static Histogram BOV::GetFrequencyHistogram(const LocalFeature_f& feature, 
                 const vector<Word_f>& words);
         };
 

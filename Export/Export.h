@@ -14,14 +14,13 @@
 #include <map>
 using namespace std;
 
-#define EPT_UCHAR   1
-#define EPT_FLOAT   2
+enum BasicType { EPT_UCHAR, EPT_FLOAT };
 
 typedef unsigned char uchar;
 
 struct EXPORT_API NativeMat
 {
-    NativeMat(int rows, int cols, int type);
+    NativeMat(int rows, int cols, BasicType type);
     NativeMat(const NativeMat& other);
 
     ~NativeMat();
@@ -43,7 +42,8 @@ struct EXPORT_API NativeMat
     void clear();
 
     void* m;
-    int rows, cols, type;
+    int rows, cols;
+    BasicType type;
 };
 
 struct EXPORT_API NativePoint
@@ -61,3 +61,18 @@ typedef vector<pair<vector<NativePoint>, NativeMat>> NativeInfo;
 
 EXPORT_API NativeInfo PerformHitmap(const NativeMat& image, bool thinning);
 EXPORT_API vector<NativeInfo> PerformHitmap(const vector<NativeMat>& images, bool thinning);
+
+
+enum LocalFeatureType { EPT_RHOG };
+
+typedef vector<float> NativeWord;
+typedef vector<double> NativeHistogram;
+
+EXPORT_API pair<vector<NativeWord>, vector<NativeHistogram>> LocalFeatureTrain(LocalFeatureType type,
+    const vector<NativeMat>& images, int wordNum, bool thinning);
+
+EXPORT_API NativeHistogram LocalFeaturePredict(LocalFeatureType type, const NativeMat& image, 
+    const vector<NativeWord>& words, bool thinning);
+
+EXPORT_API vector<NativeHistogram> LocalFeaturePredict(LocalFeatureType type, const vector<NativeMat>& images, 
+    const vector<NativeWord>& words, bool thinning);

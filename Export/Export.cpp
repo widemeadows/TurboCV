@@ -13,7 +13,7 @@ using namespace System::Image;
 using namespace cv;
 using namespace std;
 
-NativeMat::NativeMat(int rows, int cols, int type)
+NativeMat::NativeMat(int rows, int cols, BasicType type)
 {
     this->rows = rows;
     this->cols = cols;
@@ -125,16 +125,23 @@ void NativeMat::clear()
     }
 }
 
+template<typename T>
+Mat ConvertNativeMatToCvMat(const NativeMat& mat, T type)
+{
+    Mat cvMat(mat.rows, mat.cols, CV_8U);
+
+    for (int i = 0; i < mat.rows; i++)
+        for (int j = 0; j < mat.cols; j++)
+            cvMat.at<T>(i, j) = mat.at<T>(i, j);
+
+    return cvMat;
+};
+
 EXPORT_API NativeInfo PerformHitmap(const NativeMat& image, bool thinning)
 {
-    Hitmap hitmap;
+    Mat cvImage = ConvertNativeMatToCvMat(image, uchar());
 
-    Mat cvImage(image.rows, image.cols, CV_8U);
-    for (int i = 0; i < image.rows; i++)
-        for (int j = 0; j < image.cols; j++)
-            cvImage.at<uchar>(i, j) = image.at<uchar>(i, j);
-
-    Hitmap::Info tmp = hitmap.GetFeatureWithPreprocess(cvImage, thinning);
+    Hitmap::Info tmp = Hitmap().GetFeatureWithPreprocess(cvImage, thinning);
 
     NativeInfo result;
     for (int i = 0; i < tmp.size(); i++)
@@ -167,4 +174,80 @@ EXPORT_API vector<NativeInfo> PerformHitmap(const vector<NativeMat>& images, boo
         result[i] = PerformHitmap(images[i], thinning);
 
     return result;
+}
+
+EXPORT_API pair<vector<NativeWord>, vector<NativeHistogram>> LocalFeatureTrain(LocalFeatureType type,
+    const vector<NativeMat>& images, int wordNum, bool thinning)
+{
+    int imageNum = images.size();
+    vector<LocalFeature_f> features(imageNum);
+    #pragma omp parallel for
+    for (int i = 0; i < imageNum; i++)
+    {
+        Mat cvImage = ConvertNativeMatToCvMat(images[i], uchar());
+
+        switch (type)
+        {
+        case EPT_RHOG:
+            Convert(RHOG().GetFeatureWithPreprocess(cvImage, thinning), features[i]);
+            break;
+        default:
+            break;
+        }
+    }
+
+    vector<Word_f> words = BOV::GetVisualWords(features, wordNum, 1000000);
+    vector<Histogram> freqHistograms = BOV::GetFrequencyHistograms(features, words);
+
+    vector<NativeWord> nativeWords(words.size());
+    for (int i = 0; i < words.size(); i++)
+        for (int j = 0; j < words[i].size(); j++)
+            nativeWords[i].push_back(words[i][j]);
+
+    vector<NativeHistogram> nativeHistograms(freqHistograms.size());
+    for (int i = 0; i < freqHistograms.size(); i++)
+        for (int j = 0; j < freqHistograms[i].size(); j++)
+            nativeHistograms[i].push_back(freqHistograms[i][j]);
+
+    return make_pair(nativeWords, nativeHistograms);
+}
+
+EXPORT_API NativeHistogram LocalFeaturePredict(LocalFeatureType type, const NativeMat& image, 
+    const vector<NativeWord>& words, bool thinning)
+{
+    LocalFeature_f feature;
+    Mat cvImage = ConvertNativeMatToCvMat(image, uchar());
+
+    switch (type)
+    {
+    case EPT_RHOG:
+        Convert(RHOG().GetFeatureWithPreprocess(cvImage, thinning), feature);
+        break;
+    default:
+        break;
+    }
+
+    vector<Word_f> cvWords(words.size());
+    for (int i = 0; i < words.size(); i++)
+        for (int j = 0; j < words[i].size(); j++)
+            cvWords[i].push_back(words[i][j]);
+    Histogram freqHistogram = BOV::GetFrequencyHistogram(feature, cvWords);
+
+    NativeHistogram nativeHistogram;
+    for (int i = 0; i < freqHistogram.size(); i++)
+        nativeHistogram.push_back(freqHistogram[i]);
+
+    return nativeHistogram;
+}
+
+EXPORT_API vector<NativeHistogram> LocalFeaturePredict(LocalFeatureType type, const vector<NativeMat>& images, 
+    const vector<NativeWord>& words, bool thinning)
+{
+    vector<NativeHistogram> histograms(images.size());
+
+    #pragma omp parallel for
+    for (int i = 0; i < images.size(); i++)
+        histograms[i] = LocalFeaturePredict(type, images[i], words, thinning);
+
+    return histograms;
 }
