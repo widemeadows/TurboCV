@@ -191,7 +191,6 @@ namespace ClrAdapter {
                     {
                         Mat<uchar>^ mat = Convertor::ToManagedMat(item2, uchar());
                         result[i]->Add(Tuple::Create(points, (Object^)mat));
-                        break;
                     }
                 }
             }
@@ -226,7 +225,6 @@ namespace ClrAdapter {
                 {
                     Mat<uchar>^ mat = Convertor::ToManagedMat(item2, uchar());
                     result->Add(Tuple::Create(points, (Object^)mat));
-                    break;
                 }
             }
 
