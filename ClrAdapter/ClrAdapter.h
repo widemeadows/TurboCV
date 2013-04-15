@@ -231,17 +231,21 @@ namespace ClrAdapter {
             List<Word^>^ words = gcnew List<Word^>();
             for (int i = 0; i < nativeWords.size(); i++)
             {
-                words[i] = gcnew Word();
+                Word^ word = gcnew Word();
                 for (int j = 0; j < nativeWords[i].size(); j++)
-                    words[i]->Add(nativeWords[i][j]);
+                    word->Add(nativeWords[i][j]);
+
+                words->Add(word);
             }
 
             List<Histogram^>^ histograms = gcnew List<Histogram^>();
             for (int i = 0; i < nativeHistograms.size(); i++)
             {
-                histograms[i] = gcnew Histogram();
+                Histogram^ histogram = gcnew Histogram();
                 for (int j = 0; j < nativeHistograms[i].size(); j++)
-                    histograms[i]->Add(nativeHistograms[i][j]);
+                    histogram->Add(nativeHistograms[i][j]);
+
+                histograms->Add(histogram);
             }
 
             return Tuple::Create(words, histograms);
@@ -262,7 +266,7 @@ namespace ClrAdapter {
 
             vector<NativeWord> nativeWords(words->Count);
             for (int i = 0; i < words->Count; i++)
-                for (int j = 0; j < words[i]->Count; i++)
+                for (int j = 0; j < words[i]->Count; j++)
                     nativeWords[i].push_back(words[i][j]);
 
             NativeHistogram nativeHistogram = LocalFeaturePredict(nativeType, Convertor::ToNativeMat(image), 
