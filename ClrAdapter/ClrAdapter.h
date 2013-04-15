@@ -205,7 +205,8 @@ namespace ClrAdapter {
         typedef List<float> Word;
         typedef List<double> Histogram; 
 
-        static Tuple<List<Word^>^, List<Histogram^>^>^ Train(Type type, List<Mat<uchar>^>^ images, int wordNum, bool thinning)
+        static Tuple<List<Word^>^, List<Histogram^>^>^ Train(Type type, List<Mat<uchar>^>^ images, 
+            int wordNum, bool thinning)
         {
             LocalFeatureType nativeType;
 
@@ -222,7 +223,8 @@ namespace ClrAdapter {
             for (int i = 0; i < images->Count; i++)
                 nativeMats.push_back(Convertor::ToNativeMat(images[i]));
 
-            pair<vector<NativeWord>, vector<NativeHistogram>> result = LocalFeatureTrain(nativeType, nativeMats, wordNum, thinning);
+            pair<vector<NativeWord>, vector<NativeHistogram>> result = 
+                LocalFeatureTrain(nativeType, nativeMats, wordNum, thinning);
             vector<NativeWord>& nativeWords = result.first;
             vector<NativeHistogram>& nativeHistograms = result.second;
 
