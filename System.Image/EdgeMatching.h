@@ -54,7 +54,10 @@ namespace System
             for (size_t i = 0; i < vPoints.size(); i++)
                 vToU += uMat.at<double>(vPoints[i].y, vPoints[i].x);
 
-            return (uToV / uPoints.size() + vToU / vPoints.size()) / 2.0;
+            if (uPoints.size() == 0 || vPoints.size() == 0)
+                return 1;
+            else
+                return (uToV / uPoints.size() + vToU / vPoints.size()) / 2.0;
         }
 
         inline CM::Info CM::Transform(const Mat& sketchImage, double maxDistance) const
@@ -146,7 +149,10 @@ namespace System
                 vPointNum += vPoints.size();
             }
 
-            return (uToV / uPointNum + vToU / vPointNum) / 2.0;
+            if (uPointNum == 0 || vPointNum == 0)
+                return 1;
+            else
+                return (uToV / uPointNum + vToU / vPointNum) / 2.0;
         }
 
         inline vector<vector<Point>> OCM::GetChannels(const Mat& sketchImage, int orientNum)
@@ -282,7 +288,10 @@ namespace System
                 vPointNum += vPoints.size();
             }
 
-            return 1 - sqrt((uToV / uPointNum) * (vToU / vPointNum));
+            if (uPointNum == 0 || vPointNum == 0)
+                return 1;
+            else
+                return 1 - sqrt((uToV / uPointNum) * (vToU / vPointNum));
         }
 
         inline vector<vector<Point>> Hitmap::GetChannels(const Mat& sketchImage, int orientNum)
