@@ -55,7 +55,7 @@ namespace System
                 vToU += uMat.at<double>(vPoints[i].y, vPoints[i].x);
 
             if (uPoints.size() == 0 || vPoints.size() == 0)
-                return 1;
+                return numeric_limits<double>::max();
             else
                 return (uToV / uPoints.size() + vToU / vPoints.size()) / 2.0;
         }
@@ -150,7 +150,7 @@ namespace System
             }
 
             if (uPointNum == 0 || vPointNum == 0)
-                return 1;
+                return numeric_limits<double>::max();
             else
                 return (uToV / uPointNum + vToU / vPointNum) / 2.0;
         }
