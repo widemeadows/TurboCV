@@ -285,7 +285,7 @@ void EdgeMatchingCrossValidation(const TurboCV::System::String& imageSetPath, co
         images[i].Item1().release();
     }
 
-    Mat distanceMatrix(transforms.size(), transforms.size() - 1, CV_64F);
+    Mat distanceMatrix(imageNum, imageNum, CV_64F);
     #pragma omp parallel for
     for (int i = 0; i < imageNum; i++)
     {
@@ -299,10 +299,10 @@ void EdgeMatchingCrossValidation(const TurboCV::System::String& imageSetPath, co
     printf("Write To File...\n");
     TurboCV::System::String savePath = matching.GetName() + "_" + imageSetPath + "_matrix";
     FILE* file = fopen(savePath, "w");
-    for (int i = 0; i < transforms.size(); i++)
+    for (int i = 0; i < imageNum; i++)
     {
         fprintf(file, "%d", images[i].Item2());
-        for (int j = 0; j < transforms.size(); j++)
+        for (int j = 0; j < imageNum; j++)
         {
             if (i != j)
             {
