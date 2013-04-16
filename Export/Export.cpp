@@ -137,12 +137,17 @@ Mat ConvertNativeMatToCvMat(const NativeMat& mat, T type)
     return cvMat;
 };
 
-EXPORT_API NativeInfo PerformHitmap(const NativeMat& image, bool thinning)
+EXPORT_API NativeInfo EdgeMatchingPredict(EdgeMatchingType type,
+    const NativeMat& image, bool thinning)
 {
     Mat cvImage = ConvertNativeMatToCvMat(image, uchar());
 
-    Hitmap::Info tmp = Hitmap().GetFeatureWithPreprocess(cvImage, thinning);
-
+    TurboCV::System::Vector<Tuple<vector<Point>, Mat>> tmp;
+    if (type == EPT_OCM)
+        tmp = OCM().GetFeatureWithPreprocess(cvImage, thinning);
+    else
+        tmp = Hitmap().GetFeatureWithPreprocess(cvImage, thinning);
+        
     NativeInfo result;
     for (int i = 0; i < tmp.size(); i++)
     {
@@ -154,24 +159,37 @@ EXPORT_API NativeInfo PerformHitmap(const NativeMat& image, bool thinning)
         for (int j = 0; j < item1.size(); j++)
             vec.push_back(NativePoint(item1[j].x, item1[j].y));
 
-        NativeMat mat(item2.rows, item2.cols, EPT_UCHAR);
-        for (int j = 0; j < item2.rows; j++)
-            for (int k = 0; k < item2.cols; k++)
-                mat.at<uchar>(j, k) = item2.at<uchar>(j, k);
+        if (type == EPT_OCM)
+        {
+            NativeMat mat(item2.rows, item2.cols, EPT_FLOAT);
+            for (int j = 0; j < item2.rows; j++)
+                for (int k = 0; k < item2.cols; k++)
+                    mat.at<float>(j, k) = item2.at<float>(j, k);
 
-        result.push_back(make_pair(vec, mat));
+            result.push_back(make_pair(vec, mat));
+        }
+        else
+        {
+            NativeMat mat(item2.rows, item2.cols, EPT_UCHAR);
+            for (int j = 0; j < item2.rows; j++)
+                for (int k = 0; k < item2.cols; k++)
+                    mat.at<uchar>(j, k) = item2.at<uchar>(j, k);
+
+            result.push_back(make_pair(vec, mat));
+        }
     }
 
     return result;
 }
 
-EXPORT_API vector<NativeInfo> PerformHitmap(const vector<NativeMat>& images, bool thinning)
+EXPORT_API vector<NativeInfo> EdgeMatchingPredict(EdgeMatchingType type, 
+    const vector<NativeMat>& images, bool thinning)
 {
     vector<NativeInfo> result(images.size());
 
     #pragma omp parallel for
     for (int i = 0; i < images.size(); i++)
-        result[i] = PerformHitmap(images[i], thinning);
+        result[i] = EdgeMatchingPredict(type, images[i], thinning);
 
     return result;
 }

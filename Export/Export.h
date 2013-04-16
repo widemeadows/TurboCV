@@ -57,10 +57,16 @@ struct EXPORT_API NativePoint
     int x, y;
 };
 
+
+enum EdgeMatchingType { EPT_OCM, EPT_HIT };
+
 typedef vector<pair<vector<NativePoint>, NativeMat>> NativeInfo;
 
-EXPORT_API NativeInfo PerformHitmap(const NativeMat& image, bool thinning);
-EXPORT_API vector<NativeInfo> PerformHitmap(const vector<NativeMat>& images, bool thinning);
+EXPORT_API NativeInfo EdgeMatchingPredict(EdgeMatchingType type, 
+    const NativeMat& image, bool thinning);
+
+EXPORT_API vector<NativeInfo> EdgeMatchingPredict(EdgeMatchingType type, 
+    const vector<NativeMat>& images, bool thinning);
 
 
 enum LocalFeatureType { EPT_RHOG };
@@ -71,8 +77,8 @@ typedef vector<double> NativeHistogram;
 EXPORT_API pair<vector<NativeWord>, vector<NativeHistogram>> LocalFeatureTrain(LocalFeatureType type,
     const vector<NativeMat>& images, int wordNum, bool thinning);
 
-EXPORT_API NativeHistogram LocalFeaturePredict(LocalFeatureType type, const NativeMat& image, 
-    const vector<NativeWord>& words, bool thinning);
+EXPORT_API NativeHistogram LocalFeaturePredict(LocalFeatureType type, 
+    const NativeMat& image, const vector<NativeWord>& words, bool thinning);
 
-EXPORT_API vector<NativeHistogram> LocalFeaturePredict(LocalFeatureType type, const vector<NativeMat>& images, 
-    const vector<NativeWord>& words, bool thinning);
+EXPORT_API vector<NativeHistogram> LocalFeaturePredict(LocalFeatureType type, 
+    const vector<NativeMat>& images, const vector<NativeWord>& words, bool thinning);
