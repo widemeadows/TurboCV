@@ -700,8 +700,8 @@ int main()
     //EdgeMatchingCrossValidation("oracles", Hitmap(), true);
     //printf("\n");
 
-    //LocalFeatureTest("oracles_png", Test(), 1500);
-    //printf("\n");
+    LocalFeatureTest("oracles_png", Test(), 1500);
+    printf("\n");
 
     //LocalFeatureTest("oracles_png", Test(), 1500);
     //printf("\n");
