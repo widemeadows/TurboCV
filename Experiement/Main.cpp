@@ -531,8 +531,8 @@ void LocalFeatureTest(const TurboCV::System::String& imageSetPath, const LocalFe
         //vector<Word_f> words2 = BOV::GetVisualWords(trainingSet2, wordNum, sampleNum);
 
         printf("Compute Frequency Histograms...\n");
-        vector<Histogram> trainingHistograms = BOV::GetFrequencyHistograms(trainingSet, words) * 9;
-        vector<Histogram> evaluationHistograms = BOV::GetFrequencyHistograms(evaluationSet, words) * 9;
+        vector<Histogram> trainingHistograms(trainingSet.size())/* = BOV::GetFrequencyHistograms(trainingSet, words) * 9*/;
+        vector<Histogram> evaluationHistograms(evaluationSet.size())/* = BOV::GetFrequencyHistograms(evaluationSet, words) * 9*/;
 
         vector<vector<LocalFeature_f>> parts = DivideLocalFeatures(trainingSet);
         for (int j = 0; j < parts.size(); j++)
@@ -554,8 +554,8 @@ void LocalFeatureTest(const TurboCV::System::String& imageSetPath, const LocalFe
                 evaluationHistograms[k].push_back(result[k]);
         }
 
-        assert(trainingHistograms[0].size() == wordNum * 10 &&
-            evaluationHistograms[0].size() == wordNum * 10);
+        assert(trainingHistograms[0].size() == wordNum * 9 &&
+            evaluationHistograms[0].size() == wordNum * 9);
 
         /*vector<Histogram> trainingHistograms1 = BOV::GetFrequencyHistograms(trainingSet1, words1);
         vector<Histogram> trainingHistograms2 = BOV::GetFrequencyHistograms(trainingSet2, words2);
@@ -624,7 +624,7 @@ void LocalFeatureTest(const TurboCV::System::String& imageSetPath, const LocalFe
         printf("Fold %d Accuracy: %f\n", i + 1, precisions.first);
     }
 
-    System::String savePath = feature.GetName() + "_oracles_knn.out";
+    TurboCV::System::String savePath = feature.GetName() + "_oracles_knn.out";
     FILE* file = fopen(savePath, "w");
 
     for (int i = 0; i < passResult.size(); i++)
@@ -700,7 +700,7 @@ int main()
     //EdgeMatchingCrossValidation("oracles", Hitmap(), true);
     //printf("\n");
 
-    LocalFeatureTest("oracles_png", Test(), 1500);
+    LocalFeatureTest("oracles", Test(), 1500);
     printf("\n");
 
     //LocalFeatureTest("oracles_png", Test(), 1500);
