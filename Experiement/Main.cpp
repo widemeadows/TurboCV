@@ -694,14 +694,14 @@ int main()
     //LocalFeatureCrossValidation("sketches", HOG(), 500);
     //printf("\n");
 
-    //GlobalFeatureCrossValidation("oracles_png", GHOG());
-    //printf("\n");
+    GlobalFeatureCrossValidation("oracles", GHOG(), true);
+    printf("\n");
 
     //EdgeMatchingCrossValidation("oracles", Hitmap(), true);
     //printf("\n");
 
-    LocalFeatureTest("oracles", Test(), 1500);
-    printf("\n");
+    //LocalFeatureTest("oracles", Test(), 1500);
+    //printf("\n");
 
     //LocalFeatureTest("oracles_png", Test(), 1500);
     //printf("\n");

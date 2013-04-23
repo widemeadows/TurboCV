@@ -249,7 +249,7 @@ namespace System
                         if (r < 0 || r >= height || c < 0 || c >= width)
                             hist.at<double>(i, j, k) = 0;
                         else
-                            hist.at<double>(i, j, k) = abs(filteredOrientChannels[k].at<double>(r, c));
+                            hist.at<double>(i, j, k) = filteredOrientChannels[k].at<double>(r, c);
                     }
                 }
             }
