@@ -531,31 +531,31 @@ void LocalFeatureTest(const TurboCV::System::String& imageSetPath, const LocalFe
         //vector<Word_f> words2 = BOV::GetVisualWords(trainingSet2, wordNum, sampleNum);
 
         printf("Compute Frequency Histograms...\n");
-        vector<Histogram> trainingHistograms(trainingSet.size())/* = BOV::GetFrequencyHistograms(trainingSet, words) * 9*/;
-        vector<Histogram> evaluationHistograms(evaluationSet.size())/* = BOV::GetFrequencyHistograms(evaluationSet, words) * 9*/;
+        vector<Histogram> trainingHistograms = BOV::GetFrequencyHistograms(trainingSet, words)/* * 9*/;
+        vector<Histogram> evaluationHistograms = BOV::GetFrequencyHistograms(evaluationSet, words)/* * 9*/;
 
-        vector<vector<LocalFeature_f>> parts = DivideLocalFeatures(trainingSet);
-        for (int j = 0; j < parts.size(); j++)
-        {
-            vector<Histogram> result = BOV::GetFrequencyHistograms(parts[j], words);
+        //vector<vector<LocalFeature_f>> parts = DivideLocalFeatures(trainingSet);
+        //for (int j = 0; j < parts.size(); j++)
+        //{
+        //    vector<Histogram> result = BOV::GetFrequencyHistograms(parts[j], words);
 
-            assert(result.size() == trainingHistograms.size());
-            for (int k = 0; k < result.size(); k++)
-                trainingHistograms[k].push_back(result[k]);
-        }
+        //    assert(result.size() == trainingHistograms.size());
+        //    for (int k = 0; k < result.size(); k++)
+        //        trainingHistograms[k].push_back(result[k]);
+        //}
 
-        parts = DivideLocalFeatures(evaluationSet);
-        for (int j = 0; j < parts.size(); j++)
-        {
-            vector<Histogram> result = BOV::GetFrequencyHistograms(parts[j], words);
+        //parts = DivideLocalFeatures(evaluationSet);
+        //for (int j = 0; j < parts.size(); j++)
+        //{
+        //    vector<Histogram> result = BOV::GetFrequencyHistograms(parts[j], words);
 
-            assert(result.size() == evaluationHistograms.size());
-            for (int k = 0; k < result.size(); k++)
-                evaluationHistograms[k].push_back(result[k]);
-        }
+        //    assert(result.size() == evaluationHistograms.size());
+        //    for (int k = 0; k < result.size(); k++)
+        //        evaluationHistograms[k].push_back(result[k]);
+        //}
 
-        assert(trainingHistograms[0].size() == wordNum * 9 &&
-            evaluationHistograms[0].size() == wordNum * 9);
+        assert(trainingHistograms[0].size() == wordNum &&
+            evaluationHistograms[0].size() == wordNum);
 
         /*vector<Histogram> trainingHistograms1 = BOV::GetFrequencyHistograms(trainingSet1, words1);
         vector<Histogram> trainingHistograms2 = BOV::GetFrequencyHistograms(trainingSet2, words2);

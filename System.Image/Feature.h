@@ -141,7 +141,7 @@ namespace System
         public:
             virtual LocalFeatureVec GetFeature(const Mat& sketchImage);
 
-            virtual String GetName() const { return "test@1500-9overlap"; };
+            virtual String GetName() const { return "test@1500abs"; };
 
         private:
             static Descriptor GetDescriptor1(const vector<Mat>& filteredOrientImages, 
@@ -249,7 +249,7 @@ namespace System
                         if (r < 0 || r >= height || c < 0 || c >= width)
                             hist.at<double>(i, j, k) = 0;
                         else
-                            hist.at<double>(i, j, k) = filteredOrientChannels[k].at<double>(r, c);
+                            hist.at<double>(i, j, k) = abs(filteredOrientChannels[k].at<double>(r, c));
                     }
                 }
             }
