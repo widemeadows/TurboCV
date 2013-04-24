@@ -5,7 +5,6 @@
 #include "Geometry.h"
 #include "Util.h"
 #include <cv.h>
-#include <vector>
 #include <unordered_set>
 #include <algorithm>
 using namespace cv;
@@ -17,14 +16,14 @@ namespace System
 {
     namespace Image
     {
-        inline Vector<Point> SampleOnGrid(
+        inline ArrayList<Point> SampleOnGrid(
             size_t height, 
             size_t width, 
             size_t samplingNumPerDirection)
         {
             int heightStep = height / samplingNumPerDirection, 
                 widthStep = width / samplingNumPerDirection;
-            Vector<Point> points;
+            ArrayList<Point> points;
 
             for (int i = heightStep / 2; i < height; i += heightStep)
                 for (int j = widthStep / 2; j < width; j += widthStep)
@@ -33,14 +32,14 @@ namespace System
             return points;
         }
 
-        inline Vector<Point> SampleFromPoints(
-            const Vector<Point>& points, 
+        inline ArrayList<Point> SampleFromPoints(
+            const ArrayList<Point>& points, 
             size_t samplingNum)
         {
             size_t pointNum = points.size();
 	        assert(pointNum >= samplingNum);
 
-            Vector<Tuple<double, Tuple<Point, Point>>> distances(pointNum * (pointNum - 1) / 2);
+            ArrayList<Tuple<double, Tuple<Point, Point>>> distances(pointNum * (pointNum - 1) / 2);
             unordered_set<Point, PointHash> pivots;
 
             int counter = 0;
@@ -65,14 +64,14 @@ namespace System
                     pivots.erase(pointPair.Item2());
             }
 
-            Vector<Point> results;
+            ArrayList<Point> results;
             for (auto pivot : pivots)
                 results.push_back(pivot);
 
             return results;
         }
 
-        inline Vector<Point> SampleOnShape(const Mat& sketchImage, size_t samplingNum)
+        inline ArrayList<Point> SampleOnShape(const Mat& sketchImage, size_t samplingNum)
         {
             return SampleFromPoints(GetEdgels(sketchImage), samplingNum);
         }

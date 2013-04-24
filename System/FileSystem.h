@@ -1,6 +1,7 @@
 #pragma once
 
 #include <Windows.h>
+#include "Collection.h"
 #include "String.h"
 
 namespace TurboCV
@@ -122,7 +123,8 @@ namespace System
         class FileInfo : public FileSystemInfo
         {
         public:
-            // Initializes a new instance of the FileInfo class, which acts as a wrapper for a file path.
+            // Initializes a new instance of the FileInfo class, 
+            // which acts as a wrapper for a file path.
             FileInfo(const String& path) : FileSystemInfo(path) {};
 
             // Overridden. Gets a value indicating whether a file exists.
@@ -138,18 +140,21 @@ namespace System
             String Directory() const;
         };
 
-        // Initializes a new instance of the FileInfo class, which acts as a wrapper for a file path.
+        // Initializes a new instance of the FileInfo class, 
+        // which acts as a wrapper for a file path.
         inline bool FileInfo::Exists() const
         {
             DWORD attributes = GetFileAttributes(_path);
 
-            return (attributes != INVALID_FILE_ATTRIBUTES && !(attributes & FILE_ATTRIBUTE_DIRECTORY));
+            return (attributes != INVALID_FILE_ATTRIBUTES && 
+                    !(attributes & FILE_ATTRIBUTE_DIRECTORY));
         }
 
         // Overrideen. Creates a file
         inline bool FileInfo::Create() const
         {
-            HANDLE handle = CreateFile(_path, GENERIC_READ, 0, NULL, CREATE_NEW, FILE_ATTRIBUTE_NORMAL, NULL);
+            HANDLE handle = CreateFile(_path, GENERIC_READ, 0, NULL, CREATE_NEW, 
+                FILE_ATTRIBUTE_NORMAL, NULL);
 
             if (handle != INVALID_HANDLE_VALUE)
             {
@@ -195,10 +200,10 @@ namespace System
             String Parent() const;
 
             // Returns the full paths of subdirectories in the current directory.
-            vector<String> GetDirectories() const;
+            ArrayList<String> GetDirectories() const;
 
             // Returns the full paths of files in the current directory.
-            vector<String> GetFiles() const;
+            ArrayList<String> GetFiles() const;
         };
 
         // Overridden. Gets a value indicating whether the directory exists.
@@ -206,7 +211,8 @@ namespace System
         {
             DWORD attributes = GetFileAttributes(_path);
 
-            return (attributes != INVALID_FILE_ATTRIBUTES && (attributes & FILE_ATTRIBUTE_DIRECTORY));
+            return (attributes != INVALID_FILE_ATTRIBUTES && 
+                    (attributes & FILE_ATTRIBUTE_DIRECTORY));
         }
 
         // Overridden. Creates a directory.
@@ -228,10 +234,10 @@ namespace System
         }
 
         // Returns the full paths of subdirectories in the current directory.
-        inline vector<String> DirectoryInfo::GetDirectories() const
+        inline ArrayList<String> DirectoryInfo::GetDirectories() const
         {
             WIN32_FIND_DATA data; 
-            vector<String> subDirs;
+            ArrayList<String> subDirs;
             TCHAR curDir[MAX_PATH];
 
             GetCurrentDirectory(MAX_PATH, curDir);
@@ -254,10 +260,10 @@ namespace System
         }
 
         // Returns the full paths of files in the current directory.
-        inline vector<String> DirectoryInfo::GetFiles() const
+        inline ArrayList<String> DirectoryInfo::GetFiles() const
         {
             WIN32_FIND_DATA data; 
-            vector<String> files;
+            ArrayList<String> files;
             TCHAR curDir[MAX_PATH];
 
             GetCurrentDirectory(MAX_PATH, curDir);

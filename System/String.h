@@ -4,9 +4,8 @@
 #include <cstring>
 #include <string>
 #include <iostream>
-#include <vector>
+#include "Collection.h"
 #include "Exception.h"
-using namespace std;
 
 namespace TurboCV
 {
@@ -22,7 +21,7 @@ namespace System
         String(const char* str);
 
         // Copies the std::string referenced by str.
-        String(const string& str);
+        String(const std::string& str);
 
         // Constructs a copy of str.
         String(const String& str);
@@ -39,7 +38,7 @@ namespace System
         String& operator=(const char* str);
 
         // Assigns the std::string to this instance, replacing its current contents.
-        String& operator=(const string& str);
+        String& operator=(const std::string& str);
 
         // Assigns another String object to this instance, replacing its current contents.
         String& operator=(const String& str);
@@ -50,7 +49,7 @@ namespace System
 
         // Returns a newly constructed String object with its value being the concatenation of 
         // the characters in this instance followed by those of append.
-        String operator+(const string& append) const;
+        String operator+(const std::string& append) const;
 
         // Returns a newly constructed String object with its value being the concatenation of 
         // the characters in this instance followed by those of append.
@@ -62,7 +61,7 @@ namespace System
 
         // Returns a newly constructed String object with its value being the concatenation of 
         // the characters in lhs followed by those of rhs.
-        friend String operator+(const string& lhs, const String& rhs);
+        friend String operator+(const std::string& lhs, const String& rhs);
 
         // Indicates whether this instance is less than str.
         bool operator<(const String& str) const;
@@ -77,14 +76,14 @@ namespace System
         operator const char*() const;
 
         // Converts this instance to an std::string.
-        operator string() const;
+        operator std::string() const;
 
         // Inserts the sequence of characters that conforms value of str into out.
-        friend ostream& operator<<(ostream& out, const String& str);
+        friend std::ostream& operator<<(std::ostream& out, const String& str);
 
         // Extracts a String object from the input stream in, storing the sequence in str, 
         // which is overwritten (the previous value of str is deleted).
-        friend istream& operator>>(istream& in, String& str);
+        friend std::istream& operator>>(std::istream& in, String& str);
 
         // Returns a newly constructed string object with its value initialized to a copy of 
         // a substring of this instance. The substring is the portion of this instance that starts 
@@ -114,11 +113,11 @@ namespace System
 
         // Returns a String array that contains the substrings in this instance that are delimited 
         // by the specific character.
-        vector<String> Split(char separateCharacter) const;
+        ArrayList<String> Split(char separateCharacter) const;
 
         // Returns a String array that contains the substrings in this instance that are delimited 
         // by elements of a character array.
-        vector<String> Split(const char* separateCharacters) const;
+        ArrayList<String> Split(const char* separateCharacters) const;
 
         // Returns a pointer to an array that contains a null-terminated sequence of characters 
         // (i.e., a C-string) representing the current value of this instance.
@@ -149,19 +148,19 @@ namespace System
         if (!str)
             throw ArgumentNullException();
 
-        _length = strlen(str);
+        _length = std::strlen(str);
 
         _chars = new char[_length + 1];
-        strcpy(_chars, str);
+        std::strcpy(_chars, str);
     }
 
     // Copies the std::string referenced by str.
-    inline String::String(const string& str)
+    inline String::String(const std::string& str)
     {
         _length = str.length();
 
         _chars = new char[_length + 1];
-        strcpy(_chars, str.c_str());
+        std::strcpy(_chars, str.c_str());
     }
 
     // Constructs a copy of str.
@@ -170,7 +169,7 @@ namespace System
         _length = str._length;
 
         _chars = new char[_length + 1];
-        strcpy(_chars, str._chars);
+        std::strcpy(_chars, str._chars);
     }
 
     // Assigns the null-terminated character sequence (C-string) to this instance, 
@@ -180,10 +179,10 @@ namespace System
         if (!str)
             throw ArgumentNullException();
 
-        _length = strlen(str);
+        _length = std::strlen(str);
 
         char* tmp = new char[_length + 1];
-        strcpy(tmp, str);
+        std::strcpy(tmp, str);
         delete[] _chars;
         _chars = tmp;
 
@@ -191,12 +190,12 @@ namespace System
     }
 
     // Assigns the std::string to this instance, replacing its current contents.
-    inline String& String::operator=(const string& str)
+    inline String& String::operator=(const std::string& str)
     {
         _length = str.length();
 
         char* tmp = new char[_length + 1];
-        strcpy(tmp, str.c_str());
+        std::strcpy(tmp, str.c_str());
         delete[] _chars;
         _chars = tmp;
 
@@ -209,7 +208,7 @@ namespace System
         _length = str._length;
 
         char* tmp = new char[_length + 1];
-        strcpy(tmp, str._chars);
+        std::strcpy(tmp, str._chars);
         delete[] _chars;
         _chars = tmp;
 
@@ -223,28 +222,28 @@ namespace System
         if (!append)
             throw ArgumentNullException();
 
-        size_t appendLength = strlen(append);
+        size_t appendLength = std::strlen(append);
         String result;
 
         result._length = _length + appendLength;
         result._chars = new char[result._length + 1];
-        strcpy(result._chars, _chars);
-        strcat(result._chars, append);
+        std::strcpy(result._chars, _chars);
+        std::strcat(result._chars, append);
 
         return result;
     }
 
     // Returns a newly constructed String object with its value being the concatenation of 
     // the characters in this instance followed by those of append.
-    inline String String::operator+(const string& append) const
+    inline String String::operator+(const std::string& append) const
     {
         size_t appendLength = append.length();
         String result;
 
         result._length = _length + appendLength;
         result._chars = new char[result._length + 1];
-        strcpy(result._chars, _chars);
-        strcat(result._chars, append.c_str());
+        std::strcpy(result._chars, _chars);
+        std::strcat(result._chars, append.c_str());
 
         return result;
     }
@@ -258,8 +257,8 @@ namespace System
 
         result._length = _length + appendLength;
         result._chars = new char[result._length + 1];
-        strcpy(result._chars, _chars);
-        strcat(result._chars, append._chars);
+        std::strcpy(result._chars, _chars);
+        std::strcat(result._chars, append._chars);
 
         return result;
     }
@@ -273,7 +272,7 @@ namespace System
 
     // Returns a newly constructed String object with its value being the concatenation of 
     // the characters in lhs followed by those of rhs.
-    inline String operator+(const string& lhs, const String& rhs)
+    inline String operator+(const std::string& lhs, const String& rhs)
     {
         return String(lhs) + rhs;
     }
@@ -281,13 +280,13 @@ namespace System
     // Indicates whether this instance is less than str.
     inline bool String::operator<(const String& str) const
     {
-        return strcmp(_chars, str._chars) < 0;
+        return std::strcmp(_chars, str._chars) < 0;
     }
 
     // Indicates whether this instance is equal to str.
     inline bool String::operator==(const String& str) const
     {
-        return strcmp(_chars, str._chars) == 0;
+        return std::strcmp(_chars, str._chars) == 0;
     }
 
     // Converts this instance to a null-terminated character sequence (C-string).
@@ -300,13 +299,13 @@ namespace System
     }
 
     // Converts this instance to an std::string.
-    inline String::operator string() const
+    inline String::operator std::string() const
     {
-        return string(_chars); 
+        return std::string(_chars); 
     }
 
     // Inserts the sequence of characters that conforms value of str into out.
-    inline ostream& operator<<(ostream& out, const String& str)
+    inline std::ostream& operator<<(std::ostream& out, const String& str)
     {
         out << str._chars;
         return out;
@@ -314,9 +313,9 @@ namespace System
 
     // Extracts a String object from the input stream in, storing the sequence in str, 
     // which is overwritten (the previous value of str is deleted).
-    inline istream& operator>>(istream& in, String& str)
+    inline std::istream& operator>>(std::istream& in, String& str)
     {
-        string tmp;
+        std::string tmp;
         in >> tmp;
         str = tmp;
 
@@ -342,7 +341,7 @@ namespace System
         String result;
         result._length = length;
         result._chars = new char[length + 1];
-        strncpy(result._chars, _chars + offset, length);
+        std::strncpy(result._chars, _chars + offset, length);
         result._chars[length] = '\0';
 
         return result;
@@ -352,7 +351,7 @@ namespace System
     // If found, the index of the specific character is returned. Otherwise, -1 is returned.
     inline size_t String::IndexOf(char value) const
     {
-        char* ptr = strchr(_chars, value);
+        char* ptr = std::strchr(_chars, value);
 
         if (!ptr)
             return -1;
@@ -364,7 +363,7 @@ namespace System
     // If found, the index indicated the first occurrence of substr is returned. Otherwise, -1 is returned.
     inline size_t String::IndexOf(const String& substr) const
     {
-        char* ptr = strstr(_chars, substr._chars);
+        char* ptr = std::strstr(_chars, substr._chars);
 
         if (!ptr)
             return -1;
@@ -376,7 +375,7 @@ namespace System
     // If found, the index of the specific character is returned. Otherwise, -1 is returned.
     inline size_t String::LastIndexOf(char value) const
     {
-        char* ptr = strrchr(_chars, value);
+        char* ptr = std::strrchr(_chars, value);
 
         if (!ptr)
             return -1;
@@ -391,7 +390,7 @@ namespace System
         char* prev = NULL;
         char* cur = _chars;
         
-        while (cur = strstr(cur, substr._chars))
+        while (cur = std::strstr(cur, substr._chars))
         {
             prev = cur;
             cur++;
@@ -405,7 +404,7 @@ namespace System
 
     // Returns a String array that contains the substrings in this instance that are delimited 
     // by the specific character.
-    inline vector<String> String::Split(char separateCharacter) const
+    inline ArrayList<String> String::Split(char separateCharacter) const
     {
         char tmp[] = { separateCharacter };
         return Split(tmp);
@@ -413,23 +412,23 @@ namespace System
 
     // Returns a String array that contains the substrings in this instance that are delimited 
     // by elements of a character array.
-    inline vector<String> String::Split(const char* separateCharacters) const
+    inline ArrayList<String> String::Split(const char* separateCharacters) const
     {
         if (!separateCharacters)
             throw ArgumentNullException();
 
-        vector<String> tokens;
+        ArrayList<String> tokens;
         int beginPos = -1, endPos = -1;
 
         while (++beginPos < _length)
         {            
-            if (!strchr(separateCharacters, _chars[beginPos]))
+            if (!std::strchr(separateCharacters, _chars[beginPos]))
             {
                 endPos = beginPos;
                 
                 while (++endPos < _length)
                 {
-                    if (strchr(separateCharacters, _chars[endPos]))
+                    if (std::strchr(separateCharacters, _chars[endPos]))
                         break;
                 }
 
@@ -448,7 +447,7 @@ namespace System
     inline char* String::Chars() const
     {
         char* result = new char[_length + 1];
-        strcpy(result, _chars);
+        std::strcpy(result, _chars);
 
         return result;
     }

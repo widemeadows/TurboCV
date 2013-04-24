@@ -164,11 +164,11 @@ namespace System
 	        return result;
         }
 
-        inline Vector<double> linspace(double start, double end, int pointNum)
+        inline ArrayList<double> linspace(double start, double end, int pointNum)
         {
             double size = (end - start) / (pointNum - 1);
 
-            Vector<double> result;
+            ArrayList<double> result;
             result.push_back(start);
             for (int i = 1; i < pointNum - 1; i++)
                 result.push_back(result[i - 1] + size);
@@ -183,12 +183,12 @@ namespace System
         // 2. relevants -- If image[i] and the query belong to the same category, 
         //                 then relevants[i] is true;
         // 3. numOfCP -- Number of Control Points.
-        Tuple<Vector<double>, Vector<double>> ROC(
-            const Vector<double>& distances, 
-            const Vector<bool>& relevants,
+        Tuple<ArrayList<double>, ArrayList<double>> ROC(
+            const ArrayList<double>& distances, 
+            const ArrayList<bool>& relevants,
             int numOfCP = 20)
         {
-            Vector<double> positiveDist, negativeDist;
+            ArrayList<double> positiveDist, negativeDist;
             for (int i = 0; i < relevants.size(); i++)
             {
                 if (relevants[i])
@@ -199,9 +199,9 @@ namespace System
 
             double firstCP = Math::Min(distances);
             double lastCP = Math::Max(distances);
-            Vector<double> plot = linspace(firstCP, lastCP, numOfCP);
+            ArrayList<double> plot = linspace(firstCP, lastCP, numOfCP);
 
-            Vector<double> TP(numOfCP), FP(numOfCP), TN(numOfCP), FN(numOfCP);
+            ArrayList<double> TP(numOfCP), FP(numOfCP), TN(numOfCP), FN(numOfCP);
             for (int i = 0; i < numOfCP; i++)
             {
                 for (auto item : positiveDist)
@@ -224,7 +224,7 @@ namespace System
                     FP[i] + TN[i] == negativeDist.size());
             }
 
-            Vector<double> DR, FPR;
+            ArrayList<double> DR, FPR;
             for (int i = 0; i < numOfCP; i++)
             {
                 DR.push_back(TP[i] / (TP[i] + FN[i]));

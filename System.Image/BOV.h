@@ -15,36 +15,36 @@ namespace System
         class BOV
         {
         public:
-            static Vector<Word_f> GetVisualWords(
-                const Vector<LocalFeature_f>& features, 
+            static ArrayList<Word_f> GetVisualWords(
+                const ArrayList<LocalFeature_f>& features, 
                 size_t clusterNum, 
                 size_t sampleNum = INF);
 
-            static Vector<Histogram> GetFrequencyHistograms(
-                const Vector<LocalFeature_f>& features, 
-                const Vector<Word_f>& words);
+            static ArrayList<Histogram> GetFrequencyHistograms(
+                const ArrayList<LocalFeature_f>& features, 
+                const ArrayList<Word_f>& words);
 
-            static Vector<Histogram> GetFrequencyHistogram(
-                const Vector<LocalFeature_f>& features, 
+            static ArrayList<Histogram> GetFrequencyHistogram(
+                const ArrayList<LocalFeature_f>& features, 
                 size_t clusterNum, 
                 size_t sampleNum = INF);
 
             static Histogram BOV::GetFrequencyHistogram(
                 const LocalFeature_f& feature, 
-                const Vector<Word_f>& words);
+                const ArrayList<Word_f>& words);
         
         private:
-            static Vector<double> GetDistancesToVisualWords(
+            static ArrayList<double> GetDistancesToVisualWords(
                 const Descriptor_f& descriptor, 
-                const Vector<Word_f>& words);
+                const ArrayList<Word_f>& words);
         };
 
-        inline Vector<Word_f> BOV::GetVisualWords(
-            const Vector<LocalFeature_f>& features, 
+        inline ArrayList<Word_f> BOV::GetVisualWords(
+            const ArrayList<LocalFeature_f>& features, 
             size_t clusterNum, 
             size_t sampleNum)
         {
-            Vector<Descriptor_f> allDescriptors;
+            ArrayList<Descriptor_f> allDescriptors;
             for (size_t i = 0; i < features.size(); i++)
                 for (size_t j = 0; j < features[i].size(); j++)
                     allDescriptors.push_back(features[i][j]);
@@ -57,7 +57,7 @@ namespace System
 
             sampleNum = min(descriptorNum, sampleNum);
             Mat samples(sampleNum, descriptorSize, CV_32F);
-            Vector<size_t> randomIndex = RandomPermutate(descriptorNum, sampleNum);
+            ArrayList<size_t> randomIndex = RandomPermutate(descriptorNum, sampleNum);
             sort(randomIndex.begin(), randomIndex.end());
 
             int counter = 0;
@@ -78,7 +78,7 @@ namespace System
             kmeans(samples, clusterNum, labels, TermCriteria(CV_TERMCRIT_ITER, 500, 1e-6), 
                 1, KMEANS_PP_CENTERS, centers);
 
-            Vector<Word_f> words(clusterNum);
+            ArrayList<Word_f> words(clusterNum);
             for (size_t i = 0; i < clusterNum; i++)
                 for (size_t j = 0; j < descriptorSize; j++)
                     words[i].push_back(centers.at<float>(i, j));
@@ -86,14 +86,14 @@ namespace System
             return words;
         }
 
-        inline Vector<double> BOV::GetDistancesToVisualWords(
+        inline ArrayList<double> BOV::GetDistancesToVisualWords(
             const Descriptor_f& descriptor, 
-            const Vector<Word_f>& words)
+            const ArrayList<Word_f>& words)
         {
             assert(words.size() > 0 && descriptor.size() == words[0].size());
 
             size_t wordNum = words.size();
-            Vector<double> distances;
+            ArrayList<double> distances;
 
             for (size_t i = 0; i < wordNum; i++)
                 distances.push_back(Math::GaussianDistance(descriptor, words[i], 0.1));
@@ -104,7 +104,7 @@ namespace System
 
         inline Histogram BOV::GetFrequencyHistogram(
             const LocalFeature_f& feature, 
-            const Vector<Word_f>& words)
+            const ArrayList<Word_f>& words)
         {    
             size_t wordNum = words.size();
             size_t descriptorNum = feature.size();
@@ -112,7 +112,7 @@ namespace System
 
             for (size_t i = 0; i < descriptorNum; i++)
             {
-                vector<double> distances = GetDistancesToVisualWords(feature[i], words);
+                ArrayList<double> distances = GetDistancesToVisualWords(feature[i], words);
                 NormOneNormalize(distances.begin(), distances.end());
 
                 for (size_t j = 0; j < wordNum; j++)
@@ -125,12 +125,12 @@ namespace System
             return freqHistogram;
         }
 
-        inline Vector<Histogram> BOV::GetFrequencyHistograms(
-            const Vector<LocalFeature_f>& features, 
-            const Vector<Word_f>& words)
+        inline ArrayList<Histogram> BOV::GetFrequencyHistograms(
+            const ArrayList<LocalFeature_f>& features, 
+            const ArrayList<Word_f>& words)
         {
             size_t imageNum = features.size();
-            Vector<Histogram> freqHistograms(imageNum);
+            ArrayList<Histogram> freqHistograms(imageNum);
 
             #pragma omp parallel for schedule(guided)
             for (int i = 0; i < imageNum; i++)
@@ -139,8 +139,8 @@ namespace System
             return freqHistograms;
         }
 
-        inline Vector<Histogram> BOV::GetFrequencyHistogram(
-            const Vector<LocalFeature_f>& features,
+        inline ArrayList<Histogram> BOV::GetFrequencyHistogram(
+            const ArrayList<LocalFeature_f>& features,
             size_t clusterNum, size_t sampleNum)
         {
             return GetFrequencyHistograms(features, 

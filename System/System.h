@@ -1,5 +1,6 @@
 #pragma once
 
+#include "Collection.h"
 #include "Type.h"
 #include "Exception.h"
 #include "FileSystem.h"

@@ -3,7 +3,6 @@
 #include "../System/System.h"
 #include "Util.h"
 #include <cv.h>
-#include <vector>
 #include <algorithm>
 #include <unordered_set>
 using namespace cv;
@@ -15,7 +14,7 @@ namespace System
 {
     namespace Image
     {
-        typedef vector<Point> Edge;
+        typedef ArrayList<Point> Edge;
 
         enum Status
         {
@@ -27,11 +26,11 @@ namespace System
         // Assume: Background is 0.
         // The values are ordered from the top-left point going anti-clockwise around the pixel.
         template<typename T>
-        inline vector<T> GetNeighbourValues(const Mat& image, const Point& centre)
+        inline ArrayList<T> GetNeighbourValues(const Mat& image, const Point& centre)
         {
             static int dy[] = { -1, 0, 1, 1, 1, 0, -1, -1 };
             static int dx[] = { -1, -1, -1, 0, 1, 1, 1, 0 };
-            vector<T> result;
+            ArrayList<T> result;
 
             for (int i = 0; i < 8; i++)
             {
@@ -47,11 +46,12 @@ namespace System
         }
 
         // Assume: Edgels are 1 and Background is 0.
-        inline Tuple<vector<Point>, vector<Point>> FindJunctionsOrEndpoints(const Mat& binaryImage)
+        inline Tuple<ArrayList<Point>, ArrayList<Point>> FindJunctionsOrEndpoints(
+            const Mat& binaryImage)
         {
-            vector<Point> junctions, endPoints;
+            ArrayList<Point> junctions, endPoints;
             Mat patch(3, 3, CV_8U);
-            vector<uchar> a(8), b(8);
+            ArrayList<uchar> a(8), b(8);
 
             for (int i = 0; i < binaryImage.rows; i++)
             {
@@ -116,7 +116,8 @@ namespace System
                 {
                     if (edgeFlags.at<int>(newY, newX) == 1)
                     {
-                        vector<int> values = GetNeighbourValues<int>(edgeFlags, Point(newX, newY));
+                        ArrayList<int> values = 
+                            GetNeighbourValues<int>(edgeFlags, Point(newX, newY));
                         int counter = 0;
 
                         for (int j = values.size() - 1; j >= 0; j--)
@@ -218,9 +219,9 @@ namespace System
 
         // Assume: Edgels are 1 and Background is 0. 
         // We strongly recommend removing any isolated pixel before applying EdgeLink.
-        vector<Edge> EdgeLink(const Mat& binaryImage, int minLength = 10)
+        ArrayList<Edge> EdgeLink(const Mat& binaryImage, int minLength = 10)
         {
-            Tuple<vector<Point>, vector<Point>> juncOrEnd = 
+            Tuple<ArrayList<Point>, ArrayList<Point>> juncOrEnd = 
                 FindJunctionsOrEndpoints(binaryImage);
 
             unordered_set<Point, PointHash> junctions, endpoints;
@@ -232,15 +233,15 @@ namespace System
             Mat edgeFlags;
             binaryImage.convertTo(edgeFlags, CV_32S);
 
-            vector<Edge> edgeList;
+            ArrayList<Edge> edgeList;
             for (int i = 0; i < edgeFlags.rows; i++)
             {
                 for (int j = 0; j < edgeFlags.cols; j++)
                 {
                     if (edgeFlags.at<int>(i, j) == 1)
                     {
-                        Edge edge = TrackEdge(edgeFlags, (int)edgeList.size() + 1, junctions, 
-                            endpoints, Point(j, i));
+                        Edge edge = TrackEdge(edgeFlags, (int)edgeList.size() + 1, 
+                            junctions, endpoints, Point(j, i));
 
                         if (edge.size() >= minLength)
                             edgeList.push_back(edge);

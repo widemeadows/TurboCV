@@ -8,20 +8,20 @@ namespace System
 {
     namespace Image
     {
-        typedef Vector<double> Descriptor;
-        typedef Vector<float> Descriptor_f;
+        typedef ArrayList<double> Descriptor;
+        typedef ArrayList<float> Descriptor_f;
 
-        typedef Vector<Descriptor> LocalFeatureVec;
-        typedef Vector<Descriptor_f> LocalFeature_f;
+        typedef ArrayList<Descriptor> LocalFeatureVec;
+        typedef ArrayList<Descriptor_f> LocalFeature_f;
 
-        typedef Vector<double> GlobalFeatureVec;
-        typedef Vector<float> GlobalFeature_f;
+        typedef ArrayList<double> GlobalFeatureVec;
+        typedef ArrayList<float> GlobalFeature_f;
 
-        typedef Vector<double> Word;
-        typedef Vector<float> Word_f;
+        typedef ArrayList<double> Word;
+        typedef ArrayList<float> Word_f;
 
-        typedef Vector<double> Histogram;
-        typedef Vector<float> Histogram_f;
+        typedef ArrayList<double> Histogram;
+        typedef ArrayList<float> Histogram_f;
 
         inline void Convert(const LocalFeatureVec& src, LocalFeature_f& dst)
         {

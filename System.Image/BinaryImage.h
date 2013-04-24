@@ -173,10 +173,9 @@ namespace System
         }
 
         // Assume: Edgels are 1 and Background is 0.
-        inline vector<Point> GetEdgels(const Mat& sketchImage)
+        inline ArrayList<Point> GetEdgels(const Mat& sketchImage)
         {
-	        vector<Point> points;
-            points.reserve(1024);
+	        ArrayList<Point> points;
 
 	        for (int i = 0; i < sketchImage.rows; i++)
 		        for (int j = 0; j < sketchImage.cols; j++)

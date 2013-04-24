@@ -2,7 +2,7 @@
 
 #include <cassert>
 #include <cstdlib>
-#include "Type.h"
+#include "Collection.h"
 
 namespace TurboCV
 {
@@ -26,12 +26,10 @@ namespace System
         return false;
     }
 
-    inline Vector<size_t> RandomPermutate(
-        size_t cardNum, 
-        size_t pickUpNum)
+    inline ArrayList<size_t> RandomPermutate(size_t cardNum, size_t pickUpNum)
     {
         assert(cardNum >= pickUpNum);
-        Vector<size_t> result;
+        ArrayList<size_t> result;
 
         size_t* cards = new size_t[cardNum];
         for (size_t i = 0; i < cardNum; i++)
@@ -39,10 +37,9 @@ namespace System
 
         for (size_t i = 0; i < pickUpNum; i++)
         {
-            size_t index = (size_t)
-                ((double)rand() * (cardNum - i - 1) / RAND_MAX + i);
+            size_t index = (size_t)((double)rand() * (cardNum - i - 1) / RAND_MAX + i);
             assert(index < cardNum);
-            swap(cards[i], cards[index]);
+            std::swap(cards[i], cards[index]);
         }
 
         for (size_t i = 0; i < pickUpNum; i++)
@@ -53,14 +50,12 @@ namespace System
     }
 
     template<typename T>
-    inline Vector<T> PickUp(
-        const Vector<T>& vec, 
-        const Vector<size_t>& pickUpIndexes)
+    inline ArrayList<T> PickUp(const ArrayList<T>& vec, const ArrayList<size_t>& pickUpIndexes)
     {
-        Vector<size_t> indexes = pickUpIndexes;
-        sort(indexes.begin(), indexes.end());
+        ArrayList<size_t> indexes = pickUpIndexes;
+        std::sort(indexes.begin(), indexes.end());
 
-        Vector<T> pickUps;
+        ArrayList<T> pickUps;
         size_t cardNum = vec.size(), counter = 0;
 
         for (size_t i = 0; i < cardNum; i++)
@@ -76,14 +71,14 @@ namespace System
     }
 
     template<typename T>
-    inline Tuple<Vector<T>, Vector<T>, Vector<size_t>> Divide(
-        const Vector<T>& vec, 
-        const Vector<size_t>& pickUpIndexes)
+    inline Tuple<ArrayList<T>, ArrayList<T>, ArrayList<size_t>> Divide(
+        const ArrayList<T>& vec, 
+        const ArrayList<size_t>& pickUpIndexes)
     {
-        Vector<size_t> indexes = pickUpIndexes;
-        sort(indexes.begin(), indexes.end());
+        ArrayList<size_t> indexes = pickUpIndexes;
+        std::sort(indexes.begin(), indexes.end());
 
-        Vector<T> pickUps, others;
+        ArrayList<T> pickUps, others;
         size_t cardNum = vec.size(), counter = 0;
 
         for (size_t i = 0; i < cardNum; i++)
@@ -101,9 +96,7 @@ namespace System
     }
 
     template<typename T>
-    inline Vector<T> RandomPickUp(
-        const Vector<T>& vec, 
-        size_t pickUpNum)
+    inline ArrayList<T> RandomPickUp(const ArrayList<T>& vec, size_t pickUpNum)
     {
         size_t cardNum = vec.size();
         assert(cardNum >= pickUpNum);
@@ -112,19 +105,18 @@ namespace System
     }
 
     template<typename T>
-    inline Vector<Tuple<Vector<T>, Vector<T>, Vector<size_t>>> RandomSplit(
-        const Vector<T>& vec, 
-        size_t fold)
+    inline ArrayList<Tuple<ArrayList<T>, ArrayList<T>, ArrayList<size_t>>> RandomSplit(
+        const ArrayList<T>& vec, size_t fold)
     {
         size_t cardNum = vec.size();
         assert(cardNum >= fold);
 
-        Vector<size_t> permutation = RandomPermutate(cardNum, cardNum);
+        ArrayList<size_t> permutation = RandomPermutate(cardNum, cardNum);
 
-        Vector<Tuple<Vector<T>, Vector<T>, Vector<size_t>>> result;
+        ArrayList<Tuple<ArrayList<T>, ArrayList<T>, ArrayList<size_t>>> result;
         for (size_t i = 0; i < fold; i++)
         {
-            Vector<size_t> subsetIndexes;
+            ArrayList<size_t> subsetIndexes;
             size_t begin = cardNum / fold * i,
                 end = (i != fold - 1) ? cardNum / fold * (i + 1) : cardNum;
 

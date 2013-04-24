@@ -142,7 +142,7 @@ EXPORT_API NativeInfo EdgeMatchingPredict(EdgeMatchingType type,
 {
     Mat cvImage = ConvertNativeMatToCvMat(image, uchar());
 
-    TurboCV::System::Vector<Tuple<vector<Point>, Mat>> tmp;
+    TurboCV::System::ArrayList<Tuple<vector<Point>, Mat>> tmp;
     if (type == EPT_OCM)
         tmp = OCM().GetFeatureWithPreprocess(cvImage, thinning);
     else

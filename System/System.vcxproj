@@ -138,6 +138,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="Collection.h" />
     <ClInclude Include="Type.h" />
     <ClInclude Include="FileSystem.h" />
     <ClInclude Include="Math.h" />

@@ -2,7 +2,6 @@
 
 #include "../System/System.h"
 #include <cv.h>
-#include <vector>
 #include <map>
 #include <unordered_map>
 #include <algorithm>
@@ -20,51 +19,55 @@ namespace System
         {
         public:
             template<typename Measurement>
-            static pair<vector<vector<double>>, vector<vector<bool>>> Evaluate(
-                const vector<T>& trainingSet,
-                const vector<int>& trainingLabels,
-                const vector<T>& evaluationSet,
-                const vector<int>& evaluationLabels,
+            static pair<ArrayList<ArrayList<double>>, ArrayList<ArrayList<bool>>> Evaluate(
+                const ArrayList<T>& trainingSet,
+                const ArrayList<int>& trainingLabels,
+                const ArrayList<T>& evaluationSet,
+                const ArrayList<int>& evaluationLabels,
                 Measurement GetDistance)
             {
                 assert(trainingSet.size() == trainingLabels.size());
                 assert(evaluationSet.size() == evaluationSet.size());
 
-                vector<vector<double>> distanceMatrix(evaluationSet.size());
-                vector<vector<bool>> relevantMatrix(evaluationSet.size());
+                ArrayList<ArrayList<double>> distanceMatrix(evaluationSet.size());
+                ArrayList<ArrayList<bool>> relevantMatrix(evaluationSet.size());
 
                 #pragma omp parallel for
                 for (int i = 0; i < evaluationSet.size(); i++)
                 {
                     for (size_t j = 0; j < trainingSet.size(); j++)
                     {
-                        distanceMatrix[i].push_back(GetDistance(evaluationSet[i], trainingSet[j]));
-                        relevantMatrix[i].push_back(evaluationLabels[i] == trainingLabels[j]);
+                        distanceMatrix[i].push_back(
+                            GetDistance(evaluationSet[i], trainingSet[j]));
+                        relevantMatrix[i].push_back(
+                            evaluationLabels[i] == trainingLabels[j]);
                     }
                 }
 
                 return make_pair(distanceMatrix, relevantMatrix);
             }
 
-            static pair<vector<vector<double>>, vector<vector<bool>>> Evaluate(
-                const vector<T>& trainingSet,
-                const vector<int>& trainingLabels,
-                const vector<T>& evaluationSet,
-                const vector<int>& evaluationLabels)
+            static pair<ArrayList<ArrayList<double>>, ArrayList<ArrayList<bool>>> Evaluate(
+                const ArrayList<T>& trainingSet,
+                const ArrayList<int>& trainingLabels,
+                const ArrayList<T>& evaluationSet,
+                const ArrayList<int>& evaluationLabels)
             {
                 assert(trainingSet.size() == trainingLabels.size());
                 assert(evaluationSet.size() == evaluationSet.size());
 
-                vector<vector<double>> distanceMatrix(evaluationSet.size());
-                vector<vector<bool>> relevantMatrix(evaluationSet.size());
+                ArrayList<ArrayList<double>> distanceMatrix(evaluationSet.size());
+                ArrayList<ArrayList<bool>> relevantMatrix(evaluationSet.size());
 
                 #pragma omp parallel for
                 for (int i = 0; i < evaluationSet.size(); i++)
                 {
                     for (size_t j = 0; j < trainingSet.size(); j++)
                     {
-                        distanceMatrix[i].push_back(Math::NormOneDistance(evaluationSet[i], trainingSet[j]));
-                        relevantMatrix[i].push_back(evaluationLabels[i] == trainingLabels[j]);
+                        distanceMatrix[i].push_back(
+                            Math::NormOneDistance(evaluationSet[i], trainingSet[j]));
+                        relevantMatrix[i].push_back(
+                            evaluationLabels[i] == trainingLabels[j]);
                     }
                 }
 
@@ -74,17 +77,17 @@ namespace System
             template<typename Measurement>
             pair<double, map<int, double>> Evaluate(
                 int K,
-                const vector<T>& trainingSet,
-                const vector<int>& trainingLabels,
-                const vector<T>& evaluationSet,
-                const vector<int>& evaluationLabels,
+                const ArrayList<T>& trainingSet,
+                const ArrayList<int>& trainingLabels,
+                const ArrayList<T>& evaluationSet,
+                const ArrayList<int>& evaluationLabels,
                 Measurement GetDistance)
 	        {
                 assert(trainingSet.size() == trainingLabels.size());
                 assert(evaluationSet.size() == evaluationSet.size());
 
 		        Train(trainingSet, trainingLabels);
-		        vector<int> predict = Predict(evaluationSet, K, GetDistance);
+		        ArrayList<int> predict = Predict(evaluationSet, K, GetDistance);
 
                 size_t evaluationNum = evaluationSet.size(), correctNum = 0;
                 unordered_map<int, int> evaluationNumPerClass, correctNumPerClass;
@@ -103,7 +106,8 @@ namespace System
                 for (auto item : _dataNumPerClass)
                 {
                     int label = item.first;
-			        precisions[label] = (double)correctNumPerClass[label] / evaluationNumPerClass[label];
+			        precisions[label] = (double)correctNumPerClass[label] / 
+                        evaluationNumPerClass[label];
                 }
 
 		        return make_pair((double)correctNum / evaluationNum, precisions);
@@ -111,16 +115,16 @@ namespace System
 
             pair<double, map<int, double>> Evaluate(
                 int K,
-                const vector<T>& trainingSet,
-                const vector<int>& trainingLabels,
-                const vector<T>& evaluationSet,
-                const vector<int>& evaluationLabels)
+                const ArrayList<T>& trainingSet,
+                const ArrayList<int>& trainingLabels,
+                const ArrayList<T>& evaluationSet,
+                const ArrayList<int>& evaluationLabels)
             {
                 assert(trainingSet.size() == trainingLabels.size());
                 assert(evaluationSet.size() == evaluationSet.size());
 
                 Train(trainingSet, trainingLabels);
-                vector<int> predict = Predict(evaluationSet, K);
+                ArrayList<int> predict = Predict(evaluationSet, K);
 
                 size_t evaluationNum = evaluationSet.size(), correctNum = 0;
                 unordered_map<int, int> evaluationNumPerClass, correctNumPerClass;
@@ -139,13 +143,14 @@ namespace System
                 for (auto item : _dataNumPerClass)
                 {
                     int label = item.first;
-                    precisions[label] = (double)correctNumPerClass[label] / evaluationNumPerClass[label];
+                    precisions[label] = (double)correctNumPerClass[label] / 
+                        evaluationNumPerClass[label];
                 }
 
                 return make_pair((double)correctNum / evaluationNum, precisions);
             }
 
-            void Train(const vector<T>& data, const vector<int>& labels)
+            void Train(const ArrayList<T>& data, const ArrayList<int>& labels)
 	        {
                 assert(data.size() == labels.size() && data.size() > 0);
                 int dataNum = (int)data.size();
@@ -158,10 +163,10 @@ namespace System
 	        }
 
             template<typename Measurement>
-            vector<int> Predict(const vector<T>& samples, int K, Measurement GetDistance)
+            ArrayList<int> Predict(const ArrayList<T>& samples, int K, Measurement GetDistance)
 	        {
                 int sampleNum = samples.size();
-		        vector<int> results(sampleNum);
+		        ArrayList<int> results(sampleNum);
 
 		        #pragma omp parallel for
 		        for (int i = 0; i < sampleNum; i++)
@@ -172,10 +177,10 @@ namespace System
 		        return results;
 	        }
 
-            vector<int> Predict(const vector<T>& samples, int K)
+            ArrayList<int> Predict(const ArrayList<T>& samples, int K)
             {
                 int sampleNum = samples.size();
-                vector<int> results(sampleNum);
+                ArrayList<int> results(sampleNum);
 
                 #pragma omp parallel for
                 for (int i = 0; i < sampleNum; i++)
@@ -191,7 +196,7 @@ namespace System
             int predictOneSample(const T& sample, int K, Measurement GetDistance)
 	        {
                 size_t dataNum = _data.size();
-		        vector<pair<double, int>> distances(dataNum);
+		        ArrayList<pair<double, int>> distances(dataNum);
 
 		        for (size_t i = 0; i < dataNum; i++)
 		        {
@@ -224,11 +229,12 @@ namespace System
             int predictOneSample(const T& sample, int K)
             {
                 size_t dataNum = _data.size();
-                vector<pair<double, int>> distances(dataNum);
+                ArrayList<pair<double, int>> distances(dataNum);
 
                 for (size_t i = 0; i < dataNum; i++)
                 {
-                    distances[i] = make_pair(Math::NormOneDistance(sample, _data[i]), _labels[i]);
+                    distances[i] = make_pair(
+                        Math::NormOneDistance(sample, _data[i]), _labels[i]);
                 }
                 partial_sort(distances.begin(), distances.begin() + K, distances.end());
 
@@ -254,8 +260,8 @@ namespace System
                 return index;
             }
 
-            vector<int> _labels;
-            vector<T> _data;
+            ArrayList<int> _labels;
+            ArrayList<T> _data;
             unordered_map<int, int> _dataNumPerClass;
         };
     }

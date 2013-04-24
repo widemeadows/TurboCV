@@ -16,7 +16,7 @@ namespace System
         class CM : public Feature
         {
         public:
-            typedef Tuple<Vector<Point>, Mat> Info;
+            typedef Tuple<ArrayList<Point>, Mat> Info;
 
             Info GetFeatureWithPreprocess(const Mat& sketchImage, bool thinning = false) const;
             Info GetFeatureWithoutPreprocess(const Mat& sketchImage) const;
@@ -41,8 +41,8 @@ namespace System
 
         inline double CM::GetDistance(const Info& u, const Info& v)
         {
-            const Vector<Point>& uPoints = u.Item1();
-            const Vector<Point>& vPoints = v.Item1();
+            const ArrayList<Point>& uPoints = u.Item1();
+            const ArrayList<Point>& vPoints = v.Item1();
             const Mat& uMat = u.Item2();
             const Mat& vMat = v.Item2();
             double uToV = 0, vToU = 0;
@@ -67,7 +67,7 @@ namespace System
                 for (int j = 0; j < dt.cols; j++)
                     dt.at<double>(i, j) = maxDistance * maxDistance;
 
-            Vector<Point> points = GetEdgels(sketchImage);
+            ArrayList<Point> points = GetEdgels(sketchImage);
 
             for (size_t i = 0; i < points.size(); i++)
             {
@@ -101,13 +101,13 @@ namespace System
         class OCM : public Feature
         {
         public:
-            typedef Vector<Tuple<Vector<Point>, Mat>> Info;
+            typedef ArrayList<Tuple<ArrayList<Point>, Mat>> Info;
 
             Info GetFeatureWithPreprocess(const Mat& sketchImage, bool thinning = false);
             Info GetFeatureWithoutPreprocess(const Mat& sketchImage);
 
             static double GetDistance(const Info& u, const Info& v);
-            static Vector<Vector<Point>> GetChannels(const Mat& sketchImage, int orientNum);
+            static ArrayList<ArrayList<Point>> GetChannels(const Mat& sketchImage, int orientNum);
 
             virtual String GetName() const { return "ocm"; };
 
@@ -133,8 +133,8 @@ namespace System
 
             for (int i = 0; i < orientNum; i++)
             {
-                const Vector<Point>& uPoints = u[i].Item1();
-                const Vector<Point>& vPoints = v[i].Item1();
+                const ArrayList<Point>& uPoints = u[i].Item1();
+                const ArrayList<Point>& vPoints = v[i].Item1();
                 const Mat& uMat = u[i].Item2();
                 const Mat& vMat = v[i].Item2();
 
@@ -154,10 +154,10 @@ namespace System
                 return (uToV / uPointNum + vToU / vPointNum) / 2.0;
         }
 
-        inline Vector<Vector<Point>> OCM::GetChannels(const Mat& sketchImage, int orientNum)
+        inline ArrayList<ArrayList<Point>> OCM::GetChannels(const Mat& sketchImage, int orientNum)
         {
             int sigma = 9, lambda = 24, ksize = sigma * 6 + 1;
-            vector<Mat> tmp(orientNum);
+            ArrayList<Mat> tmp(orientNum);
 
             for (int i = 0; i < orientNum; i++)
             {
@@ -168,9 +168,9 @@ namespace System
                 tmp[i] = abs(tmp[i]);
             }
 
-            Vector<Point> points = GetEdgels(sketchImage);
+            ArrayList<Point> points = GetEdgels(sketchImage);
 
-            Vector<Vector<Point>> channels(orientNum);
+            ArrayList<ArrayList<Point>> channels(orientNum);
             for (int i = 0; i < points.size(); i++)
             {
                 double maxResponse = -INF;
@@ -194,7 +194,7 @@ namespace System
 
         inline OCM::Info OCM::Transform(const Mat& sketchImage, double maxDistance)
         {
-            Vector<Vector<Point>> channels = GetChannels(sketchImage, 6);
+            ArrayList<ArrayList<Point>> channels = GetChannels(sketchImage, 6);
             Info result(channels.size());
 
             for (size_t i = 0; i < channels.size(); i++)
@@ -240,13 +240,13 @@ namespace System
         class Hitmap : public Feature
         {
         public:
-            typedef Vector<Tuple<Vector<Point>, Mat>> Info;
+            typedef ArrayList<Tuple<ArrayList<Point>, Mat>> Info;
 
             Info GetFeatureWithPreprocess(const Mat& sketchImage, bool thinning = false);
             Info GetFeatureWithoutPreprocess(const Mat& sketchImage);
 
             static double GetDistance(const Info& u, const Info& v);
-            static vector<vector<Point>> GetChannels(const Mat& sketchImage, int orientNum);
+            static ArrayList<ArrayList<Point>> GetChannels(const Mat& sketchImage, int orientNum);
 
             virtual String GetName() const { return "hit"; };
 
@@ -272,8 +272,8 @@ namespace System
 
             for (int i = 0; i < orientNum; i++)
             {
-                const Vector<Point>& uPoints = u[i].Item1();
-                const Vector<Point>& vPoints = v[i].Item1();
+                const ArrayList<Point>& uPoints = u[i].Item1();
+                const ArrayList<Point>& vPoints = v[i].Item1();
                 const Mat& uMat = u[i].Item2();
                 const Mat& vMat = v[i].Item2();
 
@@ -293,10 +293,10 @@ namespace System
                 return 1 - sqrt((uToV / uPointNum) * (vToU / vPointNum));
         }
 
-        inline Vector<Vector<Point>> Hitmap::GetChannels(const Mat& sketchImage, int orientNum)
+        inline ArrayList<ArrayList<Point>> Hitmap::GetChannels(const Mat& sketchImage, int orientNum)
         {
             int sigma = 9, lambda = 24, ksize = sigma * 6 + 1;
-            Vector<Mat> tmp(orientNum);
+            ArrayList<Mat> tmp(orientNum);
 
             for (int i = 0; i < orientNum; i++)
             {
@@ -307,9 +307,9 @@ namespace System
                 tmp[i] = abs(tmp[i]);
             }
 
-            Vector<Point> points = GetEdgels(sketchImage);
+            ArrayList<Point> points = GetEdgels(sketchImage);
 
-            Vector<Vector<Point>> channels(orientNum);
+            ArrayList<ArrayList<Point>> channels(orientNum);
             for (int i = 0; i < points.size(); i++)
             {
                 double maxResponse = -INF;
@@ -333,7 +333,7 @@ namespace System
 
         inline Hitmap::Info Hitmap::Transform(const Mat& sketchImage, double maxDistance)
         {
-            Vector<Vector<Point>> channels = GetChannels(sketchImage, 6);
+            ArrayList<ArrayList<Point>> channels = GetChannels(sketchImage, 6);
             Info result(channels.size());
 
             for (size_t i = 0; i < channels.size(); i++)

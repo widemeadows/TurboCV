@@ -18,7 +18,7 @@ namespace System
 
             static Tuple<Mat, Mat> Gradient::GetGradient(const Mat& image, double sigma = 1.0);
 
-            static Vector<Mat> Gradient::GetOrientChannels(const Mat& sketchImage, int orientNum);
+            static ArrayList<Mat> Gradient::GetOrientChannels(const Mat& sketchImage, int orientNum);
         };
 
         inline Tuple<Mat, Mat> Gradient::GetGradientKernel(double sigma, double epsilon)
@@ -84,7 +84,7 @@ namespace System
             return CreateTuple(powerImage, orientImage);
         }
 
-        inline Vector<Mat> Gradient::GetOrientChannels(const Mat& sketchImage, int orientNum)
+        inline ArrayList<Mat> Gradient::GetOrientChannels(const Mat& sketchImage, int orientNum)
         {
             Tuple<Mat, Mat> gradient = GetGradient(sketchImage);
             Mat& powerImage = gradient.Item1();
@@ -92,7 +92,7 @@ namespace System
             int height = sketchImage.rows, width = sketchImage.cols;
             double orientBinSize = CV_PI / orientNum;
 
-            Vector<Mat> orientChannels;
+            ArrayList<Mat> orientChannels;
             for (int i = 0; i < orientNum; i++)
                 orientChannels.push_back(Mat::zeros(height, width, CV_64F));
 
@@ -162,10 +162,10 @@ namespace System
             return kernel;
         }
 
-        inline vector<Mat> GetLoGPyramid(const Mat& image, const vector<double>& sigmas)
+        inline ArrayList<Mat> GetLoGPyramid(const Mat& image, const ArrayList<double>& sigmas)
         {
             size_t sigmaNum = sigmas.size();
-            vector<Mat> LoGPyramid(sigmaNum);
+            ArrayList<Mat> LoGPyramid(sigmaNum);
 
             for (int i = 0; i < sigmaNum; i++)
             {
@@ -183,10 +183,10 @@ namespace System
             return LoGPyramid;
         }
 
-        inline vector<Mat> GetDoGPyramid(const Mat& image, const vector<double>& sigmas)
+        inline ArrayList<Mat> GetDoGPyramid(const Mat& image, const ArrayList<double>& sigmas)
         {
             size_t sigmaNum = sigmas.size();
-            vector<Mat> GaussianPyramid(sigmaNum + 1);
+            ArrayList<Mat> GaussianPyramid(sigmaNum + 1);
 
             image.convertTo(GaussianPyramid[0], CV_64F);
             for (int i = 0; i < sigmaNum; i++)
@@ -201,7 +201,7 @@ namespace System
                 sepFilter2D(image, GaussianPyramid[i + 1], CV_64F, kernel, kernel);
             }
 
-            vector<Mat> DoGPyramid;
+            ArrayList<Mat> DoGPyramid;
             for (int i = 1; i <= sigmaNum; i++)
                 DoGPyramid[i - 1] = GaussianPyramid[i] - GaussianPyramid[i - 1];
 
