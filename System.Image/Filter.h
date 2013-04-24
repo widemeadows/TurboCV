@@ -4,7 +4,6 @@
 #include "System.Image.h"
 #include <cv.h>
 using namespace cv;
-using namespace std;
 
 namespace TurboCV
 {
@@ -19,7 +18,7 @@ namespace System
 
             static Tuple<Mat, Mat> Gradient::GetGradient(const Mat& image, double sigma = 1.0);
 
-            static vector<Mat> Gradient::GetOrientChannels(const Mat& sketchImage, int orientNum);
+            static Vector<Mat> Gradient::GetOrientChannels(const Mat& sketchImage, int orientNum);
         };
 
         inline Tuple<Mat, Mat> Gradient::GetGradientKernel(double sigma, double epsilon)
@@ -33,7 +32,8 @@ namespace System
             {
                 for (int j = 0; j < size; j++)
                 {
-                    dx.at<double>(i, j) = Math::Gauss(i - halfSize, sigma) * Math::GaussDeriv(j - halfSize, sigma);
+                    dx.at<double>(i, j) = Math::Gauss(i - halfSize, sigma) * 
+                        Math::GaussDeriv(j - halfSize, sigma);
                     dy.at<double>(j, i) = dx.at<double>(i, j);
                     sum += dx.at<double>(i, j) * dx.at<double>(i, j);
                 }
@@ -77,13 +77,14 @@ namespace System
             Mat powerImage(image.rows, image.cols, CV_64F);
             for (int i = 0; i < image.rows; i++)
                 for (int j = 0; j < image.cols; j++)
-                    powerImage.at<double>(i, j) = sqrt(dyImage.at<double>(i, j) * dyImage.at<double>(i, j) +
+                    powerImage.at<double>(i, j) = sqrt(
+                        dyImage.at<double>(i, j) * dyImage.at<double>(i, j) +
                         dxImage.at<double>(i, j) * dxImage.at<double>(i, j));
 
             return CreateTuple(powerImage, orientImage);
         }
 
-        inline vector<Mat> Gradient::GetOrientChannels(const Mat& sketchImage, int orientNum)
+        inline Vector<Mat> Gradient::GetOrientChannels(const Mat& sketchImage, int orientNum)
         {
             Tuple<Mat, Mat> gradient = GetGradient(sketchImage);
             Mat& powerImage = gradient.Item1();
@@ -91,7 +92,7 @@ namespace System
             int height = sketchImage.rows, width = sketchImage.cols;
             double orientBinSize = CV_PI / orientNum;
 
-            vector<Mat> orientChannels;
+            Vector<Mat> orientChannels;
             for (int i = 0; i < orientNum; i++)
                 orientChannels.push_back(Mat::zeros(height, width, CV_64F));
 

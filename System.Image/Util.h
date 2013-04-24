@@ -5,7 +5,6 @@
 #include <highgui.h>
 #include <numeric>
 using namespace cv;
-using namespace std;
 
 namespace TurboCV
 {
@@ -13,7 +12,7 @@ namespace System
 {
     namespace Image
     {
-        const long long INF = numeric_limits<long long>::max();
+        const long long INF = std::numeric_limits<long long>::max();
         const double EPS = 1e-14;
         const int MAX_GRAYSCALE = 255;
 
@@ -42,13 +41,16 @@ namespace System
 
             for (int i = 0; i < grayScaleImage.rows; i++)
                 for (int j = 0; j < grayScaleImage.cols; j++)
-                    result.at<uchar>(i, j) = MAX_GRAYSCALE - grayScaleImage.at<uchar>(i, j);
+                    result.at<uchar>(i, j) = MAX_GRAYSCALE - 
+                        grayScaleImage.at<uchar>(i, j);
 
             return result;
         }
 
         template<typename RandomAccessIterator>
-        inline void NormOneNormalize(const RandomAccessIterator& begin, const RandomAccessIterator& end)
+        inline void NormOneNormalize(
+            const RandomAccessIterator& begin, 
+            const RandomAccessIterator& end)
         {
             double sum = 0;
             RandomAccessIterator curr = begin;
@@ -70,7 +72,9 @@ namespace System
         }
 
         template<typename RandomAccessIterator>
-        inline void NormTwoNormalize(const RandomAccessIterator& begin, const RandomAccessIterator& end)
+        inline void NormTwoNormalize(
+            const RandomAccessIterator& begin, 
+            const RandomAccessIterator& end)
         {
             double sum = 0;
             RandomAccessIterator curr = begin;
@@ -112,8 +116,12 @@ namespace System
             }
         }
 
-        inline size_t FindBinIndex(double value, double minIncluded, double maxExcluded, 
-            size_t intervalNum, bool cyclic = false)
+        inline size_t FindBinIndex(
+            double value, 
+            double minIncluded, 
+            double maxExcluded, 
+            size_t intervalNum, 
+            bool cyclic = false)
         {
             assert(intervalNum > 0 && maxExcluded > minIncluded);
 
@@ -134,29 +142,33 @@ namespace System
 	        for (int i = 0; i < height / 2; i++)
 	        {
 		        for (int j = 0; j < width / 2; j++)
-			        result.at<double>(i, j) = data.at<double>(i + (height + 1) / 2, j + (width + 1) / 2);
+			        result.at<double>(i, j) = 
+                        data.at<double>(i + (height + 1) / 2, j + (width + 1) / 2);
 
 		        for (int j = 0; j < (width + 1) / 2; j++)
-			        result.at<double>(i, j + width / 2) = data.at<double>(i + (height + 1) / 2, j);
+			        result.at<double>(i, j + width / 2) = 
+                        data.at<double>(i + (height + 1) / 2, j);
 	        }
 
 	        for (int i = 0; i < (height + 1) / 2; i++)
 	        {
 		        for (int j = 0; j < width / 2; j++)
-			        result.at<double>(i + height / 2, j) = data.at<double>(i, j + (width + 1) / 2);
+			        result.at<double>(i + height / 2, j) = 
+                        data.at<double>(i, j + (width + 1) / 2);
 
 		        for (int j = 0; j < (width + 1) / 2; j++)
-			        result.at<double>(i + height / 2, j + width / 2) = data.at<double>(i, j);
+			        result.at<double>(i + height / 2, j + width / 2) = 
+                        data.at<double>(i, j);
 	        }
 
 	        return result;
         }
 
-        inline vector<double> linspace(double start, double end, int pointNum)
+        inline Vector<double> linspace(double start, double end, int pointNum)
         {
             double size = (end - start) / (pointNum - 1);
 
-            vector<double> result;
+            Vector<double> result;
             result.push_back(start);
             for (int i = 1; i < pointNum - 1; i++)
                 result.push_back(result[i - 1] + size);
@@ -168,12 +180,15 @@ namespace System
 
         // Params:
         // 1. distances -- Distances from database images to the query;
-        // 2. relevants -- If image[i] and the query belong to the same category, then relevants[i] is true;
+        // 2. relevants -- If image[i] and the query belong to the same category, 
+        //                 then relevants[i] is true;
         // 3. numOfCP -- Number of Control Points.
-        Tuple<vector<double>, vector<double>> ROC(const vector<double>& distances, const vector<bool>& relevants,
+        Tuple<Vector<double>, Vector<double>> ROC(
+            const Vector<double>& distances, 
+            const Vector<bool>& relevants,
             int numOfCP = 20)
         {
-            vector<double> positiveDist, negativeDist;
+            Vector<double> positiveDist, negativeDist;
             for (int i = 0; i < relevants.size(); i++)
             {
                 if (relevants[i])
@@ -184,9 +199,9 @@ namespace System
 
             double firstCP = Math::Min(distances);
             double lastCP = Math::Max(distances);
-            vector<double> plot = linspace(firstCP, lastCP, numOfCP);
+            Vector<double> plot = linspace(firstCP, lastCP, numOfCP);
 
-            vector<double> TP(numOfCP), FP(numOfCP), TN(numOfCP), FN(numOfCP);
+            Vector<double> TP(numOfCP), FP(numOfCP), TN(numOfCP), FN(numOfCP);
             for (int i = 0; i < numOfCP; i++)
             {
                 for (auto item : positiveDist)
@@ -205,10 +220,11 @@ namespace System
                     if (item > plot[i])
                         TN[i]++;
 
-                assert(TP[i] + FN[i] == positiveDist.size() && FP[i] + TN[i] == negativeDist.size());
+                assert(TP[i] + FN[i] == positiveDist.size() && 
+                    FP[i] + TN[i] == negativeDist.size());
             }
 
-            vector<double> DR, FPR;
+            Vector<double> DR, FPR;
             for (int i = 0; i < numOfCP; i++)
             {
                 DR.push_back(TP[i] / (TP[i] + FN[i]));

@@ -2,9 +2,7 @@
 
 #include <cassert>
 #include <cmath>
-#include <vector>
 #include "Type.h"
-using namespace std;
 
 namespace TurboCV
 {
@@ -16,38 +14,29 @@ namespace System
         static const double PI;
 
         template<typename T>
-        static T Min(const vector<T>& vec);
+        static T Min(const Vector<T>& vec);
 
         template<typename T>
-        static T Max(const vector<T>& vec);
+        static T Max(const Vector<T>& vec);
 
         template<typename T>
-        static T Sum(const vector<T>& vec);
+        static T Sum(const Vector<T>& vec);
 
         template<typename T>
-        static double Mean(const vector<T>& vec);
+        static double Mean(const Vector<T>& vec);
 
         template<typename T>
-        static double StandardDeviation(const vector<T>& vec);
+        static double StandardDeviation(const Vector<T>& vec);
 
         static double Gauss(double x, double sigma);
 
         static double GaussDeriv(double x, double sigma);
   
         template<typename T>
-        static double NormOneDistance(const vector<T>& u, const vector<T>& v);
-
-        template<typename T>
         static double NormOneDistance(const Vector<T>& u, const Vector<T>& v);
 
         template<typename T>
-        static double NormTwoDistance(const vector<T>& u, const vector<T>& v);
-
-        template<typename T>
         static double NormTwoDistance(const Vector<T>& u, const Vector<T>& v);
-
-        template<typename T>
-        static double GaussianDistance(const vector<T>& u, const vector<T>& v, double sigma);
 
         template<typename T>
         static double GaussianDistance(const Vector<T>& u, const Vector<T>& v, double sigma);
@@ -56,7 +45,7 @@ namespace System
     const double Math::PI = 3.1415926535897932384626433832795;
 
     template<typename T>
-    inline T Math::Min(const vector<T>& vec)
+    inline T Math::Min(const Vector<T>& vec)
     {
         assert(vec.size() > 0);
 
@@ -68,7 +57,7 @@ namespace System
     }
 
     template<typename T>
-    inline T Math::Max(const vector<T>& vec)
+    inline T Math::Max(const Vector<T>& vec)
     {
         assert(vec.size() > 0);
 
@@ -80,7 +69,7 @@ namespace System
     }
 
     template <typename T>
-    inline T Math::Sum(const vector<T>& vec)
+    inline T Math::Sum(const Vector<T>& vec)
     {
         T sum = 0;
 
@@ -91,7 +80,7 @@ namespace System
     }
 
     template<typename T>
-    inline double Math::Mean(const vector<T>& vec)
+    inline double Math::Mean(const Vector<T>& vec)
     {
         assert(vec.size() > 0);
 
@@ -99,7 +88,7 @@ namespace System
     }
 
     template<typename T>
-    inline double Math::StandardDeviation(const vector<T>& vec)
+    inline double Math::StandardDeviation(const Vector<T>& vec)
     {
         assert(vec.size() > 0);
 
@@ -123,7 +112,7 @@ namespace System
     }
 
     template<typename T>
-    inline double Math::NormOneDistance(const vector<T>& u, const vector<T>& v)
+    inline double Math::NormOneDistance(const Vector<T>& u, const Vector<T>& v)
     {
         assert(u.size() == v.size());
 
@@ -135,13 +124,7 @@ namespace System
     }
 
     template<typename T>
-    inline double Math::NormOneDistance(const Vector<T>& u, const Vector<T>& v)
-    {
-        return NormOneDistance((const vector<T>&)u, (const vector<T>&)v);
-    }
-
-    template<typename T>
-    inline double Math::NormTwoDistance(const vector<T>& u, const vector<T>& v)
+    inline double Math::NormTwoDistance(const Vector<T>& u, const Vector<T>& v)
     {
         assert(u.size() == v.size());
 
@@ -153,13 +136,7 @@ namespace System
     }
 
     template<typename T>
-    inline double Math::NormTwoDistance(const Vector<T>& u, const Vector<T>& v)
-    {
-        return NormTwoDistance((const vector<T>&)u, (const vector<T>&)v);
-    }
-
-    template<typename T>
-    inline double Math::GaussianDistance(const vector<T>& u, const vector<T>& v, double sigma)
+    inline double Math::GaussianDistance(const Vector<T>& u, const Vector<T>& v, double sigma)
     {
         assert(u.size() == v.size());
 
@@ -168,12 +145,6 @@ namespace System
             distance += (u[i] - v[i]) * (u[i] - v[i]);
 
         return exp(-distance / (2 * sigma * sigma));
-    }
-
-    template<typename T>
-    inline double Math::GaussianDistance(const Vector<T>& u, const Vector<T>& v, double sigma)
-    {
-        return GaussianDistance((const vector<T>&)u, (const vector<T>&)v, sigma);
     }
 }
 }

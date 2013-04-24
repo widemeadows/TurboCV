@@ -4,7 +4,6 @@
 #include "Feature.h"
 #include "Filter.h"
 #include <cv.h>
-using namespace std;
 using namespace cv;
 
 namespace TurboCV
@@ -17,7 +16,7 @@ namespace System
         class CM : public Feature
         {
         public:
-            typedef Tuple<vector<Point>, Mat> Info;
+            typedef Tuple<Vector<Point>, Mat> Info;
 
             Info GetFeatureWithPreprocess(const Mat& sketchImage, bool thinning = false) const;
             Info GetFeatureWithoutPreprocess(const Mat& sketchImage) const;
@@ -42,8 +41,8 @@ namespace System
 
         inline double CM::GetDistance(const Info& u, const Info& v)
         {
-            const vector<Point>& uPoints = u.Item1();
-            const vector<Point>& vPoints = v.Item1();
+            const Vector<Point>& uPoints = u.Item1();
+            const Vector<Point>& vPoints = v.Item1();
             const Mat& uMat = u.Item2();
             const Mat& vMat = v.Item2();
             double uToV = 0, vToU = 0;
@@ -68,7 +67,7 @@ namespace System
                 for (int j = 0; j < dt.cols; j++)
                     dt.at<double>(i, j) = maxDistance * maxDistance;
 
-            vector<Point> points = GetEdgels(sketchImage);
+            Vector<Point> points = GetEdgels(sketchImage);
 
             for (size_t i = 0; i < points.size(); i++)
             {
@@ -102,13 +101,13 @@ namespace System
         class OCM : public Feature
         {
         public:
-            typedef Vector<Tuple<vector<Point>, Mat>> Info;
+            typedef Vector<Tuple<Vector<Point>, Mat>> Info;
 
             Info GetFeatureWithPreprocess(const Mat& sketchImage, bool thinning = false);
             Info GetFeatureWithoutPreprocess(const Mat& sketchImage);
 
             static double GetDistance(const Info& u, const Info& v);
-            static vector<vector<Point>> GetChannels(const Mat& sketchImage, int orientNum);
+            static Vector<Vector<Point>> GetChannels(const Mat& sketchImage, int orientNum);
 
             virtual String GetName() const { return "ocm"; };
 
@@ -134,8 +133,8 @@ namespace System
 
             for (int i = 0; i < orientNum; i++)
             {
-                const vector<Point>& uPoints = u[i].Item1();
-                const vector<Point>& vPoints = v[i].Item1();
+                const Vector<Point>& uPoints = u[i].Item1();
+                const Vector<Point>& vPoints = v[i].Item1();
                 const Mat& uMat = u[i].Item2();
                 const Mat& vMat = v[i].Item2();
 
@@ -155,7 +154,7 @@ namespace System
                 return (uToV / uPointNum + vToU / vPointNum) / 2.0;
         }
 
-        inline vector<vector<Point>> OCM::GetChannels(const Mat& sketchImage, int orientNum)
+        inline Vector<Vector<Point>> OCM::GetChannels(const Mat& sketchImage, int orientNum)
         {
             int sigma = 9, lambda = 24, ksize = sigma * 6 + 1;
             vector<Mat> tmp(orientNum);
@@ -169,9 +168,9 @@ namespace System
                 tmp[i] = abs(tmp[i]);
             }
 
-            vector<Point> points = GetEdgels(sketchImage);
+            Vector<Point> points = GetEdgels(sketchImage);
 
-            vector<vector<Point>> channels(orientNum);
+            Vector<Vector<Point>> channels(orientNum);
             for (int i = 0; i < points.size(); i++)
             {
                 double maxResponse = -INF;
@@ -195,7 +194,7 @@ namespace System
 
         inline OCM::Info OCM::Transform(const Mat& sketchImage, double maxDistance)
         {
-            vector<vector<Point>> channels = GetChannels(sketchImage, 6);
+            Vector<Vector<Point>> channels = GetChannels(sketchImage, 6);
             Info result(channels.size());
 
             for (size_t i = 0; i < channels.size(); i++)
@@ -241,7 +240,7 @@ namespace System
         class Hitmap : public Feature
         {
         public:
-            typedef Vector<Tuple<vector<Point>, Mat>> Info;
+            typedef Vector<Tuple<Vector<Point>, Mat>> Info;
 
             Info GetFeatureWithPreprocess(const Mat& sketchImage, bool thinning = false);
             Info GetFeatureWithoutPreprocess(const Mat& sketchImage);
@@ -273,8 +272,8 @@ namespace System
 
             for (int i = 0; i < orientNum; i++)
             {
-                const vector<Point>& uPoints = u[i].Item1();
-                const vector<Point>& vPoints = v[i].Item1();
+                const Vector<Point>& uPoints = u[i].Item1();
+                const Vector<Point>& vPoints = v[i].Item1();
                 const Mat& uMat = u[i].Item2();
                 const Mat& vMat = v[i].Item2();
 
@@ -294,10 +293,10 @@ namespace System
                 return 1 - sqrt((uToV / uPointNum) * (vToU / vPointNum));
         }
 
-        inline vector<vector<Point>> Hitmap::GetChannels(const Mat& sketchImage, int orientNum)
+        inline Vector<Vector<Point>> Hitmap::GetChannels(const Mat& sketchImage, int orientNum)
         {
             int sigma = 9, lambda = 24, ksize = sigma * 6 + 1;
-            vector<Mat> tmp(orientNum);
+            Vector<Mat> tmp(orientNum);
 
             for (int i = 0; i < orientNum; i++)
             {
@@ -308,9 +307,9 @@ namespace System
                 tmp[i] = abs(tmp[i]);
             }
 
-            vector<Point> points = GetEdgels(sketchImage);
+            Vector<Point> points = GetEdgels(sketchImage);
 
-            vector<vector<Point>> channels(orientNum);
+            Vector<Vector<Point>> channels(orientNum);
             for (int i = 0; i < points.size(); i++)
             {
                 double maxResponse = -INF;
@@ -334,7 +333,7 @@ namespace System
 
         inline Hitmap::Info Hitmap::Transform(const Mat& sketchImage, double maxDistance)
         {
-            vector<vector<Point>> channels = GetChannels(sketchImage, 6);
+            Vector<Vector<Point>> channels = GetChannels(sketchImage, 6);
             Info result(channels.size());
 
             for (size_t i = 0; i < channels.size(); i++)

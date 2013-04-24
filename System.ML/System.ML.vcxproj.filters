@@ -21,5 +21,8 @@
     <ClInclude Include="System.ML.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="LDA.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

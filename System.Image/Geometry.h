@@ -16,11 +16,11 @@ namespace System
         public:
             static double EulerDistance(const Point& u, const Point& v);
 
-            static vector<double> EulerDistance(const Point& u, const vector<Point>& vec);
+            static Vector<double> EulerDistance(const Point& u, const Vector<Point>& vec);
 
             static double Angle(const Point& start, const Point& end);
 
-            static vector<double> Angle(const Point& start, const vector<Point>& ends);
+            static Vector<double> Angle(const Point& start, const Vector<Point>& ends);
         };
 
         inline double Geometry::EulerDistance(const Point& u, const Point& v)
@@ -28,9 +28,9 @@ namespace System
             return sqrt((u.x - v.x) * (u.x - v.x) + (u.y - v.y) * (u.y - v.y));
         }
 
-        inline vector<double> Geometry::EulerDistance(const Point& u, const vector<Point>& vec)
+        inline Vector<double> Geometry::EulerDistance(const Point& u, const Vector<Point>& vec)
         {
-            vector<double> distances(vec.size());
+            Vector<double> distances(vec.size());
 
             for (int i = 0; i < vec.size(); i++)
 		        distances[i] = Geometry::EulerDistance(u, vec[i]);
@@ -55,9 +55,9 @@ namespace System
 	        return angle;
         }
 
-        inline vector<double> Geometry::Angle(const Point& start, const vector<Point>& ends)
+        inline Vector<double> Geometry::Angle(const Point& start, const Vector<Point>& ends)
         {
-            vector<double> angles(ends.size());
+            Vector<double> angles(ends.size());
 
             for (int i = 0; i < ends.size(); i++)
                 angles[i] = Geometry::Angle(start, ends[i]);

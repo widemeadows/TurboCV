@@ -3,9 +3,7 @@
 #include <iomanip>
 #include <sstream>
 #include <string>
-#include <vector>
 #include "String.h"
-using namespace std;
 
 namespace TurboCV
 {
@@ -106,7 +104,8 @@ namespace System
 
     class NullType {};
 
-    template<typename T1 = NullType, typename T2 = NullType, typename T3 = NullType, typename T4 = NullType>
+    template<typename T1 = NullType, typename T2 = NullType, 
+             typename T3 = NullType, typename T4 = NullType>
     class Tuple
     {
 
@@ -293,8 +292,15 @@ namespace System
         typename vector<T>::iterator end() const { return ptr->end(); }
 
         void push_back(const T& item) { ptr->push_back(item); }
-        void push_back(const Vector<T>& vec) { ptr->insert(ptr->end(), vec.begin(), vec.end()); }
-        void push_back(typename const vector<T>::iterator& begin, typename const vector<T>::iterator& end) 
+
+        void push_back(const Vector<T>& vec) 
+        { 
+            ptr->insert(ptr->end(), vec.begin(), vec.end()); 
+        }
+
+        void push_back(
+            typename const vector<T>::iterator& begin, 
+            typename const vector<T>::iterator& end) 
         { 
             ptr->insert(ptr->end(), begin, end); 
         }

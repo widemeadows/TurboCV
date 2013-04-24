@@ -17,11 +17,14 @@ namespace System
 {
     namespace Image
     {
-        inline vector<Point> SampleOnGrid(size_t height, size_t width, size_t samplingNumPerDirection)
+        inline Vector<Point> SampleOnGrid(
+            size_t height, 
+            size_t width, 
+            size_t samplingNumPerDirection)
         {
             int heightStep = height / samplingNumPerDirection, 
                 widthStep = width / samplingNumPerDirection;
-            vector<Point> points;
+            Vector<Point> points;
 
             for (int i = heightStep / 2; i < height; i += heightStep)
                 for (int j = widthStep / 2; j < width; j += widthStep)
@@ -30,12 +33,14 @@ namespace System
             return points;
         }
 
-        inline vector<Point> SampleFromPoints(const vector<Point>& points, size_t samplingNum)
+        inline Vector<Point> SampleFromPoints(
+            const Vector<Point>& points, 
+            size_t samplingNum)
         {
             size_t pointNum = points.size();
 	        assert(pointNum >= samplingNum);
 
-            vector<Tuple<double, Tuple<Point, Point>>> distances(pointNum * (pointNum - 1) / 2);
+            Vector<Tuple<double, Tuple<Point, Point>>> distances(pointNum * (pointNum - 1) / 2);
             unordered_set<Point, PointHash> pivots;
 
             int counter = 0;
@@ -44,7 +49,8 @@ namespace System
                 for (size_t j = i + 1; j < pointNum; j++)
                 {
                     double distance = Geometry::EulerDistance(points[i], points[j]);
-                    distances[counter++] = CreateTuple(distance, CreateTuple(points[i], points[j]));
+                    distances[counter++] = CreateTuple(distance, 
+                        CreateTuple(points[i], points[j]));
                 }
                 pivots.insert(points[i]);
             }
@@ -59,14 +65,14 @@ namespace System
                     pivots.erase(pointPair.Item2());
             }
 
-            vector<Point> results;
+            Vector<Point> results;
             for (auto pivot : pivots)
                 results.push_back(pivot);
 
             return results;
         }
 
-        inline vector<Point> SampleOnShape(const Mat& sketchImage, size_t samplingNum)
+        inline Vector<Point> SampleOnShape(const Mat& sketchImage, size_t samplingNum)
         {
             return SampleFromPoints(GetEdgels(sketchImage), samplingNum);
         }

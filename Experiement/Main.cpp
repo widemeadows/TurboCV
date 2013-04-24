@@ -9,18 +9,21 @@ using namespace TurboCV::System::Image;
 using namespace TurboCV::System::ML;
 using namespace cv;
 
-inline vector<Tuple<Mat, int>> GetImages(const TurboCV::System::String& imageSetPath, 
+inline TurboCV::System::Vector<Tuple<Mat, int>> GetImages(
+    const TurboCV::System::String& imageSetPath, 
     int imageLoadMode = CV_LOAD_IMAGE_GRAYSCALE)
 {
     DirectoryInfo imageSetInfo(imageSetPath);
 
-    vector<TurboCV::System::String> classInfos = imageSetInfo.GetDirectories();
+    TurboCV::System::Vector<TurboCV::System::String> classInfos = 
+        imageSetInfo.GetDirectories();
     sort(classInfos.begin(), classInfos.end());
 
-    vector<Tuple<Mat, int>> images;
+    TurboCV::System::Vector<Tuple<Mat, int>> images;
     for (int i = 0; i < classInfos.size(); i++)
     {
-        vector<TurboCV::System::String> fileInfos = DirectoryInfo(classInfos[i]).GetFiles();
+        TurboCV::System::Vector<TurboCV::System::String> fileInfos = 
+            DirectoryInfo(classInfos[i]).GetFiles();
         sort(fileInfos.begin(), fileInfos.end());
 
         for (int j = 0; j < fileInfos.size(); j++)
@@ -30,7 +33,7 @@ inline vector<Tuple<Mat, int>> GetImages(const TurboCV::System::String& imageSet
     return images;
 }
 
-void NormlizeDeviation(vector<Histogram> vecs)
+void NormlizeDeviation(Vector<Histogram> vecs)
 {
     Histogram mean(vecs[0].size());
     double deviation = 0;
@@ -61,7 +64,7 @@ void LocalFeatureCrossValidation(const TurboCV::System::String& imageSetPath, co
     vector<Tuple<Mat, int>> images = GetImages(imageSetPath, CV_LOAD_IMAGE_GRAYSCALE);
     int imageNum = (int)images.size();
 
-    vector<LocalFeature_f> features(imageNum);
+    TurboCV::System::Vector<LocalFeature_f> features(imageNum);
     printf("Compute " + feature.GetName() + "...\n");
     LocalFeature machine = feature;
     #pragma omp parallel for private(machine)
@@ -73,10 +76,10 @@ void LocalFeatureCrossValidation(const TurboCV::System::String& imageSetPath, co
 
     { // Use a block here to destruct words and freqHistograms immediately.
         printf("Compute Visual Words...\n");
-        vector<Word_f> words = BOV::GetVisualWords(features, wordNum, sampleNum);
+        Vector<Word_f> words = BOV::GetVisualWords(features, wordNum, sampleNum);
 
         printf("Compute Frequency Histograms...\n");
-        vector<Histogram> freqHistograms = BOV::GetFrequencyHistograms(features, words);
+        Vector<Histogram> freqHistograms = BOV::GetFrequencyHistograms(features, words);
 
         printf("Write To File...\n");
         TurboCV::System::String savePath = feature.GetName() + "_" + imageSetPath;

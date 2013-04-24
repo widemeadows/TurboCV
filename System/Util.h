@@ -2,16 +2,17 @@
 
 #include <cassert>
 #include <cstdlib>
-#include <vector>
 #include "Type.h"
-using namespace std;
 
 namespace TurboCV
 {
 namespace System
 {
     template<typename RandomAccessIterator, typename T> 
-    bool Contains(const RandomAccessIterator& begin, const RandomAccessIterator& end, const T& item)
+    bool Contains(
+        const RandomAccessIterator& begin, 
+        const RandomAccessIterator& end, 
+        const T& item)
     {
         RandomAccessIterator itr = begin;
 
@@ -25,10 +26,12 @@ namespace System
         return false;
     }
 
-    inline vector<size_t> RandomPermutate(size_t cardNum, size_t pickUpNum)
+    inline Vector<size_t> RandomPermutate(
+        size_t cardNum, 
+        size_t pickUpNum)
     {
         assert(cardNum >= pickUpNum);
-        vector<size_t> result;
+        Vector<size_t> result;
 
         size_t* cards = new size_t[cardNum];
         for (size_t i = 0; i < cardNum; i++)
@@ -36,7 +39,8 @@ namespace System
 
         for (size_t i = 0; i < pickUpNum; i++)
         {
-            size_t index = (size_t)((double)rand() * (cardNum - i - 1) / RAND_MAX + i);
+            size_t index = (size_t)
+                ((double)rand() * (cardNum - i - 1) / RAND_MAX + i);
             assert(index < cardNum);
             swap(cards[i], cards[index]);
         }
@@ -49,12 +53,14 @@ namespace System
     }
 
     template<typename T>
-    inline vector<T> PickUp(const vector<T>& vec, const vector<size_t>& pickUpIndexes)
+    inline Vector<T> PickUp(
+        const Vector<T>& vec, 
+        const Vector<size_t>& pickUpIndexes)
     {
-        vector<size_t> indexes = pickUpIndexes;
+        Vector<size_t> indexes = pickUpIndexes;
         sort(indexes.begin(), indexes.end());
 
-        vector<T> pickUps;
+        Vector<T> pickUps;
         size_t cardNum = vec.size(), counter = 0;
 
         for (size_t i = 0; i < cardNum; i++)
@@ -70,13 +76,14 @@ namespace System
     }
 
     template<typename T>
-    inline Tuple<vector<T>, vector<T>, vector<size_t>> Divide(const vector<T>& vec, 
-        const vector<size_t>& pickUpIndexes)
+    inline Tuple<Vector<T>, Vector<T>, Vector<size_t>> Divide(
+        const Vector<T>& vec, 
+        const Vector<size_t>& pickUpIndexes)
     {
-        vector<size_t> indexes = pickUpIndexes;
+        Vector<size_t> indexes = pickUpIndexes;
         sort(indexes.begin(), indexes.end());
 
-        vector<T> pickUps, others;
+        Vector<T> pickUps, others;
         size_t cardNum = vec.size(), counter = 0;
 
         for (size_t i = 0; i < cardNum; i++)
@@ -94,7 +101,9 @@ namespace System
     }
 
     template<typename T>
-    inline vector<T> RandomPickUp(const vector<T>& vec, size_t pickUpNum)
+    inline Vector<T> RandomPickUp(
+        const Vector<T>& vec, 
+        size_t pickUpNum)
     {
         size_t cardNum = vec.size();
         assert(cardNum >= pickUpNum);
@@ -103,18 +112,19 @@ namespace System
     }
 
     template<typename T>
-    inline vector<Tuple<vector<T>, vector<T>, vector<size_t>>> RandomSplit(
-        const vector<T>& vec, size_t fold)
+    inline Vector<Tuple<Vector<T>, Vector<T>, Vector<size_t>>> RandomSplit(
+        const Vector<T>& vec, 
+        size_t fold)
     {
         size_t cardNum = vec.size();
         assert(cardNum >= fold);
 
-        vector<size_t> permutation = RandomPermutate(cardNum, cardNum);
+        Vector<size_t> permutation = RandomPermutate(cardNum, cardNum);
 
-        vector<Tuple<vector<T>, vector<T>, vector<size_t>>> result;
+        Vector<Tuple<Vector<T>, Vector<T>, Vector<size_t>>> result;
         for (size_t i = 0; i < fold; i++)
         {
-            vector<size_t> subsetIndexes;
+            Vector<size_t> subsetIndexes;
             size_t begin = cardNum / fold * i,
                 end = (i != fold - 1) ? cardNum / fold * (i + 1) : cardNum;
 

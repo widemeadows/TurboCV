@@ -1,7 +1,6 @@
 #pragma once
 
 #include "../System/Type.h"
-using namespace std;
 
 namespace TurboCV
 {
