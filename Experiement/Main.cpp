@@ -131,7 +131,7 @@ void LocalFeatureCrossValidation(const TurboCV::System::String& imageSetPath, co
         printf("Fold %d Accuracy: %f\n", i + 1, precisions.first);
 
         pair<ArrayList<ArrayList<double>>, ArrayList<ArrayList<bool>>> matrix =
-            knn.Evaluate(trainingHistograms, trainingLabels, evaluationHistograms, evaluationLabels);
+            GetDistanceMatrix(trainingHistograms, trainingLabels, evaluationHistograms, evaluationLabels);
         ArrayList<ArrayList<double>>& distances = matrix.first;
         ArrayList<ArrayList<bool>>& relevants = matrix.second;
         for (int j = 0; j < pickUpIndexes.Count(); j++)
@@ -222,15 +222,15 @@ void GlobalFeatureCrossValidation(const TurboCV::System::String& imageSetPath, c
                 trainingLabels.Add(images[j].Item2());
         }
 
-        KNN<GlobalFeature_f> knn;
+        MQDF<GlobalFeature_f> mqdf;
         pair<double, map<int, double>> precisions = 
-            knn.Evaluate(4, trainingSet, trainingLabels, evaluationSet, evaluationLabels);
+            mqdf.Evaluate(trainingSet, trainingLabels, evaluationSet, evaluationLabels);
 
         passResult.Add(precisions.first);
         printf("Fold %d Accuracy: %f\n", i + 1, precisions.first);
 
         pair<ArrayList<ArrayList<double>>, ArrayList<ArrayList<bool>>> matrix =
-            knn.Evaluate(trainingSet, trainingLabels, evaluationSet, evaluationLabels);
+            GetDistanceMatrix(trainingSet, trainingLabels, evaluationSet, evaluationLabels);
         ArrayList<ArrayList<double>>& distances = matrix.first;
         ArrayList<ArrayList<bool>>& relevants = matrix.second;
         for (int j = 0; j < pickUpIndexes.Count(); j++)
@@ -347,7 +347,7 @@ void EdgeMatchingCrossValidation(const TurboCV::System::String& imageSetPath, co
         passResult.Add(precisions.first);
         printf("Fold %d Accuracy: %f\n", i + 1, precisions.first);
 
-        pair<ArrayList<ArrayList<double>>, ArrayList<ArrayList<bool>>> matrix = knn.Evaluate(
+        pair<ArrayList<ArrayList<double>>, ArrayList<ArrayList<bool>>> matrix = GetDistanceMatrix(
             trainingSet, trainingLabels, evaluationSet, evaluationLabels, EdgeMatching::GetDistance);
         ArrayList<ArrayList<double>>& distances = matrix.first;
         ArrayList<ArrayList<bool>>& relevants = matrix.second;
@@ -682,11 +682,11 @@ void Batch(const TurboCV::System::String& imageSetPath, bool thinning = false)
 
 int main()
 {
-    LocalFeatureCrossValidation("sketches", RHOG(), 500);
-    printf("\n");
-
-    //GlobalFeatureCrossValidation("oracles", GHOG(), true);
+    //LocalFeatureCrossValidation("sketches", RHOG(), 500);
     //printf("\n");
+
+    GlobalFeatureCrossValidation("oracles", GHOG(), true);
+    printf("\n");
 
     //EdgeMatchingCrossValidation("oracles", Hitmap(), true);
     //printf("\n");

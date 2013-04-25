@@ -15,14 +15,17 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="KNN.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
     <ClInclude Include="System.ML.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="KNN.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
     <ClInclude Include="LDA.h">
-      <Filter>Source Files</Filter>
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="MQDF.h">
+      <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>
