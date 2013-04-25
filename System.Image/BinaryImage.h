@@ -180,7 +180,7 @@ namespace System
 	        for (int i = 0; i < sketchImage.rows; i++)
 		        for (int j = 0; j < sketchImage.cols; j++)
 			        if (sketchImage.at<uchar>(i, j))
-				        points.push_back(Point(j, i));
+				        points.Add(Point(j, i));
 
 	        return points;
         }

@@ -94,7 +94,7 @@ namespace System
 
             ArrayList<Mat> orientChannels;
             for (int i = 0; i < orientNum; i++)
-                orientChannels.push_back(Mat::zeros(height, width, CV_64F));
+                orientChannels.Add(Mat::zeros(height, width, CV_64F));
 
             for (int i = 0; i < height; i++)
             {
@@ -164,7 +164,7 @@ namespace System
 
         inline ArrayList<Mat> GetLoGPyramid(const Mat& image, const ArrayList<double>& sigmas)
         {
-            size_t sigmaNum = sigmas.size();
+            size_t sigmaNum = sigmas.Count();
             ArrayList<Mat> LoGPyramid(sigmaNum);
 
             for (int i = 0; i < sigmaNum; i++)
@@ -185,7 +185,7 @@ namespace System
 
         inline ArrayList<Mat> GetDoGPyramid(const Mat& image, const ArrayList<double>& sigmas)
         {
-            size_t sigmaNum = sigmas.size();
+            size_t sigmaNum = sigmas.Count();
             ArrayList<Mat> GaussianPyramid(sigmaNum + 1);
 
             image.convertTo(GaussianPyramid[0], CV_64F);

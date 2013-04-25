@@ -45,13 +45,13 @@ namespace System
             size_t sampleNum)
         {
             ArrayList<Descriptor_f> allDescriptors;
-            for (size_t i = 0; i < features.size(); i++)
-                for (size_t j = 0; j < features[i].size(); j++)
-                    allDescriptors.push_back(features[i][j]);
+            for (size_t i = 0; i < features.Count(); i++)
+                for (size_t j = 0; j < features[i].Count(); j++)
+                    allDescriptors.Add(features[i][j]);
 
-            assert(allDescriptors.size() > 0);
-            size_t descriptorNum = allDescriptors.size(), 
-                descriptorSize = allDescriptors[0].size();
+            assert(allDescriptors.Count() > 0);
+            size_t descriptorNum = allDescriptors.Count(), 
+                descriptorSize = allDescriptors[0].Count();
             printf("Descriptor Num: %d, Descriptor Size: %d.\n", 
                 (int)descriptorNum, (int)descriptorSize);
 
@@ -61,7 +61,7 @@ namespace System
             sort(randomIndex.begin(), randomIndex.end());
 
             int counter = 0;
-            for (size_t i = 0; i < randomIndex.size(); i++)
+            for (size_t i = 0; i < randomIndex.Count(); i++)
             {
                 size_t index = randomIndex[i];
                 for (size_t j = 0; j < descriptorSize; j++)
@@ -81,7 +81,7 @@ namespace System
             ArrayList<Word_f> words(clusterNum);
             for (size_t i = 0; i < clusterNum; i++)
                 for (size_t j = 0; j < descriptorSize; j++)
-                    words[i].push_back(centers.at<float>(i, j));
+                    words[i].Add(centers.at<float>(i, j));
 
             return words;
         }
@@ -90,13 +90,13 @@ namespace System
             const Descriptor_f& descriptor, 
             const ArrayList<Word_f>& words)
         {
-            assert(words.size() > 0 && descriptor.size() == words[0].size());
+            assert(words.Count() > 0 && descriptor.Count() == words[0].Count());
 
-            size_t wordNum = words.size();
+            size_t wordNum = words.Count();
             ArrayList<double> distances;
 
             for (size_t i = 0; i < wordNum; i++)
-                distances.push_back(Math::GaussianDistance(descriptor, words[i], 0.1));
+                distances.Add(Math::GaussianDistance(descriptor, words[i], 0.1));
 
             NormOneNormalize(distances.begin(), distances.end());
             return distances;
@@ -106,8 +106,8 @@ namespace System
             const LocalFeature_f& feature, 
             const ArrayList<Word_f>& words)
         {    
-            size_t wordNum = words.size();
-            size_t descriptorNum = feature.size();
+            size_t wordNum = words.Count();
+            size_t descriptorNum = feature.Count();
             Histogram freqHistogram(wordNum);
 
             for (size_t i = 0; i < descriptorNum; i++)
@@ -129,7 +129,7 @@ namespace System
             const ArrayList<LocalFeature_f>& features, 
             const ArrayList<Word_f>& words)
         {
-            size_t imageNum = features.size();
+            size_t imageNum = features.Count();
             ArrayList<Histogram> freqHistograms(imageNum);
 
             #pragma omp parallel for schedule(guided)

@@ -37,9 +37,9 @@ namespace System
                 int newY = centre.y + dy[i], newX = centre.x + dx[i];
 
                 if (newY < 0 || newY >= image.rows || newX < 0 || newX >= image.cols)
-                    result.push_back(0);
+                    result.Add(0);
                 else
-                    result.push_back(image.at<T>(newY, newX));
+                    result.Add(image.at<T>(newY, newX));
             }
 
             return result;
@@ -66,9 +66,9 @@ namespace System
 
                         double distance = Math::NormOneDistance(a, b);
                         if (distance >= 6)
-                            junctions.push_back(Point(j, i));
+                            junctions.Add(Point(j, i));
                         else if (distance == 2)
-                            endPoints.push_back(Point(j, i));
+                            endPoints.Add(Point(j, i));
                     }
                 }
             }
@@ -120,7 +120,7 @@ namespace System
                             GetNeighbourValues<int>(edgeFlags, Point(newX, newY));
                         int counter = 0;
 
-                        for (int j = values.size() - 1; j >= 0; j--)
+                        for (int j = values.Count() - 1; j >= 0; j--)
                             if (values[j] == -edgeNo)
                                 counter++;
 
@@ -152,7 +152,7 @@ namespace System
             const Point& start)
         {
             Edge edge;
-            edge.push_back(start);
+            edge.Add(start);
             edgeFlags.at<int>(start.y, start.x) = -edgeNo;
 
             Tuple<Status, Point> next = NextPoint(edgeFlags, edgeNo, junctions, endpoints, start);
@@ -161,7 +161,7 @@ namespace System
 
             while (status != NoPoint)
             {
-                edge.push_back(nextPoint);
+                edge.Add(nextPoint);
                 edgeFlags.at<int>(nextPoint.y, nextPoint.x) = -edgeNo;
 
                 if (status == LastPoint) // hit a junction/endpoint
@@ -187,7 +187,7 @@ namespace System
 
                 while (status != NoPoint)
                 {
-                    edge.push_back(nextPoint);
+                    edge.Add(nextPoint);
                     edgeFlags.at<int>(nextPoint.y, nextPoint.x) = -edgeNo;
 
                     if (status == LastPoint)
@@ -205,13 +205,13 @@ namespace System
             // to form a loop. If the number of points in the list is four or more (the 
             // minimum number that could form a loop), and the endpoints are within a pixel 
             // of each other, append a copy if the first point to the end to complete the loop.
-            if (edge.size() >= 4)
+            if (edge.Count() >= 4)
             {
-                Point start = edge.front();
-                Point end = edge.back();
+                Point start = edge.Front();
+                Point end = edge.Back();
 
                 if (abs(start.y - end.y) <= 1 && abs(start.x - end.x) <= 1)
-                    edge.push_back(start);
+                    edge.Add(start);
             }
 
             return edge;
@@ -240,11 +240,11 @@ namespace System
                 {
                     if (edgeFlags.at<int>(i, j) == 1)
                     {
-                        Edge edge = TrackEdge(edgeFlags, (int)edgeList.size() + 1, 
+                        Edge edge = TrackEdge(edgeFlags, (int)edgeList.Count() + 1, 
                             junctions, endpoints, Point(j, i));
 
-                        if (edge.size() >= minLength)
-                            edgeList.push_back(edge);
+                        if (edge.Count() >= minLength)
+                            edgeList.Add(edge);
                     }
                 }
             }

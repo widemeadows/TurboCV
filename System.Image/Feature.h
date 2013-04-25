@@ -1,7 +1,6 @@
 #pragma once
 
-#include "../System/String.h"
-#include "../System/Math.h"
+#include "../System/System.h"
 #include "BinaryImage.h"
 #include "Filter.h"
 #include "Geometry.h"
@@ -50,7 +49,8 @@ namespace System
             resize(squareImage, scaledImage, Size(224, 224));
 
             Mat paddedImage;
-            copyMakeBorder(scaledImage, paddedImage, 16, 16, 16, 16, BORDER_CONSTANT, Scalar(0, 0, 0, 0));
+            copyMakeBorder(scaledImage, paddedImage, 16, 16, 16, 16, BORDER_CONSTANT, 
+                Scalar(0, 0, 0, 0));
             assert(paddedImage.rows == 256 && paddedImage.cols == 256);
 
             Mat finalImage;
@@ -200,7 +200,7 @@ namespace System
             {
                 Descriptor descriptor = GetDescriptor1(filteredOrientChannels, center, 
                     blockSize, cellNum);
-                feature.push_back(descriptor);
+                feature.Add(descriptor);
             }
 
             //vector<Mat> enlargeChannels(orientNum);
@@ -256,7 +256,7 @@ namespace System
             for (int i = 0; i < cellNum; i++)
                 for (int j = 0; j < cellNum; j++)
                     for (int k = 0; k < orientNum; k++)
-                        descriptor.push_back(hist.at<double>(i, j, k));
+                        descriptor.Add(hist.at<double>(i, j, k));
 
             NormTwoNormalize(descriptor.begin(), descriptor.end());
             return descriptor;
@@ -316,7 +316,7 @@ namespace System
             for (int i = 0; i < cellNum; i++)
                 for (int j = 0; j < cellNum; j++)
                     for (int k = 0; k < orientNum; k++)
-                        descriptor.push_back(hist.at<double>(i, j, k));
+                        descriptor.Add(hist.at<double>(i, j, k));
 
             NormTwoNormalize(descriptor.begin(), descriptor.end());
             return descriptor;
@@ -368,7 +368,7 @@ namespace System
                 {
                     Descriptor descriptor = GetDescriptor(filteredOrientChannels, Point(j, i), 
                         cellSize, cellNum);
-                    feature.push_back(descriptor);
+                    feature.Add(descriptor);
                 }
             }
 
@@ -383,7 +383,7 @@ namespace System
             int blockSize = cellSize * cellNum;
             int expectedTop = center.y - blockSize / 2,
                 expectedLeft = center.x - blockSize / 2,
-                orientNum = filteredOrientChannels.size();
+                orientNum = filteredOrientChannels.Count();
             int dims[] = { cellNum, cellNum, orientNum };
             Mat hist(3, dims, CV_64F);
 
@@ -408,7 +408,7 @@ namespace System
             for (int i = 0; i < cellNum; i++)
                 for (int j = 0; j < cellNum; j++)
                     for (int k = 0; k < orientNum; k++)
-                        descriptor.push_back(hist.at<double>(i, j, k));
+                        descriptor.Add(hist.at<double>(i, j, k));
 
             NormTwoNormalize(descriptor.begin(), descriptor.end());
             return descriptor;
@@ -459,7 +459,7 @@ namespace System
             {
                 Descriptor descriptor = GetDescriptor(filteredOrientChannels, center, 
                     blockSize, cellNum);
-                feature.push_back(descriptor);
+                feature.Add(descriptor);
             }
 
             return feature;
@@ -473,7 +473,7 @@ namespace System
             double cellSize = (double)blockSize / cellNum;
             int expectedTop = center.y - blockSize / 2,
                 expectedLeft = center.x - blockSize / 2,
-                orientNum = filteredOrientChannels.size();
+                orientNum = filteredOrientChannels.Count();
             int dims[] = { cellNum, cellNum, orientNum };
             Mat hist(3, dims, CV_64F);
 
@@ -498,7 +498,7 @@ namespace System
             for (int i = 0; i < cellNum; i++)
                 for (int j = 0; j < cellNum; j++)
                     for (int k = 0; k < orientNum; k++)
-                        descriptor.push_back(hist.at<double>(i, j, k));
+                        descriptor.Add(hist.at<double>(i, j, k));
 
             NormTwoNormalize(descriptor.begin(), descriptor.end());
             return descriptor;
@@ -524,15 +524,15 @@ namespace System
             int orientNum = 4, cellNum = 4;
 
             ArrayList<Point> points = GetEdgels(sketchImage);
-            ArrayList<Point> pivots = SampleFromPoints(points, (int)(points.size() * 0.33));
+            ArrayList<Point> pivots = SampleFromPoints(points, (int)(points.Count() * 0.33));
             ArrayList<Mat> orientChannels = Gradient::GetOrientChannels(sketchImage, orientNum);
 
             LocalFeatureVec feature;
-            for (int i = 0; i < pivots.size(); i++)
+            for (int i = 0; i < pivots.Count(); i++)
             {
                 Descriptor descriptor = GetDescriptor(orientChannels, pivots[i], 
                     points, cellNum);
-                feature.push_back(descriptor);
+                feature.Add(descriptor);
             }
 
             return feature;
@@ -542,12 +542,12 @@ namespace System
             const Point& pivot, const ArrayList<Point>& points, int cellNum)
         {
             ArrayList<double> distances = Geometry::EulerDistance(pivot, points);
-            double mean = Math::Sum(distances) / (points.size() - 1); // Except pivot
+            double mean = Math::Sum(distances) / (points.Count() - 1); // Except pivot
             int blockSize = (int)(1.5 * mean);
 
             int height = orientChannels[0].rows, 
                 width = orientChannels[0].cols,
-                orientNum = orientChannels.size();
+                orientNum = orientChannels.Count();
             int expectedTop = pivot.y - blockSize / 2,
                 expectedLeft = pivot.x - blockSize / 2;
             double cellSize = (double)blockSize / cellNum;
@@ -595,7 +595,7 @@ namespace System
             for (int i = 0; i < cellNum; i++)
                 for (int j = 0; j < cellNum; j++)
                     for (int k = 0; k < orientNum; k++)
-                        descriptor.push_back(hist.at<double>(i, j, k));
+                        descriptor.Add(hist.at<double>(i, j, k));
 
             NormTwoNormalize(descriptor.begin(), descriptor.end());
             return descriptor;
@@ -622,17 +622,17 @@ namespace System
             double sigmaInit = 0.7, sigmaStep = 1.2;
 
             ArrayList<double> sigmas;
-            sigmas.push_back(sigmaInit);
+            sigmas.Add(sigmaInit);
             for (int i = 1; i < scaleNum; i++)
-                sigmas.push_back(sigmas[i - 1] * sigmaStep);
+                sigmas.Add(sigmas[i - 1] * sigmaStep);
 
             ArrayList<Point> points = GetEdgels(sketchImage);
-            ArrayList<Point> pivots = SampleFromPoints(points, (int)(points.size() * 0.33));
+            ArrayList<Point> pivots = SampleFromPoints(points, (int)(points.Count() * 0.33));
             ArrayList<Mat> orientChannels = Gradient::GetOrientChannels(sketchImage, orientNum);
             ArrayList<Mat> pyramid = GetLoGPyramid(sketchImage, sigmas);
 
             LocalFeatureVec feature;
-            for (int i = 0; i < pivots.size(); i++)
+            for (int i = 0; i < pivots.Count(); i++)
             {
                 for (int j = 0; j < scaleNum; j++)
                 {
@@ -644,7 +644,7 @@ namespace System
                     {
                         Descriptor desc = GetDescriptor(orientChannels, pivots[i], 
                             (int)(sigmas[j] * 6 + 1), cellNum);
-                        feature.push_back(desc);
+                        feature.Add(desc);
                     }
                 }
             }
@@ -657,7 +657,7 @@ namespace System
         {
             int height = orientChannels[0].rows, 
                 width = orientChannels[0].cols,
-                orientNum = (int)orientChannels.size();
+                orientNum = (int)orientChannels.Count();
             int expectedTop = pivot.y - blockSize / 2,
                 expectedLeft = pivot.x - blockSize / 2;
             double cellSize = (double)blockSize / cellNum;
@@ -705,7 +705,7 @@ namespace System
             for (int i = 0; i < cellNum; i++)
                 for (int j = 0; j < cellNum; j++)
                     for (int k = 0; k < orientNum; k++)
-                        desc.push_back(hist.at<double>(i, j, k));
+                        desc.Add(hist.at<double>(i, j, k));
 
             NormTwoNormalize(desc.begin(), desc.end());
             return desc;
@@ -751,7 +751,7 @@ namespace System
             for (int i = blockSize / 2 - 1; i < sketchImage.rows; i += blockSize / 2)
                 for (int j = blockSize / 2 - 1; j < sketchImage.cols; j += blockSize / 2)
                     for (int k = 0; k < orientNum; k++)
-                        feature.push_back(filteredOrientChannels[k].at<double>(i, j));      
+                        feature.Add(filteredOrientChannels[k].at<double>(i, j));      
 
             return feature;
         }
@@ -779,18 +779,18 @@ namespace System
             int angleNum = 9, orientNum = 8;
 
             ArrayList<Point> points = GetEdgels(sketchImage);
-            ArrayList<Point> pivots = SampleFromPoints(points, (size_t)(points.size() * 0.33));
+            ArrayList<Point> pivots = SampleFromPoints(points, (size_t)(points.Count() * 0.33));
 
             Tuple<Mat, Mat> gradient = Gradient::GetGradient(sketchImage);
             Mat& powerImage = gradient.Item1();
             Mat& orientImage = gradient.Item2();
 
             LocalFeatureVec feature;
-            for (int i = 0; i < pivots.size(); i++)
+            for (int i = 0; i < pivots.Count(); i++)
             {
                 Descriptor descriptor = GetDescriptor(orientImage, pivots[i], points,
                     logDistances, angleNum, orientNum);
-                feature.push_back(descriptor);
+                feature.Add(descriptor);
             }
 
             return feature;
@@ -800,7 +800,7 @@ namespace System
             const Point& pivot, const ArrayList<Point>& points,
             const ArrayList<double>& logDistances, int angleNum, int orientNum)
         {
-	        int pointNum = points.size();
+	        int pointNum = points.Count();
             assert(pointNum > 1);
 
             ArrayList<double> distances = Geometry::EulerDistance(pivot, points);
@@ -809,7 +809,7 @@ namespace System
 	        for (int i = 0; i < pointNum; i++)
 		        distances[i] /= mean;
 
-            int distanceNum = logDistances.size() - 1;
+            int distanceNum = logDistances.Count() - 1;
 	        int dims[] = { distanceNum, angleNum, orientNum };
 	        Mat bins(3, dims, CV_64F);
             bins = Scalar::all(0);
@@ -843,12 +843,12 @@ namespace System
                 ArrayList<double> ring;
 		        for (int j = 0; j < angleNum; j++)
 			        for (int k = 0; k < orientNum; k++)
-				        ring.push_back(bins.at<double>(i, j, k));
+				        ring.Add(bins.at<double>(i, j, k));
 
 		        NormOneNormalize(ring.begin(), ring.end());
 
                 for (auto item : ring)
-                    descriptor.push_back(item);
+                    descriptor.Add(item);
 	        }
 
 	        return descriptor;
@@ -885,7 +885,7 @@ namespace System
             {
                 Descriptor desc = GetDescriptor(orientImage, center, points,
                     logDistances, angleNum, orientNum);
-                feature.push_back(desc);
+                feature.Add(desc);
             }
 
             return feature;
@@ -895,14 +895,14 @@ namespace System
             const Point& center, const ArrayList<Point>& points, 
             const ArrayList<double>& logDistances, int angleNum, int orientNum)
         {
-            int pointNum = points.size();
+            int pointNum = points.Count();
             assert(pointNum > 1);
 
             ArrayList<double> distances = Geometry::EulerDistance(center, points);
             ArrayList<double> angles = Geometry::Angle(center, points);
             
             double mean;
-            if (Contains(points.begin(), points.end(), center))
+            if (points.Contains(center))
                 mean = Math::Sum(distances) / (pointNum - 1); // Except center
             else
                 mean = Math::Sum(distances) / pointNum;
@@ -910,7 +910,7 @@ namespace System
             for (int i = 0; i < pointNum; i++)
                 distances[i] /= mean;
 
-            int distanceNum = logDistances.size() - 1;
+            int distanceNum = logDistances.Count() - 1;
             int dims[] = { distanceNum, angleNum, orientNum };
             Mat bins(3, dims, CV_64F);
             bins = Scalar::all(0);
@@ -944,12 +944,12 @@ namespace System
                 ArrayList<double> ring;
                 for (int j = 0; j < angleNum; j++)
                     for (int k = 0; k < orientNum; k++)
-                        ring.push_back(bins.at<double>(i, j, k));
+                        ring.Add(bins.at<double>(i, j, k));
 
                 NormOneNormalize(ring.begin(), ring.end());
 
                 for (auto item : ring)
-                    descriptor.push_back(item);
+                    descriptor.Add(item);
             }
 
             return descriptor;
@@ -977,13 +977,13 @@ namespace System
             int angleNum = 12;
 
             ArrayList<Point> points = GetEdgels(sketchImage);
-            ArrayList<Point> pivots = SampleFromPoints(points, (int)(points.size() * 0.33));
+            ArrayList<Point> pivots = SampleFromPoints(points, (int)(points.Count() * 0.33));
 
             LocalFeatureVec feature;
-            for (int i = 0; i < pivots.size(); i++)
+            for (int i = 0; i < pivots.Count(); i++)
             {
                 Descriptor descriptor = GetDescriptor(pivots[i], pivots, logDistances, angleNum);
-                feature.push_back(descriptor);
+                feature.Add(descriptor);
             }
 
             return feature;
@@ -992,7 +992,7 @@ namespace System
         inline Descriptor SC::GetDescriptor(const Point& pivot, const ArrayList<Point>& pivots,
                 const ArrayList<double>& logDistances, int angleNum)
         {
-            int pivotNum = pivots.size();
+            int pivotNum = pivots.Count();
             assert(pivotNum > 1);
 
             ArrayList<double> distances = Geometry::EulerDistance(pivot, pivots);
@@ -1001,7 +1001,7 @@ namespace System
 	        for (int i = 0; i < pivotNum; i++)
 		        distances[i] /= mean;
 
-            int distanceNum = logDistances.size() - 1;
+            int distanceNum = logDistances.Count() - 1;
 	        Mat bins = Mat::zeros(distanceNum, angleNum, CV_64F);
 
 	        for (int i = 0; i < pivotNum; i++)
@@ -1026,12 +1026,12 @@ namespace System
 	        {
                 ArrayList<double> ring;
 		        for (int j = 0; j < angleNum; j++)
-				    ring.push_back(bins.at<double>(i, j));
+				    ring.Add(bins.at<double>(i, j));
 
 		        NormOneNormalize(ring.begin(), ring.end());
 
                 for (auto item : ring)
-                    descriptor.push_back(item);
+                    descriptor.Add(item);
 	        }
 
 	        return descriptor;
@@ -1060,13 +1060,13 @@ namespace System
             int angleNum = 12;
 
             ArrayList<Point> points = GetEdgels(sketchImage);
-            ArrayList<Point> pivots = SampleFromPoints(points, (int)(points.size() * 0.33));
+            ArrayList<Point> pivots = SampleFromPoints(points, (int)(points.Count() * 0.33));
 
             LocalFeatureVec feature;
-            for (int i = 0; i < pivots.size(); i++)
+            for (int i = 0; i < pivots.Count(); i++)
             {
                 Descriptor descriptor = GetDescriptor(pivots[i], points, logDistances, angleNum);
-                feature.push_back(descriptor);
+                feature.Add(descriptor);
             }
 
             return feature;
@@ -1075,7 +1075,7 @@ namespace System
         inline Descriptor PSC::GetDescriptor(const Point& pivot, const ArrayList<Point>& points,
             const ArrayList<double>& logDistances, int angleNum)
         {
-            int pointNum = points.size();
+            int pointNum = points.Count();
             assert(pointNum > 1);
 
             ArrayList<double> distances = Geometry::EulerDistance(pivot, points);
@@ -1084,7 +1084,7 @@ namespace System
             for (int i = 0; i < pointNum; i++)
                 distances[i] /= mean;
 
-            int distanceNum = logDistances.size() - 1;
+            int distanceNum = logDistances.Count() - 1;
             Mat bins = Mat::zeros(distanceNum, angleNum, CV_64F);
 
             for (int i = 0; i < pointNum; i++)
@@ -1109,12 +1109,12 @@ namespace System
             {
                 ArrayList<double> ring;
                 for (int j = 0; j < angleNum; j++)
-                    ring.push_back(bins.at<double>(i, j));
+                    ring.Add(bins.at<double>(i, j));
 
                 NormOneNormalize(ring.begin(), ring.end());
 
                 for (auto item : ring)
-                    descriptor.push_back(item);
+                    descriptor.Add(item);
             }
 
             return descriptor;
@@ -1143,14 +1143,14 @@ namespace System
 
             Mat orientImage = Gradient::GetGradient(sketchImage).Item2();
             ArrayList<Point> points = GetEdgels(sketchImage); 
-            ArrayList<Point> pivots = SampleFromPoints(points, (int)(points.size() * 0.33));
+            ArrayList<Point> pivots = SampleFromPoints(points, (int)(points.Count() * 0.33));
 
             LocalFeatureVec feature;
             ArrayList<Point> centers = SampleOnGrid(sketchImage.rows, sketchImage.cols, sampleNum);
             for (Point center : centers)
             {
                 Descriptor desc = GetDescriptor(center, pivots, logDistances, angleNum);
-                    feature.push_back(desc);
+                    feature.Add(desc);
             }
 
             return feature;
@@ -1159,14 +1159,14 @@ namespace System
         inline Descriptor RSC::GetDescriptor(const Point& center, 
             const ArrayList<Point>& pivots, const ArrayList<double>& logDistances, int angleNum)
         {
-            int pivotNum = pivots.size();
+            int pivotNum = pivots.Count();
             assert(pivotNum > 1);
 
             ArrayList<double> distances = Geometry::EulerDistance(center, pivots);
             ArrayList<double> angles = Geometry::Angle(center, pivots);
 
 	        double mean;
-            if (Contains(pivots.begin(), pivots.end(), center))
+            if (pivots.Contains(center))
                 mean = Math::Sum(distances) / (pivotNum - 1); // Except pivot
             else
                 mean = Math::Sum(distances) / pivotNum;
@@ -1174,7 +1174,7 @@ namespace System
 	        for (int i = 0; i < pivotNum; i++)
 		        distances[i] /= mean;
 
-            int distanceNum = logDistances.size() - 1;
+            int distanceNum = logDistances.Count() - 1;
 	        Mat bins = Mat::zeros(distanceNum, angleNum, CV_64F);
 
 	        for (int i = 0; i < pivotNum; i++)
@@ -1199,12 +1199,12 @@ namespace System
 	        {
                 ArrayList<double> ring;
 		        for (int j = 0; j < angleNum; j++)
-				    ring.push_back(bins.at<double>(i, j));
+				    ring.Add(bins.at<double>(i, j));
 
 		        NormOneNormalize(ring.begin(), ring.end());
 
                 for (auto item : ring)
-                    descriptor.push_back(item);
+                    descriptor.Add(item);
 	        }
 
 	        return descriptor;
@@ -1239,7 +1239,7 @@ namespace System
             for (Point center : centers)
             {
                 Descriptor desc = GetDescriptor(center, points, logDistances, angleNum);
-                feature.push_back(desc);
+                feature.Add(desc);
             }
 
             return feature;
@@ -1248,14 +1248,14 @@ namespace System
         inline Descriptor PRSC::GetDescriptor(const Point& center, 
             const ArrayList<Point>& points, const ArrayList<double>& logDistances, int angleNum)
         {
-            int pointNum = points.size();
+            int pointNum = points.Count();
             assert(pointNum > 1);
 
             ArrayList<double> distances = Geometry::EulerDistance(center, points);
             ArrayList<double> angles = Geometry::Angle(center, points);
 
             double mean;
-            if (Contains(points.begin(), points.end(), center))
+            if (points.Contains(center))
                 mean = Math::Sum(distances) / (pointNum - 1); // Except pivot
             else
                 mean = Math::Sum(distances) / pointNum;
@@ -1263,7 +1263,7 @@ namespace System
             for (int i = 0; i < pointNum; i++)
                 distances[i] /= mean;
 
-            int distanceNum = logDistances.size() - 1;
+            int distanceNum = logDistances.Count() - 1;
             Mat bins = Mat::zeros(distanceNum, angleNum, CV_64F);
 
             for (int i = 0; i < pointNum; i++)
@@ -1288,12 +1288,12 @@ namespace System
             {
                 ArrayList<double> ring;
                 for (int j = 0; j < angleNum; j++)
-                    ring.push_back(bins.at<double>(i, j));
+                    ring.Add(bins.at<double>(i, j));
 
                 NormOneNormalize(ring.begin(), ring.end());
 
                 for (auto item : ring)
-                    descriptor.push_back(item);
+                    descriptor.Add(item);
             }
 
             return descriptor;
@@ -1321,7 +1321,7 @@ namespace System
             ArrayList<int> orientNumPerScale(tmp, tmp + sizeof(tmp) / sizeof(int));
 
             ArrayList<Mat> gaborResponses;
-            for (int i = 0; i < orientNumPerScale.size(); i++)
+            for (int i = 0; i < orientNumPerScale.Count(); i++)
             {
                 double sigma = pow(1.8, i + 1), lambda = sigma * 1.7;
 
@@ -1337,7 +1337,7 @@ namespace System
                     Mat gaborResponse;
                     filter2D(sketchImage, gaborResponse, CV_64F, kernel);
 
-			        gaborResponses.push_back(abs(gaborResponse));
+			        gaborResponses.Add(abs(gaborResponse));
                 }
             }
 
@@ -1346,7 +1346,7 @@ namespace System
             for (Point center : centers)
             {
                 Descriptor descriptor = GetDescriptor(gaborResponses, center, blockSize, cellNum);
-                feature.push_back(descriptor);
+                feature.Add(descriptor);
             }
 
             return feature;
@@ -1355,7 +1355,7 @@ namespace System
         inline Descriptor Gabor::GetDescriptor(const ArrayList<Mat>& gaborResponses, 
                 const Point& center, int blockSize, int cellNum)
         {
-            assert(gaborResponses.size() > 0);
+            assert(gaborResponses.Count() > 0);
 
             int height = gaborResponses[0].rows,
                 width = gaborResponses[0].cols,
@@ -1364,7 +1364,7 @@ namespace System
                 cellSize = blockSize / cellNum;
 
             Descriptor desc;
-            for (int i = 0; i < gaborResponses.size(); i++)
+            for (int i = 0; i < gaborResponses.Count(); i++)
             {
                 ArrayList<double> cells(cellNum * cellNum);
 
@@ -1381,8 +1381,8 @@ namespace System
                     }
                 }
 
-                for (int j = 0; j < cells.size(); j++)
-                    desc.push_back(cells[i]);
+                for (int j = 0; j < cells.Count(); j++)
+                    desc.Add(cells[i]);
             }
 
             NormTwoNormalize(desc.begin(), desc.end());
@@ -1419,7 +1419,7 @@ namespace System
 	        split(dftOutComplex, dftOutPlanes);
 
             GlobalFeatureVec feature;
-	        for (int i = 0; i < gaborsInFreqDomain.size(); i++)
+	        for (int i = 0; i < gaborsInFreqDomain.Count(); i++)
 	        {
 		        Mat idftInPlanes[] = { Mat::zeros(sketchImage.size(), CV_64F), 
                     Mat::zeros(sketchImage.size(), CV_64F) };
@@ -1451,7 +1451,7 @@ namespace System
 				            for (int c = 0; c < blockWidth; c++)
 					            sum += finalImage.at<double>(j * blockHeight + r, k * blockWidth + c);
 
-                        feature.push_back(sum / (blockWidth * blockHeight));
+                        feature.Add(sum / (blockWidth * blockHeight));
                     }
                 }
 	        }
@@ -1465,12 +1465,12 @@ namespace System
             int height = size.height, width = size.width;
 
             int filterNum = 0;
-	        for (int i = orientNumPerScale.size() - 1; i >= 0; i--)
+	        for (int i = orientNumPerScale.Count() - 1; i >= 0; i--)
 		        filterNum += orientNumPerScale[i];
 
 	        Mat param(filterNum, 4, CV_64F);
 	        int l = 0;
-	        for (int i = 0; i < orientNumPerScale.size(); i++)
+	        for (int i = 0; i < orientNumPerScale.Count(); i++)
             {
 		        for (int j = 0; j < orientNumPerScale[i]; j++)
 		        {
@@ -1517,7 +1517,7 @@ namespace System
 
 			        }
 
-		        gaborsInFreqDomain.push_back(gaborInFreqDomain);
+		        gaborsInFreqDomain.Add(gaborInFreqDomain);
 	        }
 
             return gaborsInFreqDomain;

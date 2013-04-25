@@ -19,13 +19,13 @@ inline TurboCV::System::ArrayList<Tuple<Mat, int>> GetImages(
     sort(classInfos.begin(), classInfos.end());
 
     ArrayList<Tuple<Mat, int>> images;
-    for (int i = 0; i < classInfos.size(); i++)
+    for (int i = 0; i < classInfos.Count(); i++)
     {
         ArrayList<TurboCV::System::String> fileInfos = DirectoryInfo(classInfos[i]).GetFiles();
         sort(fileInfos.begin(), fileInfos.end());
 
-        for (int j = 0; j < fileInfos.size(); j++)
-            images.push_back(CreateTuple(imread(fileInfos[j], imageLoadMode), i + 1));
+        for (int j = 0; j < fileInfos.Count(); j++)
+            images.Add(CreateTuple(imread(fileInfos[j], imageLoadMode), i + 1));
     }
 
     return images;
@@ -33,24 +33,24 @@ inline TurboCV::System::ArrayList<Tuple<Mat, int>> GetImages(
 
 void NormlizeDeviation(ArrayList<Histogram> vecs)
 {
-    Histogram mean(vecs[0].size());
+    Histogram mean(vecs[0].Count());
     double deviation = 0;
 
-    for (size_t i = 0; i < vecs.size(); i++)
-        for (size_t j = 0; j < vecs[i].size(); j++)
+    for (size_t i = 0; i < vecs.Count(); i++)
+        for (size_t j = 0; j < vecs[i].Count(); j++)
             mean[j] += vecs[i][j];
     
-    for (size_t i = 0; i < mean.size(); i++)
-        mean[i] /= vecs.size();
+    for (size_t i = 0; i < mean.Count(); i++)
+        mean[i] /= vecs.Count();
 
-    for (size_t i = 0; i < vecs.size(); i++)
-        for (size_t j = 0; j < vecs[i].size(); j++)
+    for (size_t i = 0; i < vecs.Count(); i++)
+        for (size_t j = 0; j < vecs[i].Count(); j++)
             deviation += (vecs[i][j] - mean[j]) * (vecs[i][j] - mean[j]);
 
-    deviation = sqrt(deviation / vecs.size());
+    deviation = sqrt(deviation / vecs.Count());
 
-    for (size_t i = 0; i < vecs.size(); i++)
-        for (size_t j = 0; j < vecs[i].size(); j++)
+    for (size_t i = 0; i < vecs.Count(); i++)
+        for (size_t j = 0; j < vecs[i].Count(); j++)
             vecs[i][j] /= deviation;
 }
 
@@ -60,7 +60,7 @@ void LocalFeatureCrossValidation(const TurboCV::System::String& imageSetPath, co
 {
     srand(1);
     ArrayList<Tuple<Mat, int>> images = GetImages(imageSetPath, CV_LOAD_IMAGE_GRAYSCALE);
-    int imageNum = (int)images.size();
+    int imageNum = (int)images.Count();
 
     TurboCV::System::ArrayList<LocalFeature_f> features(imageNum);
     printf("Compute " + feature.GetName() + "...\n");
@@ -82,10 +82,10 @@ void LocalFeatureCrossValidation(const TurboCV::System::String& imageSetPath, co
         printf("Write To File...\n");
         TurboCV::System::String savePath = feature.GetName() + "_" + imageSetPath;
         FILE* file = fopen(savePath, "w");
-        for (int i = 0; i < freqHistograms.size(); i++)
+        for (int i = 0; i < freqHistograms.Count(); i++)
         {
             fprintf(file, "%d", images[i].Item2());
-            for (int j = 0; j < freqHistograms[i].size(); j++)
+            for (int j = 0; j < freqHistograms[i].Count(); j++)
                 fprintf(file, " %d:%f", j + 1, freqHistograms[i][j]);
             fprintf(file, "\n");
         }
@@ -114,27 +114,27 @@ void LocalFeatureCrossValidation(const TurboCV::System::String& imageSetPath, co
         int counter = 0;
         for (int j = 0; j < imageNum; j++)
         {
-            if (counter < pickUpIndexes.size() && j == pickUpIndexes[counter])
+            if (counter < pickUpIndexes.Count() && j == pickUpIndexes[counter])
             {
-                evaluationLabels.push_back(images[j].Item2());
+                evaluationLabels.Add(images[j].Item2());
                 counter++;
             }
             else
-                trainingLabels.push_back(images[j].Item2());
+                trainingLabels.Add(images[j].Item2());
         }
 
         KNN<Histogram> knn;
         pair<double, map<int, double>> precisions = 
             knn.Evaluate(4, trainingHistograms, trainingLabels, evaluationHistograms, evaluationLabels);
        
-        passResult.push_back(precisions.first);
+        passResult.Add(precisions.first);
         printf("Fold %d Accuracy: %f\n", i + 1, precisions.first);
 
         pair<ArrayList<ArrayList<double>>, ArrayList<ArrayList<bool>>> matrix =
             knn.Evaluate(trainingHistograms, trainingLabels, evaluationHistograms, evaluationLabels);
         ArrayList<ArrayList<double>>& distances = matrix.first;
         ArrayList<ArrayList<bool>>& relevants = matrix.second;
-        for (int j = 0; j < pickUpIndexes.size(); j++)
+        for (int j = 0; j < pickUpIndexes.Count(); j++)
         {
             int index = pickUpIndexes[j];
             auto roc = ROC(distances[j], relevants[j]);
@@ -145,7 +145,7 @@ void LocalFeatureCrossValidation(const TurboCV::System::String& imageSetPath, co
 
     TurboCV::System::String savePath = feature.GetName() + "_" + imageSetPath + "_knn.out";
     FILE* file = fopen(savePath, "w");
-    for (int i = 0; i < passResult.size(); i++)
+    for (int i = 0; i < passResult.Count(); i++)
         fprintf(file, "Fold %d Accuracy: %f\n", i + 1, passResult[i]);
     fprintf(file, "Average: %f, Standard Deviation: %f\n", Math::Mean(passResult), 
         Math::StandardDeviation(passResult));
@@ -155,13 +155,13 @@ void LocalFeatureCrossValidation(const TurboCV::System::String& imageSetPath, co
 
     savePath = feature.GetName() + "_" + imageSetPath + "_roc";
     file = fopen(savePath, "w");
-    for (int i = 0; i < DRs.size(); i++)
+    for (int i = 0; i < DRs.Count(); i++)
     {
-        for (int j = 0; j < DRs[i].size(); j++)
+        for (int j = 0; j < DRs[i].Count(); j++)
             fprintf(file, "%f ", DRs[i][j]);
         fprintf(file, "\n");
 
-        for (int j = 0; j < FPRs[i].size(); j++)
+        for (int j = 0; j < FPRs[i].Count(); j++)
             fprintf(file, "%f ", FPRs[i][j]);
         fprintf(file, "\n");
     }
@@ -174,7 +174,7 @@ void GlobalFeatureCrossValidation(const TurboCV::System::String& imageSetPath, c
 {
     srand(1);
     ArrayList<Tuple<Mat, int>> images = GetImages(imageSetPath, CV_LOAD_IMAGE_GRAYSCALE);
-    int imageNum = (int)images.size();
+    int imageNum = (int)images.Count();
 
     ArrayList<GlobalFeature_f> features(imageNum);
     printf("Compute " + feature.GetName() + "...\n");
@@ -189,10 +189,10 @@ void GlobalFeatureCrossValidation(const TurboCV::System::String& imageSetPath, c
     printf("Write To File...\n");
     TurboCV::System::String savePath = feature.GetName() + "_" + imageSetPath;
     FILE* file = fopen(savePath, "w");
-    for (int i = 0; i < features.size(); i++)
+    for (int i = 0; i < features.Count(); i++)
     {
         fprintf(file, "%d", images[i].Item2());
-        for (int j = 0; j < features[i].size(); j++)
+        for (int j = 0; j < features[i].Count(); j++)
             fprintf(file, " %d:%f", j + 1, features[i][j]);
         fprintf(file, "\n");
     }
@@ -213,27 +213,27 @@ void GlobalFeatureCrossValidation(const TurboCV::System::String& imageSetPath, c
         int counter = 0;
         for (int j = 0; j < imageNum; j++)
         {
-            if (counter < pickUpIndexes.size() && j == pickUpIndexes[counter])
+            if (counter < pickUpIndexes.Count() && j == pickUpIndexes[counter])
             {
-                evaluationLabels.push_back(images[j].Item2());
+                evaluationLabels.Add(images[j].Item2());
                 counter++;
             }
             else
-                trainingLabels.push_back(images[j].Item2());
+                trainingLabels.Add(images[j].Item2());
         }
 
         KNN<GlobalFeature_f> knn;
         pair<double, map<int, double>> precisions = 
             knn.Evaluate(4, trainingSet, trainingLabels, evaluationSet, evaluationLabels);
 
-        passResult.push_back(precisions.first);
+        passResult.Add(precisions.first);
         printf("Fold %d Accuracy: %f\n", i + 1, precisions.first);
 
         pair<ArrayList<ArrayList<double>>, ArrayList<ArrayList<bool>>> matrix =
             knn.Evaluate(trainingSet, trainingLabels, evaluationSet, evaluationLabels);
         ArrayList<ArrayList<double>>& distances = matrix.first;
         ArrayList<ArrayList<bool>>& relevants = matrix.second;
-        for (int j = 0; j < pickUpIndexes.size(); j++)
+        for (int j = 0; j < pickUpIndexes.Count(); j++)
         {
             int index = pickUpIndexes[j];
             auto roc = ROC(distances[j], relevants[j]);
@@ -244,7 +244,7 @@ void GlobalFeatureCrossValidation(const TurboCV::System::String& imageSetPath, c
 
     savePath = feature.GetName() + "_" + imageSetPath + "_knn.out";
     file = fopen(savePath, "w");
-    for (int i = 0; i < passResult.size(); i++)
+    for (int i = 0; i < passResult.Count(); i++)
         fprintf(file, "Fold %d Accuracy: %f\n", i + 1, passResult[i]);
     fprintf(file, "Average: %f, Standard Deviation: %f\n", Math::Mean(passResult), 
         Math::StandardDeviation(passResult));
@@ -255,13 +255,13 @@ void GlobalFeatureCrossValidation(const TurboCV::System::String& imageSetPath, c
 
     savePath = feature.GetName() + "_" + imageSetPath + "_roc";
     file = fopen(savePath, "w");
-    for (int i = 0; i < DRs.size(); i++)
+    for (int i = 0; i < DRs.Count(); i++)
     {
-        for (int j = 0; j < DRs[i].size(); j++)
+        for (int j = 0; j < DRs[i].Count(); j++)
             fprintf(file, "%f ", DRs[i][j]);
         fprintf(file, "\n");
 
-        for (int j = 0; j < FPRs[i].size(); j++)
+        for (int j = 0; j < FPRs[i].Count(); j++)
             fprintf(file, "%f ", FPRs[i][j]);
         fprintf(file, "\n");
     }
@@ -274,7 +274,7 @@ void EdgeMatchingCrossValidation(const TurboCV::System::String& imageSetPath, co
 {
     srand(1);
     ArrayList<Tuple<Mat, int>> images = GetImages(imageSetPath, CV_LOAD_IMAGE_GRAYSCALE);
-    int imageNum = (int)images.size();
+    int imageNum = (int)images.Count();
 
     ArrayList<EdgeMatching::Info> transforms(imageNum);
     printf("Compute " + matching.GetName() + "...\n");
@@ -331,27 +331,27 @@ void EdgeMatchingCrossValidation(const TurboCV::System::String& imageSetPath, co
         int counter = 0;
         for (int j = 0; j < imageNum; j++)
         {
-            if (counter < pickUpIndexes.size() && j == pickUpIndexes[counter])
+            if (counter < pickUpIndexes.Count() && j == pickUpIndexes[counter])
             {
-                evaluationLabels.push_back(images[j].Item2());
+                evaluationLabels.Add(images[j].Item2());
                 counter++;
             }
             else
-                trainingLabels.push_back(images[j].Item2());
+                trainingLabels.Add(images[j].Item2());
         }
 
         KNN<EdgeMatching::Info> knn;
         pair<double, map<int, double>> precisions = knn.Evaluate(
             4, trainingSet, trainingLabels, evaluationSet, evaluationLabels, EdgeMatching::GetDistance);
 
-        passResult.push_back(precisions.first);
+        passResult.Add(precisions.first);
         printf("Fold %d Accuracy: %f\n", i + 1, precisions.first);
 
         pair<ArrayList<ArrayList<double>>, ArrayList<ArrayList<bool>>> matrix = knn.Evaluate(
             trainingSet, trainingLabels, evaluationSet, evaluationLabels, EdgeMatching::GetDistance);
         ArrayList<ArrayList<double>>& distances = matrix.first;
         ArrayList<ArrayList<bool>>& relevants = matrix.second;
-        for (int j = 0; j < pickUpIndexes.size(); j++)
+        for (int j = 0; j < pickUpIndexes.Count(); j++)
         {
             int index = pickUpIndexes[j];
             auto roc = ROC(distances[j], relevants[j]);
@@ -362,7 +362,7 @@ void EdgeMatchingCrossValidation(const TurboCV::System::String& imageSetPath, co
 
     savePath = matching.GetName() + "_" + imageSetPath + "_knn.out";
     file = fopen(savePath, "w");
-    for (int i = 0; i < passResult.size(); i++)
+    for (int i = 0; i < passResult.Count(); i++)
         fprintf(file, "Fold %d Accuracy: %f\n", i + 1, passResult[i]);
     fprintf(file, "Average: %f, Standard Deviation: %f\n", Math::Mean(passResult), 
         Math::StandardDeviation(passResult));
@@ -372,13 +372,13 @@ void EdgeMatchingCrossValidation(const TurboCV::System::String& imageSetPath, co
 
     savePath = matching.GetName() + "_" + imageSetPath + "_roc";
     file = fopen(savePath, "w");
-    for (int i = 0; i < DRs.size(); i++)
+    for (int i = 0; i < DRs.Count(); i++)
     {
-        for (int j = 0; j < DRs[i].size(); j++)
+        for (int j = 0; j < DRs[i].Count(); j++)
             fprintf(file, "%f ", DRs[i][j]);
         fprintf(file, "\n");
 
-        for (int j = 0; j < FPRs[i].size(); j++)
+        for (int j = 0; j < FPRs[i].Count(); j++)
             fprintf(file, "%f ", FPRs[i][j]);
         fprintf(file, "\n");
     }
@@ -436,33 +436,33 @@ ArrayList<ArrayList<LocalFeature_f>> DivideLocalFeatures(const ArrayList<LocalFe
     ArrayList<Point> wordCenters;
     for (int i = 1; i <= 3; i++)
         for (int j = 1; j <= 3; j++)
-            wordCenters.push_back(Point(i * 64, j * 64));
+            wordCenters.Add(Point(i * 64, j * 64));
 
     ArrayList<Point> descPoints = SampleOnGrid(256, 256, 28);
-    assert(descPoints.size() == features[0].size());
+    assert(descPoints.Count() == features[0].Count());
 
-    ArrayList<ArrayList<LocalFeature_f>> parts(wordCenters.size());
-    for (int i = 0; i < features.size(); i++)
+    ArrayList<ArrayList<LocalFeature_f>> parts(wordCenters.Count());
+    for (int i = 0; i < features.Count(); i++)
     {
-        ArrayList<LocalFeature_f> tmp(wordCenters.size());
+        ArrayList<LocalFeature_f> tmp(wordCenters.Count());
 
-        for (int j = 0; j < wordCenters.size(); j++)
+        for (int j = 0; j < wordCenters.Count(); j++)
         {
             int top = wordCenters[j].y - blockSize / 2,
                 bottom = wordCenters[j].y + blockSize / 2,
                 left = wordCenters[j].x - blockSize / 2,
                 right = wordCenters[j].x + blockSize / 2;
 
-            for (int k = 0; k < descPoints.size(); k++)
+            for (int k = 0; k < descPoints.Count(); k++)
             {
                 if (top <= descPoints[k].y && descPoints[k].y < bottom &&
                     left <= descPoints[k].x && descPoints[k].x < right)
-                    tmp[j].push_back(features[i][k]);
+                    tmp[j].Add(features[i][k]);
             }
         }
 
-        for (int j = 0; j < wordCenters.size(); j++)
-            parts[j].push_back(tmp[j]);
+        for (int j = 0; j < wordCenters.Count(); j++)
+            parts[j].Add(tmp[j]);
     }
 
     return parts;
@@ -545,8 +545,8 @@ void LocalFeatureTest(const TurboCV::System::String& imageSetPath, const LocalFe
         //        evaluationHistograms[k].push_back(result[k]);
         //}
 
-        assert(trainingHistograms[0].size() == wordNum &&
-            evaluationHistograms[0].size() == wordNum);
+        assert(trainingHistograms[0].Count() == wordNum &&
+            evaluationHistograms[0].Count() == wordNum);
 
         /*ArrayList<Histogram> trainingHistograms1 = BOV::GetFrequencyHistograms(trainingSet1, words1);
         ArrayList<Histogram> trainingHistograms2 = BOV::GetFrequencyHistograms(trainingSet2, words2);
@@ -682,11 +682,11 @@ void Batch(const TurboCV::System::String& imageSetPath, bool thinning = false)
 
 int main()
 {
-    //LocalFeatureCrossValidation("sketches", HOG(), 500);
-    //printf("\n");
-
-    GlobalFeatureCrossValidation("oracles", GHOG(), true);
+    LocalFeatureCrossValidation("sketches", RHOG(), 500);
     printf("\n");
+
+    //GlobalFeatureCrossValidation("oracles", GHOG(), true);
+    //printf("\n");
 
     //EdgeMatchingCrossValidation("oracles", Hitmap(), true);
     //printf("\n");

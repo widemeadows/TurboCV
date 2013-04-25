@@ -250,7 +250,7 @@ namespace System
                 {
                     if ((data.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) &&
                         (data.cFileName[0] != '.')) // ignore '.' and '..'
-                        subDirs.push_back(_path + "\\" + data.cFileName);
+                        subDirs.Add(_path + "\\" + data.cFileName);
 
                 } while (FindNextFile(handle, &data));
             }
@@ -275,7 +275,7 @@ namespace System
                 do
                 {
                     if (!(data.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY))
-                        files.push_back(_path + "\\" + data.cFileName);
+                        files.Add(_path + "\\" + data.cFileName);
 
                 } while (FindNextFile(handle, &data));
             }

@@ -149,7 +149,7 @@ EXPORT_API NativeInfo EdgeMatchingPredict(EdgeMatchingType type,
         tmp = Hitmap().GetFeatureWithPreprocess(cvImage, thinning);
         
     NativeInfo result;
-    for (int i = 0; i < tmp.size(); i++)
+    for (int i = 0; i < tmp.Count(); i++)
     {
         const Tuple<vector<Point>, Mat>& item = tmp[i];
         const vector<Point>& item1 = item.Item1();
@@ -219,12 +219,12 @@ EXPORT_API pair<vector<NativeWord>, vector<NativeHistogram>> LocalFeatureTrain(L
 
     vector<NativeWord> nativeWords(words.size());
     for (int i = 0; i < words.size(); i++)
-        for (int j = 0; j < words[i].size(); j++)
+        for (int j = 0; j < words[i].Count(); j++)
             nativeWords[i].push_back(words[i][j]);
 
     vector<NativeHistogram> nativeHistograms(freqHistograms.size());
     for (int i = 0; i < freqHistograms.size(); i++)
-        for (int j = 0; j < freqHistograms[i].size(); j++)
+        for (int j = 0; j < freqHistograms[i].Count(); j++)
             nativeHistograms[i].push_back(freqHistograms[i][j]);
 
     return make_pair(nativeWords, nativeHistograms);
@@ -248,11 +248,11 @@ EXPORT_API NativeHistogram LocalFeaturePredict(LocalFeatureType type, const Nati
     vector<Word_f> cvWords(words.size());
     for (int i = 0; i < words.size(); i++)
         for (int j = 0; j < words[i].size(); j++)
-            cvWords[i].push_back(words[i][j]);
+            cvWords[i].Add(words[i][j]);
     Histogram freqHistogram = BOV::GetFrequencyHistogram(feature, cvWords);
 
     NativeHistogram nativeHistogram;
-    for (int i = 0; i < freqHistogram.size(); i++)
+    for (int i = 0; i < freqHistogram.Count(); i++)
         nativeHistogram.push_back(freqHistogram[i]);
 
     return nativeHistogram;

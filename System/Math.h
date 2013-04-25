@@ -47,10 +47,10 @@ namespace System
     template<typename T>
     inline T Math::Min(const ArrayList<T>& vec)
     {
-        assert(vec.size() > 0);
+        assert(vec.Count() > 0);
 
         T result = vec[0];
-        for (size_t i = 1; i < vec.size(); i++)
+        for (size_t i = 1; i < vec.Count(); i++)
             result = min(vec[i], result);
 
         return result;
@@ -59,10 +59,10 @@ namespace System
     template<typename T>
     inline T Math::Max(const ArrayList<T>& vec)
     {
-        assert(vec.size() > 0);
+        assert(vec.Count() > 0);
 
         T result = vec[0];
-        for (size_t i = 1; i < vec.size(); i++)
+        for (size_t i = 1; i < vec.Count(); i++)
             result = max(vec[i], result);
 
         return result;
@@ -82,15 +82,15 @@ namespace System
     template<typename T>
     inline double Math::Mean(const ArrayList<T>& vec)
     {
-        assert(vec.size() > 0);
+        assert(vec.Count() > 0);
 
-        return Sum(vec) / (double)vec.size();
+        return Sum(vec) / (double)vec.Count();
     }
 
     template<typename T>
     inline double Math::StandardDeviation(const ArrayList<T>& vec)
     {
-        assert(vec.size() > 0);
+        assert(vec.Count() > 0);
 
         double mean = Mean(vec);
 
@@ -98,7 +98,7 @@ namespace System
         for (auto item : vec)
             squareSum += (double)item * (double)item;
 
-        return std::sqrt((squareSum - vec.size() * mean * mean) / vec.size());
+        return std::sqrt((squareSum - vec.Count() * mean * mean) / vec.Count());
     }
 
     inline double Math::Gauss(double x, double sigma)
@@ -114,10 +114,10 @@ namespace System
     template<typename T>
     inline double Math::NormOneDistance(const ArrayList<T>& u, const ArrayList<T>& v)
     {
-        assert(u.size() == v.size());
+        assert(u.Count() == v.Count());
 
         double distance = 0;
-        for (size_t i = 0; i < u.size(); i++)
+        for (size_t i = 0; i < u.Count(); i++)
             distance += std::abs(u[i] - v[i]);
 
         return distance;
@@ -126,10 +126,10 @@ namespace System
     template<typename T>
     inline double Math::NormTwoDistance(const ArrayList<T>& u, const ArrayList<T>& v)
     {
-        assert(u.size() == v.size());
+        assert(u.Count() == v.Count());
 
         double distance = 0;
-        for (size_t i = 0; i < u.size(); i++)
+        for (size_t i = 0; i < u.Count(); i++)
             distance += (u[i] - v[i]) * (u[i] - v[i]);
 
         return std::sqrt(distance);
@@ -138,10 +138,10 @@ namespace System
     template<typename T>
     inline double Math::GaussianDistance(const ArrayList<T>& u, const ArrayList<T>& v, double sigma)
     {
-        assert(u.size() == v.size());
+        assert(u.Count() == v.Count());
 
         double distance = 0;
-        for (size_t i = 0; i < u.size(); i++)
+        for (size_t i = 0; i < u.Count(); i++)
             distance += (u[i] - v[i]) * (u[i] - v[i]);
 
         return std::exp(-distance / (2 * sigma * sigma));

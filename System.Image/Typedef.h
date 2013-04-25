@@ -25,24 +25,24 @@ namespace System
 
         inline void Convert(const LocalFeatureVec& src, LocalFeature_f& dst)
         {
-            dst.clear();
+            dst.Clear();
 
             for (auto descriptor : src)
             {
-                Descriptor_f tmp(descriptor.size());
-                for (int i = 0; i < descriptor.size(); i++)
+                Descriptor_f tmp(descriptor.Count());
+                for (int i = 0; i < descriptor.Count(); i++)
                     tmp[i] = (float)descriptor[i];
 
-                dst.push_back(tmp);
+                dst.Add(tmp);
             }
         }
 
         inline void Convert(const GlobalFeatureVec& src, GlobalFeature_f& dst)
         {
-            dst.clear();
+            dst.Clear();
 
             for (auto item : src)
-                dst.push_back((float)item);
+                dst.Add((float)item);
         }
     }
 }

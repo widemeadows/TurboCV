@@ -86,6 +86,7 @@ namespace System
     {
     public:
         ArrayList() : ptr(new std::vector<T>()) {}
+
         ArrayList(size_t size) : ptr(new std::vector<T>(size)) {}
 
         template<typename RandomAccessIterator>
@@ -109,32 +110,47 @@ namespace System
             return result;
         }
 
-        T& front() { return ptr->front(); }
-        const T& front() const { return ptr->front(); }
+        T& Front() { return ptr->front(); }
+        const T& Front() const { return ptr->front(); }
 
-        T& back() { return ptr->back(); }
-        const T& back() const { return ptr->back(); }
+        T& Back() { return ptr->back(); }
+        const T& Back() const { return ptr->back(); }
 
         typename std::vector<T>::iterator begin() const { return ptr->begin(); }
         typename std::vector<T>::iterator end() const { return ptr->end(); }
 
-        void push_back(const T& item) { ptr->push_back(item); }
+        void Add(const T& item) { ptr->push_back(item); }
 
-        void push_back(const ArrayList<T>& vec) 
+        void Add(const ArrayList<T>& vec) 
         { 
             ptr->insert(ptr->end(), vec.begin(), vec.end()); 
         }
 
-        void push_back(
-            typename const std::vector<T>::iterator& begin, 
-            typename const std::vector<T>::iterator& end) 
+        template<typename RandomAccessIterator>
+        void Add(RandomAccessIterator begin, RandomAccessIterator end) 
         { 
             ptr->insert(ptr->end(), begin, end); 
         }
 
-        void clear() { ptr->clear(); }
+        bool Contains(const T& item) const
+        {
+            typename std::vector<T>::iterator begin = ptr->begin();
+            typename std::vector<T>::iterator end = ptr->end();
+            typename std::vector<T>::iterator itr = begin;
 
-        size_t size() const { return ptr->size(); }
+            while (itr != end)
+            {
+                if (*itr == item)
+                    return true;
+                itr++;
+            }
+
+            return false;
+        }
+
+        void Clear() { ptr->clear(); }
+
+        size_t Count() const { return ptr->size(); }
 
     private:
         ThreadUnsafeSmartPtr<std::vector<T>> ptr;

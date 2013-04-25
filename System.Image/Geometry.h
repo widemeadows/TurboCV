@@ -30,9 +30,9 @@ namespace System
 
         inline ArrayList<double> Geometry::EulerDistance(const Point& u, const ArrayList<Point>& vec)
         {
-            ArrayList<double> distances(vec.size());
+            ArrayList<double> distances(vec.Count());
 
-            for (int i = 0; i < vec.size(); i++)
+            for (int i = 0; i < vec.Count(); i++)
 		        distances[i] = Geometry::EulerDistance(u, vec[i]);
 
             return distances;
@@ -57,9 +57,9 @@ namespace System
 
         inline ArrayList<double> Geometry::Angle(const Point& start, const ArrayList<Point>& ends)
         {
-            ArrayList<double> angles(ends.size());
+            ArrayList<double> angles(ends.Count());
 
-            for (int i = 0; i < ends.size(); i++)
+            for (int i = 0; i < ends.Count(); i++)
                 angles[i] = Geometry::Angle(start, ends[i]);
 
             return angles;

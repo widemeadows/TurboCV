@@ -19,15 +19,15 @@ namespace System
         inline ArrayList<Point> SampleOnGrid(
             size_t height, 
             size_t width, 
-            size_t samplingNumPerDirection)
+            size_t numPerDirection)
         {
-            int heightStep = height / samplingNumPerDirection, 
-                widthStep = width / samplingNumPerDirection;
+            int heightStep = height / numPerDirection, 
+                widthStep = width / numPerDirection;
             ArrayList<Point> points;
 
             for (int i = heightStep / 2; i < height; i += heightStep)
                 for (int j = widthStep / 2; j < width; j += widthStep)
-                    points.push_back(Point(j, i));
+                    points.Add(Point(j, i));
 
             return points;
         }
@@ -36,7 +36,7 @@ namespace System
             const ArrayList<Point>& points, 
             size_t samplingNum)
         {
-            size_t pointNum = points.size();
+            size_t pointNum = points.Count();
 	        assert(pointNum >= samplingNum);
 
             ArrayList<Tuple<double, Tuple<Point, Point>>> distances(pointNum * (pointNum - 1) / 2);
@@ -66,7 +66,7 @@ namespace System
 
             ArrayList<Point> results;
             for (auto pivot : pivots)
-                results.push_back(pivot);
+                results.Add(pivot);
 
             return results;
         }

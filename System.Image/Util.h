@@ -169,12 +169,12 @@ namespace System
             double size = (end - start) / (pointNum - 1);
 
             ArrayList<double> result;
-            result.push_back(start);
+            result.Add(start);
             for (int i = 1; i < pointNum - 1; i++)
-                result.push_back(result[i - 1] + size);
-            result.push_back(end);
+                result.Add(result[i - 1] + size);
+            result.Add(end);
 
-            assert(result.size() == pointNum);
+            assert(result.Count() == pointNum);
             return result;
         }
 
@@ -189,12 +189,12 @@ namespace System
             int numOfCP = 20)
         {
             ArrayList<double> positiveDist, negativeDist;
-            for (int i = 0; i < relevants.size(); i++)
+            for (int i = 0; i < relevants.Count(); i++)
             {
                 if (relevants[i])
-                    positiveDist.push_back(distances[i]);
+                    positiveDist.Add(distances[i]);
                 else
-                    negativeDist.push_back(distances[i]);
+                    negativeDist.Add(distances[i]);
             }
 
             double firstCP = Math::Min(distances);
@@ -220,15 +220,15 @@ namespace System
                     if (item > plot[i])
                         TN[i]++;
 
-                assert(TP[i] + FN[i] == positiveDist.size() && 
-                    FP[i] + TN[i] == negativeDist.size());
+                assert(TP[i] + FN[i] == positiveDist.Count() && 
+                    FP[i] + TN[i] == negativeDist.Count());
             }
 
             ArrayList<double> DR, FPR;
             for (int i = 0; i < numOfCP; i++)
             {
-                DR.push_back(TP[i] / (TP[i] + FN[i]));
-                FPR.push_back(FP[i] / (FP[i] + TN[i]));
+                DR.Add(TP[i] / (TP[i] + FN[i]));
+                FPR.Add(FP[i] / (FP[i] + TN[i]));
             }
 
             return CreateTuple(DR, FPR);

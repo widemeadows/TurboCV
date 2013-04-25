@@ -26,21 +26,19 @@ namespace System
                 const ArrayList<int>& evaluationLabels,
                 Measurement GetDistance)
             {
-                assert(trainingSet.size() == trainingLabels.size());
-                assert(evaluationSet.size() == evaluationSet.size());
+                assert(trainingSet.Count() == trainingLabels.Count());
+                assert(evaluationSet.Count() == evaluationSet.Count());
 
-                ArrayList<ArrayList<double>> distanceMatrix(evaluationSet.size());
-                ArrayList<ArrayList<bool>> relevantMatrix(evaluationSet.size());
+                ArrayList<ArrayList<double>> distanceMatrix(evaluationSet.Count());
+                ArrayList<ArrayList<bool>> relevantMatrix(evaluationSet.Count());
 
                 #pragma omp parallel for
-                for (int i = 0; i < evaluationSet.size(); i++)
+                for (int i = 0; i < evaluationSet.Count(); i++)
                 {
-                    for (size_t j = 0; j < trainingSet.size(); j++)
+                    for (size_t j = 0; j < trainingSet.Count(); j++)
                     {
-                        distanceMatrix[i].push_back(
-                            GetDistance(evaluationSet[i], trainingSet[j]));
-                        relevantMatrix[i].push_back(
-                            evaluationLabels[i] == trainingLabels[j]);
+                        distanceMatrix[i].Add(GetDistance(evaluationSet[i], trainingSet[j]));
+                        relevantMatrix[i].Add(evaluationLabels[i] == trainingLabels[j]);
                     }
                 }
 
@@ -53,21 +51,19 @@ namespace System
                 const ArrayList<T>& evaluationSet,
                 const ArrayList<int>& evaluationLabels)
             {
-                assert(trainingSet.size() == trainingLabels.size());
-                assert(evaluationSet.size() == evaluationSet.size());
+                assert(trainingSet.Count() == trainingLabels.Count());
+                assert(evaluationSet.Count() == evaluationSet.Count());
 
-                ArrayList<ArrayList<double>> distanceMatrix(evaluationSet.size());
-                ArrayList<ArrayList<bool>> relevantMatrix(evaluationSet.size());
+                ArrayList<ArrayList<double>> distanceMatrix(evaluationSet.Count());
+                ArrayList<ArrayList<bool>> relevantMatrix(evaluationSet.Count());
 
                 #pragma omp parallel for
-                for (int i = 0; i < evaluationSet.size(); i++)
+                for (int i = 0; i < evaluationSet.Count(); i++)
                 {
-                    for (size_t j = 0; j < trainingSet.size(); j++)
+                    for (size_t j = 0; j < trainingSet.Count(); j++)
                     {
-                        distanceMatrix[i].push_back(
-                            Math::NormOneDistance(evaluationSet[i], trainingSet[j]));
-                        relevantMatrix[i].push_back(
-                            evaluationLabels[i] == trainingLabels[j]);
+                        distanceMatrix[i].Add(Math::NormOneDistance(evaluationSet[i], trainingSet[j]));
+                        relevantMatrix[i].Add(evaluationLabels[i] == trainingLabels[j]);
                     }
                 }
 
@@ -83,13 +79,13 @@ namespace System
                 const ArrayList<int>& evaluationLabels,
                 Measurement GetDistance)
 	        {
-                assert(trainingSet.size() == trainingLabels.size());
-                assert(evaluationSet.size() == evaluationSet.size());
+                assert(trainingSet.Count() == trainingLabels.Count());
+                assert(evaluationSet.Count() == evaluationSet.Count());
 
 		        Train(trainingSet, trainingLabels);
 		        ArrayList<int> predict = Predict(evaluationSet, K, GetDistance);
 
-                size_t evaluationNum = evaluationSet.size(), correctNum = 0;
+                size_t evaluationNum = evaluationSet.Count(), correctNum = 0;
                 unordered_map<int, int> evaluationNumPerClass, correctNumPerClass;
 		        for (size_t i = 0; i < evaluationNum; i++)
 		        {
@@ -120,13 +116,13 @@ namespace System
                 const ArrayList<T>& evaluationSet,
                 const ArrayList<int>& evaluationLabels)
             {
-                assert(trainingSet.size() == trainingLabels.size());
-                assert(evaluationSet.size() == evaluationSet.size());
+                assert(trainingSet.Count() == trainingLabels.Count());
+                assert(evaluationSet.Count() == evaluationSet.Count());
 
                 Train(trainingSet, trainingLabels);
                 ArrayList<int> predict = Predict(evaluationSet, K);
 
-                size_t evaluationNum = evaluationSet.size(), correctNum = 0;
+                size_t evaluationNum = evaluationSet.Count(), correctNum = 0;
                 unordered_map<int, int> evaluationNumPerClass, correctNumPerClass;
                 for (size_t i = 0; i < evaluationNum; i++)
                 {
@@ -152,8 +148,8 @@ namespace System
 
             void Train(const ArrayList<T>& data, const ArrayList<int>& labels)
 	        {
-                assert(data.size() == labels.size() && data.size() > 0);
-                int dataNum = (int)data.size();
+                assert(data.Count() == labels.Count() && data.Count() > 0);
+                int dataNum = (int)data.Count();
 
 		        _labels = labels;
 		        _data = data;
@@ -165,7 +161,7 @@ namespace System
             template<typename Measurement>
             ArrayList<int> Predict(const ArrayList<T>& samples, int K, Measurement GetDistance)
 	        {
-                int sampleNum = samples.size();
+                int sampleNum = samples.Count();
 		        ArrayList<int> results(sampleNum);
 
 		        #pragma omp parallel for
@@ -179,7 +175,7 @@ namespace System
 
             ArrayList<int> Predict(const ArrayList<T>& samples, int K)
             {
-                int sampleNum = samples.size();
+                int sampleNum = samples.Count();
                 ArrayList<int> results(sampleNum);
 
                 #pragma omp parallel for
@@ -195,7 +191,7 @@ namespace System
             template<typename Measurement>
             int predictOneSample(const T& sample, int K, Measurement GetDistance)
 	        {
-                size_t dataNum = _data.size();
+                size_t dataNum = _data.Count();
 		        ArrayList<pair<double, int>> distances(dataNum);
 
 		        for (size_t i = 0; i < dataNum; i++)
@@ -228,7 +224,7 @@ namespace System
 
             int predictOneSample(const T& sample, int K)
             {
-                size_t dataNum = _data.size();
+                size_t dataNum = _data.Count();
                 ArrayList<pair<double, int>> distances(dataNum);
 
                 for (size_t i = 0; i < dataNum; i++)

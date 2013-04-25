@@ -47,16 +47,16 @@ namespace System
             const Mat& vMat = v.Item2();
             double uToV = 0, vToU = 0;
 
-            for (size_t i = 0; i < uPoints.size(); i++)
+            for (size_t i = 0; i < uPoints.Count(); i++)
                 uToV += vMat.at<double>(uPoints[i].y, uPoints[i].x);
 
-            for (size_t i = 0; i < vPoints.size(); i++)
+            for (size_t i = 0; i < vPoints.Count(); i++)
                 vToU += uMat.at<double>(vPoints[i].y, vPoints[i].x);
 
-            if (uPoints.size() == 0 || vPoints.size() == 0)
+            if (uPoints.Count() == 0 || vPoints.Count() == 0)
                 return numeric_limits<double>::max();
             else
-                return (uToV / uPoints.size() + vToU / vPoints.size()) / 2.0;
+                return (uToV / uPoints.Count() + vToU / vPoints.Count()) / 2.0;
         }
 
         inline CM::Info CM::Transform(const Mat& sketchImage, double maxDistance) const
@@ -69,7 +69,7 @@ namespace System
 
             ArrayList<Point> points = GetEdgels(sketchImage);
 
-            for (size_t i = 0; i < points.size(); i++)
+            for (size_t i = 0; i < points.Count(); i++)
             {
                 int left = (int)floor(points[i].x - maxDistance),
                     right = (int)ceil(points[i].x + maxDistance),
@@ -127,8 +127,8 @@ namespace System
 
         inline double OCM::GetDistance(const Info& u, const Info& v)
         {
-            assert(u.size() == v.size());
-            int orientNum = u.size(), uPointNum = 0, vPointNum = 0;
+            assert(u.Count() == v.Count());
+            int orientNum = u.Count(), uPointNum = 0, vPointNum = 0;
             double uToV = 0, vToU = 0;
 
             for (int i = 0; i < orientNum; i++)
@@ -138,14 +138,14 @@ namespace System
                 const Mat& uMat = u[i].Item2();
                 const Mat& vMat = v[i].Item2();
 
-                for (size_t i = 0; i < uPoints.size(); i++)
+                for (size_t i = 0; i < uPoints.Count(); i++)
                     uToV += vMat.at<float>(uPoints[i].y, uPoints[i].x);
 
-                for (size_t i = 0; i < vPoints.size(); i++)
+                for (size_t i = 0; i < vPoints.Count(); i++)
                     vToU += uMat.at<float>(vPoints[i].y, vPoints[i].x);
 
-                uPointNum += uPoints.size();
-                vPointNum += vPoints.size();
+                uPointNum += uPoints.Count();
+                vPointNum += vPoints.Count();
             }
 
             if (uPointNum == 0 || vPointNum == 0)
@@ -171,7 +171,7 @@ namespace System
             ArrayList<Point> points = GetEdgels(sketchImage);
 
             ArrayList<ArrayList<Point>> channels(orientNum);
-            for (int i = 0; i < points.size(); i++)
+            for (int i = 0; i < points.Count(); i++)
             {
                 double maxResponse = -INF;
                 int index = -1;
@@ -186,7 +186,7 @@ namespace System
                 }
 
                 assert(index >= 0 && index < orientNum);
-                channels[index].push_back(points[i]);
+                channels[index].Add(points[i]);
             }
 
             return channels;
@@ -195,9 +195,9 @@ namespace System
         inline OCM::Info OCM::Transform(const Mat& sketchImage, double maxDistance)
         {
             ArrayList<ArrayList<Point>> channels = GetChannels(sketchImage, 6);
-            Info result(channels.size());
+            Info result(channels.Count());
 
-            for (size_t i = 0; i < channels.size(); i++)
+            for (size_t i = 0; i < channels.Count(); i++)
             {
                 Mat dt(sketchImage.size(), CV_32F);
 
@@ -205,7 +205,7 @@ namespace System
                     for (int k = 0; k < dt.cols; k++)
                         dt.at<float>(j, k) = maxDistance * maxDistance;
 
-                for (size_t j = 0; j < channels[i].size(); j++)
+                for (size_t j = 0; j < channels[i].Count(); j++)
                 {
                     int left = (int)floor(channels[i][j].x - maxDistance),
                         right = (int)ceil(channels[i][j].x + maxDistance),
@@ -266,8 +266,8 @@ namespace System
 
         inline double Hitmap::GetDistance(const Info& u, const Info& v)
         {
-            assert(u.size() == v.size());
-            int orientNum = u.size(), uPointNum = 0, vPointNum = 0;
+            assert(u.Count() == v.Count());
+            int orientNum = u.Count(), uPointNum = 0, vPointNum = 0;
             double uToV = 0, vToU = 0;
 
             for (int i = 0; i < orientNum; i++)
@@ -277,14 +277,14 @@ namespace System
                 const Mat& uMat = u[i].Item2();
                 const Mat& vMat = v[i].Item2();
 
-                for (size_t i = 0; i < uPoints.size(); i++)
+                for (size_t i = 0; i < uPoints.Count(); i++)
                     uToV += vMat.at<uchar>(uPoints[i].y, uPoints[i].x);
 
-                for (size_t i = 0; i < vPoints.size(); i++)
+                for (size_t i = 0; i < vPoints.Count(); i++)
                     vToU += uMat.at<uchar>(vPoints[i].y, vPoints[i].x);
 
-                uPointNum += uPoints.size();
-                vPointNum += vPoints.size();
+                uPointNum += uPoints.Count();
+                vPointNum += vPoints.Count();
             }
 
             if (uPointNum == 0 || vPointNum == 0)
@@ -310,7 +310,7 @@ namespace System
             ArrayList<Point> points = GetEdgels(sketchImage);
 
             ArrayList<ArrayList<Point>> channels(orientNum);
-            for (int i = 0; i < points.size(); i++)
+            for (int i = 0; i < points.Count(); i++)
             {
                 double maxResponse = -INF;
                 int index = -1;
@@ -325,7 +325,7 @@ namespace System
                 }
 
                 assert(index >= 0 && index < orientNum);
-                channels[index].push_back(points[i]);
+                channels[index].Add(points[i]);
             }
 
             return channels;
@@ -334,14 +334,14 @@ namespace System
         inline Hitmap::Info Hitmap::Transform(const Mat& sketchImage, double maxDistance)
         {
             ArrayList<ArrayList<Point>> channels = GetChannels(sketchImage, 6);
-            Info result(channels.size());
+            Info result(channels.Count());
 
-            for (size_t i = 0; i < channels.size(); i++)
+            for (size_t i = 0; i < channels.Count(); i++)
             {
                 Mat dt(sketchImage.size(), CV_8U);
                 dt = Scalar::all(0);
 
-                for (size_t j = 0; j < channels[i].size(); j++)
+                for (size_t j = 0; j < channels[i].Count(); j++)
                 {
                     int left = (int)floor(channels[i][j].x - maxDistance),
                         right = (int)ceil(channels[i][j].x + maxDistance),

@@ -8,24 +8,6 @@ namespace TurboCV
 {
 namespace System
 {
-    template<typename RandomAccessIterator, typename T> 
-    bool Contains(
-        const RandomAccessIterator& begin, 
-        const RandomAccessIterator& end, 
-        const T& item)
-    {
-        RandomAccessIterator itr = begin;
-
-        while (itr != end)
-        {
-            if (*itr == item)
-                return true;
-            itr++;
-        }
-
-        return false;
-    }
-
     inline ArrayList<size_t> RandomPermutate(size_t cardNum, size_t pickUpNum)
     {
         assert(cardNum >= pickUpNum);
@@ -43,7 +25,7 @@ namespace System
         }
 
         for (size_t i = 0; i < pickUpNum; i++)
-            result.push_back(cards[i]);
+            result.Add(cards[i]);
 
         delete[] cards;
         return result;
@@ -53,17 +35,17 @@ namespace System
     inline ArrayList<T> PickUp(const ArrayList<T>& vec, const ArrayList<size_t>& pickUpIndexes)
     {
         ArrayList<size_t> indexes = pickUpIndexes;
-        std::sort(indexes.begin(), indexes.end());
+        std::sort(indexes.Begin(), indexes.End());
 
         ArrayList<T> pickUps;
-        size_t cardNum = vec.size(), counter = 0;
+        size_t cardNum = vec.Count(), counter = 0;
 
         for (size_t i = 0; i < cardNum; i++)
         {
-            if (counter < indexes.size() && indexes[counter] == i)
+            if (counter < indexes.Count() && indexes[counter] == i)
             {
                 counter++;
-                pickUps.push_back(vec[i]);
+                pickUps.Add(vec[i]);
             }
         }
 
@@ -72,24 +54,23 @@ namespace System
 
     template<typename T>
     inline Tuple<ArrayList<T>, ArrayList<T>, ArrayList<size_t>> Divide(
-        const ArrayList<T>& vec, 
-        const ArrayList<size_t>& pickUpIndexes)
+        const ArrayList<T>& vec, const ArrayList<size_t>& pickUpIndexes)
     {
         ArrayList<size_t> indexes = pickUpIndexes;
         std::sort(indexes.begin(), indexes.end());
 
         ArrayList<T> pickUps, others;
-        size_t cardNum = vec.size(), counter = 0;
+        size_t cardNum = vec.Count(), counter = 0;
 
         for (size_t i = 0; i < cardNum; i++)
         {
-            if (counter < indexes.size() && indexes[counter] == i)
+            if (counter < indexes.Count() && indexes[counter] == i)
             {
                 counter++;
-                pickUps.push_back(vec[i]);
+                pickUps.Add(vec[i]);
             }
             else
-                others.push_back(vec[i]);
+                others.Add(vec[i]);
         }
 
         return CreateTuple(pickUps, others, indexes);
@@ -98,7 +79,7 @@ namespace System
     template<typename T>
     inline ArrayList<T> RandomPickUp(const ArrayList<T>& vec, size_t pickUpNum)
     {
-        size_t cardNum = vec.size();
+        size_t cardNum = vec.Count();
         assert(cardNum >= pickUpNum);
 
         return PickUp(vec, RandomPermutate(cardNum, pickUpNum));
@@ -108,7 +89,7 @@ namespace System
     inline ArrayList<Tuple<ArrayList<T>, ArrayList<T>, ArrayList<size_t>>> RandomSplit(
         const ArrayList<T>& vec, size_t fold)
     {
-        size_t cardNum = vec.size();
+        size_t cardNum = vec.Count();
         assert(cardNum >= fold);
 
         ArrayList<size_t> permutation = RandomPermutate(cardNum, cardNum);
@@ -121,9 +102,9 @@ namespace System
                 end = (i != fold - 1) ? cardNum / fold * (i + 1) : cardNum;
 
             for (size_t j = begin; j < end; j++)
-                subsetIndexes.push_back(permutation[j]);
+                subsetIndexes.Add(permutation[j]);
                 
-            result.push_back(Divide(vec, subsetIndexes));
+            result.Add(Divide(vec, subsetIndexes));
         }
 
         return result;
