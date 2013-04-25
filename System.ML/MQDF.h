@@ -59,7 +59,9 @@ namespace TurboCV
 
                     int dataNum = data.Count();
                     _D = data[0].Count();
-                    _K = _D * 0.8;
+                    _K = _D * 0.5;
+                    if (_K > dataNum)
+                        _K = dataNum;
                     _trainingData.clear();
                     _eigens.clear();
                     _means.clear();
@@ -134,30 +136,44 @@ namespace TurboCV
                         int label = item.first;
                         double factor1 = 0, factor2 = 0;
 
-                        cv::Mat dif = x - _means[label];
-                        double tmp = cv::norm(dif, cv::NORM_L2);
-                        factor1 = tmp * tmp;
-                        
-                        double constant = _constants[label];
-                        for (int j = 0; j < _K; j++)
+                        //cv::Mat dif = x - _means[label];
+                        //double tmp = cv::norm(dif, cv::NORM_L2);
+                        //factor1 = tmp * tmp;
+                        //
+                        //double constant = _constants[label];
+                        //for (int j = 0; j < _K; j++)
+                        //{
+                        //    const Tuple<cv::Mat, cv::Mat>& item = _eigens[label];
+                        //    double eigenValue = item.Item1().at<double>(j, 0);
+                        //    cv::Mat eigenVector = item.Item2().row(j);
+
+                        //    double tmp = ((cv::Mat)(eigenVector * dif.t())).at<double>(0, 0);
+                        //    factor1 -= (1 - constant / eigenValue) * tmp * tmp;
+
+                        //    factor2 += std::log(eigenValue);
+                        //}
+
+                        //factor1 /= constant;
+                        //factor2 += (_D - _K) * log(constant);
+
+                        for (int j = 0; j < _D; j++)
                         {
                             const Tuple<cv::Mat, cv::Mat>& item = _eigens[label];
-
                             double eigenValue = item.Item1().at<double>(j, 0);
                             cv::Mat eigenVector = item.Item2().row(j);
 
-                            double tmp = ((cv::Mat)(eigenVector * dif.t())).at<double>(0, 0);
-                            factor1 -= (1 - constant / eigenValue) * tmp * tmp;
+                            if (abs(eigenValue) < 1e-4)
+                                continue;
 
-                            factor2 += std::log(eigenValue);
+                            double tmp = ((cv::Mat)(eigenVector * (x - _means[label]).t())).at<double>(0, 0);
+                            factor1 += tmp * tmp / eigenValue;
+                            
+                            factor2 += log(eigenValue);
                         }
 
-                        factor1 /= constant;
-                        factor2 += (_D - _K) * log(constant);
-
-                        double distance = (factor1 + factor2) - log(_weights[label]);
-                        printf("%f\n", distance);
+                        double distance = (factor1 + factor2)/* / _weights[label]*/;
                         distanceAndLabels[distance] = label;
+                        printf("%f %d\n", distance, label);
                     }
 
                     return (distanceAndLabels.begin())->second;

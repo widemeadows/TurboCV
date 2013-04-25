@@ -222,9 +222,9 @@ void GlobalFeatureCrossValidation(const TurboCV::System::String& imageSetPath, c
                 trainingLabels.Add(images[j].Item2());
         }
 
-        MQDF<GlobalFeature_f> mqdf;
+        KNN<GlobalFeature_f> knn;
         pair<double, map<int, double>> precisions = 
-            mqdf.Evaluate(trainingSet, trainingLabels, evaluationSet, evaluationLabels);
+            knn.Evaluate(4, trainingSet, trainingLabels, evaluationSet, evaluationLabels);
 
         passResult.Add(precisions.first);
         printf("Fold %d Accuracy: %f\n", i + 1, precisions.first);
