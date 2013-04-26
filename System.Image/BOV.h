@@ -113,7 +113,6 @@ namespace System
             for (size_t i = 0; i < descriptorNum; i++)
             {
                 ArrayList<double> distances = GetDistancesToVisualWords(feature[i], words);
-                NormOneNormalize(distances.begin(), distances.end());
 
                 for (size_t j = 0; j < wordNum; j++)
                     freqHistogram[j] += distances[j];
@@ -143,8 +142,7 @@ namespace System
             const ArrayList<LocalFeature_f>& features,
             size_t clusterNum, size_t sampleNum)
         {
-            return GetFrequencyHistograms(features, 
-                GetVisualWords(features, clusterNum, sampleNum));
+            return GetFrequencyHistograms(features, GetVisualWords(features, clusterNum, sampleNum));
         }
 
         //class IDF

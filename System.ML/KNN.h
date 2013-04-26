@@ -71,45 +71,20 @@ namespace System
         class KNN
         {
         public:
-            static pair<ArrayList<ArrayList<double>>, ArrayList<ArrayList<bool>>> Evaluate(
-                const ArrayList<T>& trainingSet,
-                const ArrayList<int>& trainingLabels,
-                const ArrayList<T>& evaluationSet,
-                const ArrayList<int>& evaluationLabels)
-            {
-                assert(trainingSet.Count() == trainingLabels.Count());
-                assert(evaluationSet.Count() == evaluationSet.Count());
-
-                ArrayList<ArrayList<double>> distanceMatrix(evaluationSet.Count());
-                ArrayList<ArrayList<bool>> relevantMatrix(evaluationSet.Count());
-
-                #pragma omp parallel for
-                for (int i = 0; i < evaluationSet.Count(); i++)
-                {
-                    for (size_t j = 0; j < trainingSet.Count(); j++)
-                    {
-                        distanceMatrix[i].Add(Math::NormOneDistance(evaluationSet[i], trainingSet[j]));
-                        relevantMatrix[i].Add(evaluationLabels[i] == trainingLabels[j]);
-                    }
-                }
-
-                return make_pair(distanceMatrix, relevantMatrix);
-            }
-
-            template<typename Measurement>
             pair<double, map<int, double>> Evaluate(
-                int K,
                 const ArrayList<T>& trainingSet,
                 const ArrayList<int>& trainingLabels,
                 const ArrayList<T>& evaluationSet,
                 const ArrayList<int>& evaluationLabels,
-                Measurement GetDistance)
+                double (*GetDistance)(const T&, const T&),
+                bool softVoting = true,
+                int K = 4)
 	        {
                 assert(trainingSet.Count() == trainingLabels.Count());
                 assert(evaluationSet.Count() == evaluationSet.Count());
 
 		        Train(trainingSet, trainingLabels);
-		        ArrayList<int> predict = Predict(evaluationSet, K, GetDistance);
+		        ArrayList<int> predict = Predict(evaluationSet, GetDistance, softVoting, K);
 
                 size_t evaluationNum = evaluationSet.Count(), correctNum = 0;
                 unordered_map<int, int> evaluationNumPerClass, correctNumPerClass;
@@ -136,17 +111,18 @@ namespace System
 	        }
 
             pair<double, map<int, double>> Evaluate(
-                int K,
                 const ArrayList<T>& trainingSet,
                 const ArrayList<int>& trainingLabels,
                 const ArrayList<T>& evaluationSet,
-                const ArrayList<int>& evaluationLabels)
+                const ArrayList<int>& evaluationLabels,
+                bool softVoting = true,
+                int K = 4)
             {
                 assert(trainingSet.Count() == trainingLabels.Count());
                 assert(evaluationSet.Count() == evaluationSet.Count());
 
                 Train(trainingSet, trainingLabels);
-                ArrayList<int> predict = Predict(evaluationSet, K);
+                ArrayList<int> predict = Predict(evaluationSet, softVoting, K);
 
                 size_t evaluationNum = evaluationSet.Count(), correctNum = 0;
                 unordered_map<int, int> evaluationNumPerClass, correctNumPerClass;
@@ -184,8 +160,11 @@ namespace System
                     _dataNumPerClass[_labels[i]]++;
 	        }
 
-            template<typename Measurement>
-            ArrayList<int> Predict(const ArrayList<T>& samples, int K, Measurement GetDistance)
+            ArrayList<int> Predict(
+                const ArrayList<T>& samples, 
+                double (*GetDistance)(const T&, const T&), 
+                bool softVoting = true, 
+                int K = 4)
 	        {
                 int sampleNum = samples.Count();
 		        ArrayList<int> results(sampleNum);
@@ -193,13 +172,14 @@ namespace System
 		        #pragma omp parallel for
 		        for (int i = 0; i < sampleNum; i++)
 		        {
-			        results[i] = predictOneSample(samples[i], K, GetDistance);
+			        results[i] = predictOneSample(samples[i], GetDistance, softVoting, K);
 		        }
 
 		        return results;
 	        }
 
-            ArrayList<int> Predict(const ArrayList<T>& samples, int K)
+            ArrayList<int> Predict(const ArrayList<T>& samples, 
+                bool softVoting = true, int K = 4)
             {
                 int sampleNum = samples.Count();
                 ArrayList<int> results(sampleNum);
@@ -207,16 +187,15 @@ namespace System
                 #pragma omp parallel for
                 for (int i = 0; i < sampleNum; i++)
                 {
-                    results[i] = predictOneSample(samples[i], K);
+                    results[i] = predictOneSample(samples[i], softVoting, K);
                 }
 
                 return results;
             }
 
         private:
-            template<typename Measurement>
-            int predictOneSample(const T& sample, int K, Measurement GetDistance, 
-                bool softVoting = true)
+            int predictOneSample(const T& sample, double (*GetDistance)(const T&, const T&), 
+                bool softVoting = true, int K = 4)
 	        {
                 size_t dataNum = _data.Count();
 
@@ -238,18 +217,11 @@ namespace System
                 }
                 else
                 {
-                    double maxDistance = -1;
-                    for (auto item : distances)
-                    {
-                        if (item.first > maxDistance)
-                            maxDistance = item.first;
-                    }
-
                     for (int i = 0; i < K; i++)
                     {
                         double& distance = distances[i].first;
                         int& label = distances[i].second;
-                        votes[label] += maxDistance - distance;
+                        votes[label] += Math::Gauss(distance, 0.4);
                     }
                 }
 	
@@ -268,7 +240,7 @@ namespace System
                 return index;
             }
 
-            int predictOneSample(const T& sample, int K)
+            int predictOneSample(const T& sample, bool softVoting = true, int K = 4)
             {
                 size_t dataNum = _data.Count();
                 ArrayList<pair<double, int>> distances(dataNum);
@@ -280,18 +252,30 @@ namespace System
                 }
                 partial_sort(distances.begin(), distances.begin() + K, distances.end());
 
-                unordered_map<int, int> votes;
-                for (int i = 0; i < K; i++)
+                unordered_map<int, double> votes;
+                if (!softVoting)
                 {
-                    int& label = distances[i].second;
-                    votes[label]++;
+                    for (int i = 0; i < K; i++)
+                    {
+                        int& label = distances[i].second;
+                        votes[label]++;
+                    }
+                }
+                else
+                {
+                    for (int i = 0; i < K; i++)
+                    {
+                        double& distance = distances[i].first;
+                        int& label = distances[i].second;
+                        votes[label] += Math::Gauss(distance, 0.4);
+                    }
                 }
 
                 double maxFreq = -1;
                 int index = -1;
                 for (auto vote : votes)
                 {
-                    double freq = (double)vote.second / _dataNumPerClass[vote.first];
+                    double freq = vote.second / _dataNumPerClass[vote.first];
                     if (freq > maxFreq)
                     {
                         maxFreq = freq;

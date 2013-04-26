@@ -125,7 +125,7 @@ void LocalFeatureCrossValidation(const TurboCV::System::String& imageSetPath, co
 
         KNN<Histogram> knn;
         pair<double, map<int, double>> precisions = 
-            knn.Evaluate(4, trainingHistograms, trainingLabels, evaluationHistograms, evaluationLabels);
+            knn.Evaluate(trainingHistograms, trainingLabels, evaluationHistograms, evaluationLabels);
        
         passResult.Add(precisions.first);
         printf("Fold %d Accuracy: %f\n", i + 1, precisions.first);
@@ -182,7 +182,7 @@ void GlobalFeatureCrossValidation(const TurboCV::System::String& imageSetPath, c
     #pragma omp parallel for private(machine)
     for (int i = 0; i < imageNum; i++)
     {
-        Convert(machine.GetFeatureWithPreprocess(images[i].Item1(), thinning), features[i]);
+        Convert(machine.GetFeatureWithPreprocess(images[i].Item1(), thinning, Size(64, 64)), features[i]);
         images[i].Item1().release();
     }
 
@@ -224,7 +224,7 @@ void GlobalFeatureCrossValidation(const TurboCV::System::String& imageSetPath, c
 
         KNN<GlobalFeature_f> knn;
         pair<double, map<int, double>> precisions = 
-            knn.Evaluate(4, trainingSet, trainingLabels, evaluationSet, evaluationLabels);
+            knn.Evaluate(trainingSet, trainingLabels, evaluationSet, evaluationLabels);
 
         passResult.Add(precisions.first);
         printf("Fold %d Accuracy: %f\n", i + 1, precisions.first);
@@ -342,7 +342,8 @@ void EdgeMatchingCrossValidation(const TurboCV::System::String& imageSetPath, co
 
         KNN<EdgeMatching::Info> knn;
         pair<double, map<int, double>> precisions = knn.Evaluate(
-            4, trainingSet, trainingLabels, evaluationSet, evaluationLabels, EdgeMatching::GetDistance);
+            trainingSet, trainingLabels, evaluationSet, evaluationLabels, 
+            EdgeMatching::GetDistance, false);
 
         passResult.Add(precisions.first);
         printf("Fold %d Accuracy: %f\n", i + 1, precisions.first);
@@ -682,14 +683,14 @@ void Batch(const TurboCV::System::String& imageSetPath, bool thinning = false)
 
 int main()
 {
-    LocalFeatureCrossValidation("sketches", RHOG(), 500);
+    //LocalFeatureCrossValidation("sketches", RHOG(), 500);
+    //printf("\n");
+
+    //GlobalFeatureCrossValidation("hccr", GHOG(), true);
+    //printf("\n");
+
+    EdgeMatchingCrossValidation("oracles", Hitmap(), true);
     printf("\n");
-
-    //GlobalFeatureCrossValidation("oracles", GHOG(), true);
-    //printf("\n");
-
-    //EdgeMatchingCrossValidation("oracles", Hitmap(), true);
-    //printf("\n");
 
     //LocalFeatureTest("oracles", Test(), 1500);
     //printf("\n");

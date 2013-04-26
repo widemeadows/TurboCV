@@ -749,7 +749,6 @@ namespace System
                     tentKernel.at<double>(i, j) = ratio;
                 }
             }
-            normalize(tentKernel, tentKernel, 1, 0, NORM_L1);
 
             ArrayList<Mat> orientChannels = Gradient::GetOrientChannels(sketchImage, orientNum);
             ArrayList<Mat> filteredOrientChannels(orientNum);
@@ -760,8 +759,9 @@ namespace System
             for (int i = blockSize / 2 - 1; i < sketchImage.rows; i += blockSize / 2)
                 for (int j = blockSize / 2 - 1; j < sketchImage.cols; j += blockSize / 2)
                     for (int k = 0; k < orientNum; k++)
-                        feature.Add(filteredOrientChannels[k].at<double>(i, j));      
+                        feature.Add(filteredOrientChannels[k].at<double>(i, j));
 
+            NormTwoNormalize(feature.begin(), feature.end());
             return feature;
         }
 
@@ -1368,6 +1368,7 @@ namespace System
                 }
 	        }
 
+            NormTwoNormalize(feature.begin(), feature.end());
             return feature;
         }
     
