@@ -682,11 +682,11 @@ void Batch(const TurboCV::System::String& imageSetPath, bool thinning = false)
 
 int main()
 {
-    //LocalFeatureCrossValidation("sketches", RHOG(), 500);
-    //printf("\n");
-
-    GlobalFeatureCrossValidation("oracles", GHOG(), true);
+    LocalFeatureCrossValidation("sketches", RHOG(), 500);
     printf("\n");
+
+    //GlobalFeatureCrossValidation("oracles", GHOG(), true);
+    //printf("\n");
 
     //EdgeMatchingCrossValidation("oracles", Hitmap(), true);
     //printf("\n");

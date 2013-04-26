@@ -215,29 +215,49 @@ namespace System
 
         private:
             template<typename Measurement>
-            int predictOneSample(const T& sample, int K, Measurement GetDistance)
+            int predictOneSample(const T& sample, int K, Measurement GetDistance, 
+                bool softVoting = true)
 	        {
                 size_t dataNum = _data.Count();
-		        ArrayList<pair<double, int>> distances(dataNum);
 
+		        ArrayList<pair<double, int>> distances(dataNum);
 		        for (size_t i = 0; i < dataNum; i++)
 		        {
 			        distances[i] = make_pair(GetDistance(sample, _data[i]), _labels[i]);
 		        }
 		        partial_sort(distances.begin(), distances.begin() + K, distances.end());
 
-		        unordered_map<int, int> votes;
-		        for (int i = 0; i < K; i++)
-		        {
-			        int& label = distances[i].second;
-			        votes[label]++;
-		        }
-		
+                unordered_map<int, double> votes;
+                if (!softVoting)
+                {
+                    for (int i = 0; i < K; i++)
+                    {
+                        int& label = distances[i].second;
+                        votes[label]++;
+                    }
+                }
+                else
+                {
+                    double maxDistance = -1;
+                    for (auto item : distances)
+                    {
+                        if (item.first > maxDistance)
+                            maxDistance = item.first;
+                    }
+
+                    for (int i = 0; i < K; i++)
+                    {
+                        double& distance = distances[i].first;
+                        int& label = distances[i].second;
+                        votes[label] += maxDistance - distance;
+                    }
+                }
+	
 		        double maxFreq = -1;
 		        int index = -1;
 		        for (auto vote : votes)
 		        {
-			        double freq = (double)vote.second / _dataNumPerClass[vote.first];
+			        double freq = vote.second / _dataNumPerClass[vote.first];
 			        if (freq > maxFreq)
 			        {
 				        maxFreq = freq;

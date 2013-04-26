@@ -8,7 +8,6 @@
 #include "Typedef.h"
 #include <cv.h>
 using namespace cv;
-using namespace std;
 
 namespace TurboCV
 {
@@ -19,7 +18,8 @@ namespace System
         class Feature
         {
         public:
-            static Mat Preprocess(const Mat& sketchImage, bool thinning = false);
+            static Mat Preprocess(const Mat& sketchImage, bool thinning = false, 
+                Size size = Size(256, 256));
 
             virtual String GetName() const = 0;
             
@@ -27,8 +27,10 @@ namespace System
             static Mat GetBoundingBox(const Mat& sketchImage);
         };
 
-        inline Mat Feature::Preprocess(const Mat& sketchImage, bool thinning)
+        inline Mat Feature::Preprocess(const Mat& sketchImage, bool thinning, Size size)
         {
+            assert(size.width == size.height);
+
             Mat revImage = reverse(sketchImage);
 
             Mat cleanedImage;
@@ -46,12 +48,16 @@ namespace System
                 widthPadding, widthPadding, BORDER_CONSTANT, Scalar(0, 0, 0, 0));
 
             Mat scaledImage;
-            resize(squareImage, scaledImage, Size(224, 224));
+            Size scaledSize = Size((int)(size.width - 2 * size.width / 16.0),
+                (int)(size.height - 2 * size.height / 16.0));
+            resize(squareImage, scaledImage, scaledSize);
 
             Mat paddedImage;
-            copyMakeBorder(scaledImage, paddedImage, 16, 16, 16, 16, BORDER_CONSTANT, 
-                Scalar(0, 0, 0, 0));
-            assert(paddedImage.rows == 256 && paddedImage.cols == 256);
+            heightPadding = (size.height - scaledSize.height) / 2,
+            widthPadding = (size.width - scaledSize.width) / 2; 
+            copyMakeBorder(scaledImage, paddedImage, heightPadding, heightPadding, 
+                widthPadding, widthPadding, BORDER_CONSTANT, Scalar(0, 0, 0, 0));
+            assert(paddedImage.rows == size.height && paddedImage.cols == size.width);
 
             Mat finalImage;
             if (thinning)
@@ -93,7 +99,8 @@ namespace System
         class LocalFeature : public Feature
         {
         public:
-            LocalFeatureVec GetFeatureWithPreprocess(const Mat& sketchImage, bool thinning = false);
+            LocalFeatureVec GetFeatureWithPreprocess(const Mat& sketchImage, 
+                bool thinning = false, Size size = Size(256, 256));
             LocalFeatureVec GetFeatureWithoutPreprocess(const Mat& sketchImage);
 
         protected:
@@ -101,9 +108,9 @@ namespace System
         };
 
         inline LocalFeatureVec LocalFeature::GetFeatureWithPreprocess(const Mat& sketchImage, 
-            bool thinning)
+            bool thinning, Size size)
         {
-            return GetFeature(Preprocess(sketchImage, thinning));
+            return GetFeature(Preprocess(sketchImage, thinning, size));
         }
 
         inline LocalFeatureVec LocalFeature::GetFeatureWithoutPreprocess(const Mat& sketchImage)
@@ -116,7 +123,8 @@ namespace System
         class GlobalFeature : public Feature
         {
         public:
-            GlobalFeatureVec GetFeatureWithPreprocess(const Mat& sketchImage, bool thinning = false);
+            GlobalFeatureVec GetFeatureWithPreprocess(const Mat& sketchImage, 
+                bool thinning = false, Size size = Size(256, 256));
             GlobalFeatureVec GetFeatureWithoutPreprocess(const Mat& sketchImage);
 
         protected:
@@ -124,9 +132,9 @@ namespace System
         };
 
         inline GlobalFeatureVec GlobalFeature::GetFeatureWithPreprocess(const Mat& sketchImage, 
-            bool thinning)
+            bool thinning, Size size)
         {
-            return GetFeature(Preprocess(sketchImage, thinning));
+            return GetFeature(Preprocess(sketchImage, thinning, size));
         }
 
         inline GlobalFeatureVec GlobalFeature::GetFeatureWithoutPreprocess(const Mat& sketchImage)
@@ -339,7 +347,7 @@ namespace System
 
         inline LocalFeatureVec HOG::GetFeature(const Mat& sketchImage)
         {
-            int orientNum = 4, cellSize = 23, cellNum = 4;
+            int orientNum = 4, cellSize = 23 * sketchImage.rows / 256, cellNum = 4;
 
             int kernelSize = cellSize * 2 + 1;
             Mat tentKernel(kernelSize, kernelSize, CV_64F);
@@ -431,7 +439,8 @@ namespace System
 
         inline LocalFeatureVec RHOG::GetFeature(const Mat& sketchImage)
         {
-            int orientNum = 4, sampleNum = 28, blockSize = 92, cellNum = 4;
+            int orientNum = 4, sampleNum = 28, blockSize = 92 * sketchImage.rows / 256, 
+                cellNum = 4;
 
             int cellSize = blockSize / cellNum, kernelSize = cellSize * 2 + 1;
             Mat tentKernel(kernelSize, kernelSize, CV_64F);
@@ -724,7 +733,7 @@ namespace System
 
         inline GlobalFeatureVec GHOG::GetFeature(const Mat& sketchImage)
         {
-            int orientNum = 8, blockSize = 48;
+            int orientNum = 8, blockSize = 48 * sketchImage.rows / 256;
 
             int kernelSize = blockSize * 2 + 1;
             Mat tentKernel(kernelSize, kernelSize, CV_64F);
@@ -813,7 +822,6 @@ namespace System
 	        int dims[] = { distanceNum, angleNum, orientNum };
 	        Mat bins(3, dims, CV_64F);
             bins = Scalar::all(0);
-
             double orientStep = CV_PI / orientNum, sigma = 10;
 	        for (int i = 0; i < pointNum; i++)
 	        {
@@ -914,7 +922,6 @@ namespace System
             int dims[] = { distanceNum, angleNum, orientNum };
             Mat bins(3, dims, CV_64F);
             bins = Scalar::all(0);
-
             double orientStep = CV_PI / orientNum, sigma = 10;
             for (int i = 0; i < pointNum; i++)
             {
@@ -1003,7 +1010,6 @@ namespace System
 
             int distanceNum = logDistances.Count() - 1;
 	        Mat bins = Mat::zeros(distanceNum, angleNum, CV_64F);
-
 	        for (int i = 0; i < pivotNum; i++)
 	        {
 		        if (pivots[i] == pivot)
@@ -1036,7 +1042,6 @@ namespace System
 
 	        return descriptor;
         }
-
 
         ///////////////////////////////////////////////////////////////////////
 
@@ -1086,7 +1091,6 @@ namespace System
 
             int distanceNum = logDistances.Count() - 1;
             Mat bins = Mat::zeros(distanceNum, angleNum, CV_64F);
-
             for (int i = 0; i < pointNum; i++)
             {
                 if (points[i] == pivot)
@@ -1176,7 +1180,6 @@ namespace System
 
             int distanceNum = logDistances.Count() - 1;
 	        Mat bins = Mat::zeros(distanceNum, angleNum, CV_64F);
-
 	        for (int i = 0; i < pivotNum; i++)
 	        {
 		        if (pivots[i] == center)
@@ -1265,7 +1268,6 @@ namespace System
 
             int distanceNum = logDistances.Count() - 1;
             Mat bins = Mat::zeros(distanceNum, angleNum, CV_64F);
-
             for (int i = 0; i < pointNum; i++)
             {
                 if (points[i] == center)
@@ -1297,96 +1299,6 @@ namespace System
             }
 
             return descriptor;
-        }
-
-        ///////////////////////////////////////////////////////////////////////
-
-        // Average Gabor Responses
-        class Gabor : public LocalFeature
-        {
-        public:
-            virtual LocalFeatureVec GetFeature(const Mat& sketchImage);
-
-            virtual String GetName() const { return "gabor"; };
-            
-        private:
-            static Descriptor GetDescriptor(const ArrayList<Mat>& gaborResponses, 
-                const Point& center, int blockSize, int cellNum);
-        };
-
-        inline LocalFeatureVec Gabor::GetFeature(const Mat& sketchImage)
-        {
-            int sampleNum = 28, blockSize = 92, cellNum = 4;
-            int tmp[] = { 8, 8, 8, 8 };
-            ArrayList<int> orientNumPerScale(tmp, tmp + sizeof(tmp) / sizeof(int));
-
-            ArrayList<Mat> gaborResponses;
-            for (int i = 0; i < orientNumPerScale.Count(); i++)
-            {
-                double sigma = pow(1.8, i + 1), lambda = sigma * 1.7;
-
-                int ksize = (int)(sigma * 6 + 1);
-                if (ksize % 2 == 0)
-                    ksize++;
-
-                for (int j = 0; j < orientNumPerScale[i]; j++)
-                {
-                    Mat kernel = getGaborKernel(Size(ksize, ksize), sigma, 
-                        CV_PI / orientNumPerScale[i] * j, lambda, 1, 0);
-
-                    Mat gaborResponse;
-                    filter2D(sketchImage, gaborResponse, CV_64F, kernel);
-
-			        gaborResponses.Add(abs(gaborResponse));
-                }
-            }
-
-            LocalFeatureVec feature;
-            ArrayList<Point> centers = SampleOnGrid(sketchImage.rows, sketchImage.cols, sampleNum);
-            for (Point center : centers)
-            {
-                Descriptor descriptor = GetDescriptor(gaborResponses, center, blockSize, cellNum);
-                feature.Add(descriptor);
-            }
-
-            return feature;
-        }
-
-        inline Descriptor Gabor::GetDescriptor(const ArrayList<Mat>& gaborResponses, 
-                const Point& center, int blockSize, int cellNum)
-        {
-            assert(gaborResponses.Count() > 0);
-
-            int height = gaborResponses[0].rows,
-                width = gaborResponses[0].cols,
-                expectedTop = center.y - blockSize / 2,
-                expectedLeft = center.x - blockSize / 2,
-                cellSize = blockSize / cellNum;
-
-            Descriptor desc;
-            for (int i = 0; i < gaborResponses.Count(); i++)
-            {
-                ArrayList<double> cells(cellNum * cellNum);
-
-                for (int j = expectedTop; j < expectedTop + blockSize; j++)
-                {
-                    for (int k = expectedLeft; k < expectedLeft + blockSize; k++)
-                    {
-                        if (j < 0 || j >= height || k < 0 || k >= width)
-                            continue;
-
-                        int cellRow = (j - expectedTop) / cellSize,
-				            cellCol = (k - expectedLeft) / cellSize;
-			            cells[cellRow * cellNum + cellCol] += gaborResponses[i].at<double>(j, k);
-                    }
-                }
-
-                for (int j = 0; j < cells.Count(); j++)
-                    desc.Add(cells[i]);
-            }
-
-            NormTwoNormalize(desc.begin(), desc.end());
-            return desc;
         }
 
         ///////////////////////////////////////////////////////////////////////

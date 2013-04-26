@@ -18,25 +18,29 @@ namespace System
         public:
             typedef Tuple<ArrayList<Point>, Mat> Info;
 
-            Info GetFeatureWithPreprocess(const Mat& sketchImage, bool thinning = false) const;
-            Info GetFeatureWithoutPreprocess(const Mat& sketchImage) const;
+            Info GetFeatureWithPreprocess(const Mat& sketchImage, bool thinning = false,
+                Size size = Size(256, 256));
+            Info GetFeatureWithoutPreprocess(const Mat& sketchImage);
 
             static double GetDistance(const Info& u, const Info& v);
 
             virtual String GetName() const { return "cm"; };
 
         protected:
-            virtual Info Transform(const Mat& sketchImage, double maxDistance = 40) const;
+            virtual Info Transform(const Mat& sketchImage, double maxDistance) const;
         };
 
-        inline CM::Info CM::GetFeatureWithPreprocess(const Mat& sketchImage, bool thinning) const
+        inline CM::Info CM::GetFeatureWithPreprocess(const Mat& sketchImage, bool thinning,
+            Size size)
         {
-            return Transform(Preprocess(sketchImage, thinning));
+            double maxDistance = 40 * size.height / 256;
+            return Transform(Preprocess(sketchImage, thinning, size), maxDistance);
         }
 
-        inline CM::Info CM::GetFeatureWithoutPreprocess(const Mat& sketchImage) const
+        inline CM::Info CM::GetFeatureWithoutPreprocess(const Mat& sketchImage)
         {
-            return Transform(sketchImage);
+            double maxDistance = 40 * sketchImage.rows / 256;
+            return Transform(sketchImage, maxDistance);
         }
 
         inline double CM::GetDistance(const Info& u, const Info& v)
@@ -103,7 +107,8 @@ namespace System
         public:
             typedef ArrayList<Tuple<ArrayList<Point>, Mat>> Info;
 
-            Info GetFeatureWithPreprocess(const Mat& sketchImage, bool thinning = false);
+            Info GetFeatureWithPreprocess(const Mat& sketchImage, bool thinning = false,
+                Size size = Size(256, 256));
             Info GetFeatureWithoutPreprocess(const Mat& sketchImage);
 
             static double GetDistance(const Info& u, const Info& v);
@@ -112,17 +117,20 @@ namespace System
             virtual String GetName() const { return "ocm"; };
 
         protected:
-            virtual Info Transform(const Mat& sketchImage, double maxDistance = 40);
+            virtual Info Transform(const Mat& sketchImage, double maxDistance);
         };
 
-        inline OCM::Info OCM::GetFeatureWithPreprocess(const Mat& sketchImage, bool thinning)
+        inline OCM::Info OCM::GetFeatureWithPreprocess(const Mat& sketchImage, bool thinning,
+            Size size)
         {
-            return Transform(Preprocess(sketchImage, thinning));
+            double maxDistance = 40 * size.height / 256;
+            return Transform(Preprocess(sketchImage, thinning), maxDistance);
         }
 
         inline OCM::Info OCM::GetFeatureWithoutPreprocess(const Mat& sketchImage)
         {
-            return Transform(sketchImage);
+            double maxDistance = 40 * sketchImage.rows / 256;
+            return Transform(sketchImage, maxDistance);
         }
 
         inline double OCM::GetDistance(const Info& u, const Info& v)
@@ -242,7 +250,8 @@ namespace System
         public:
             typedef ArrayList<Tuple<ArrayList<Point>, Mat>> Info;
 
-            Info GetFeatureWithPreprocess(const Mat& sketchImage, bool thinning = false);
+            Info GetFeatureWithPreprocess(const Mat& sketchImage, bool thinning = false,
+                Size size = Size(256, 256));
             Info GetFeatureWithoutPreprocess(const Mat& sketchImage);
 
             static double GetDistance(const Info& u, const Info& v);
@@ -251,17 +260,20 @@ namespace System
             virtual String GetName() const { return "hit"; };
 
         protected:
-            virtual Info Transform(const Mat& sketchImage, double maxDistance = 22);
+            virtual Info Transform(const Mat& sketchImage, double maxDistance);
         };
 
-        inline Hitmap::Info Hitmap::GetFeatureWithPreprocess(const Mat& sketchImage, bool thinning)
+        inline Hitmap::Info Hitmap::GetFeatureWithPreprocess(const Mat& sketchImage, bool thinning,
+            Size size)
         {
-            return Transform(Preprocess(sketchImage, thinning));
+            double maxDistance = 22 * size.height / 256;
+            return Transform(Preprocess(sketchImage, thinning), maxDistance);
         }
 
         inline Hitmap::Info Hitmap::GetFeatureWithoutPreprocess(const Mat& sketchImage)
         {
-            return Transform(sketchImage);
+            double maxDistance = 22 * sketchImage.rows / 256;
+            return Transform(sketchImage, maxDistance);
         }
 
         inline double Hitmap::GetDistance(const Info& u, const Info& v)
