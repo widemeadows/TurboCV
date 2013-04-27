@@ -343,7 +343,7 @@ void EdgeMatchingCrossValidation(const TurboCV::System::String& imageSetPath, co
         KNN<EdgeMatching::Info> knn;
         pair<double, map<int, double>> precisions = knn.Evaluate(
             trainingSet, trainingLabels, evaluationSet, evaluationLabels, 
-            EdgeMatching::GetDistance, false);
+            EdgeMatching::GetDistance, KNN<EdgeMatching::Info>::HARD_VOTING);
 
         passResult.Add(precisions.first);
         printf("Fold %d Accuracy: %f\n", i + 1, precisions.first);
@@ -475,7 +475,7 @@ void LocalFeatureTest(const TurboCV::System::String& imageSetPath, const LocalFe
 {
     srand(1);
     ArrayList<Tuple<Mat, int>> images = GetImages(imageSetPath, CV_LOAD_IMAGE_GRAYSCALE);
-    int imageNum = (int)images.size();
+    int imageNum = (int)images.Count();
 
     ArrayList<LocalFeature_f> features(imageNum);
     printf("Compute " + feature.GetName() + "...\n");
@@ -577,13 +577,13 @@ void LocalFeatureTest(const TurboCV::System::String& imageSetPath, const LocalFe
         int counter = 0;
         for (int k = 0; k < imageNum; k++)
         {
-            if (counter < pickUpIndexes.size() && k == pickUpIndexes[counter])
+            if (counter < pickUpIndexes.Count() && k == pickUpIndexes[counter])
             {
-                evaluationLabels.push_back(images[k].Item2());
+                evaluationLabels.Add(images[k].Item2());
                 counter++;
             }
             else
-                trainingLabels.push_back(images[k].Item2());
+                trainingLabels.Add(images[k].Item2());
         }
 
         //ArrayList<double> weights = Boosting(trainingHistograms, trainingLabels);
@@ -604,9 +604,10 @@ void LocalFeatureTest(const TurboCV::System::String& imageSetPath, const LocalFe
 
         KNN<Histogram> knn;
         pair<double, map<int, double>> precisions = 
-            knn.Evaluate(4, trainingHistograms, trainingLabels, evaluationHistograms, evaluationLabels);
+            knn.Evaluate(trainingHistograms, trainingLabels, evaluationHistograms, evaluationLabels,
+            KNN<Histogram>::HARD_VOTING);
 
-        passResult.push_back(precisions.first);
+        passResult.Add(precisions.first);
         for (auto item : precisions.second)
         {
             ap[item.first] += item.second;
@@ -619,7 +620,7 @@ void LocalFeatureTest(const TurboCV::System::String& imageSetPath, const LocalFe
     TurboCV::System::String savePath = feature.GetName() + "_oracles_knn.out";
     FILE* file = fopen(savePath, "w");
 
-    for (int i = 0; i < passResult.size(); i++)
+    for (int i = 0; i < passResult.Count(); i++)
         fprintf(file, "Fold %d Accuracy: %f\n", i + 1, passResult[i]);
 
     fprintf(file, "Average: %f, Standard Deviation: %f\n", Math::Mean(passResult), 
@@ -686,14 +687,14 @@ int main()
     //LocalFeatureCrossValidation("sketches", RHOG(), 500);
     //printf("\n");
 
-    //GlobalFeatureCrossValidation("hccr", GHOG(), true);
+    //GlobalFeatureCrossValidation("oracles", GHOG(), true);
     //printf("\n");
 
-    EdgeMatchingCrossValidation("oracles", Hitmap(), true);
+    //EdgeMatchingCrossValidation("oracles", Hitmap(), true);
+    //printf("\n");
+
+    LocalFeatureTest("oracles", Test(), 1500);
     printf("\n");
-
-    //LocalFeatureTest("oracles", Test(), 1500);
-    //printf("\n");
 
     //LocalFeatureTest("oracles_png", Test(), 1500);
     //printf("\n");

@@ -5,6 +5,7 @@
 #include <iostream>
 #include <sstream>
 #include <iomanip>
+#include "Collection.h"
 #include "Exception.h"
 
 namespace TurboCV

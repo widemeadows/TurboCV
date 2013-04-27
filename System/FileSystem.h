@@ -2,7 +2,7 @@
 
 #include <Windows.h>
 #include "Collection.h"
-#include "String.h"
+#include "Type.h"
 
 namespace TurboCV
 {

@@ -1,10 +1,9 @@
 #include "stdafx.h"
 #include "CppUnitTest.h"
+#include "../System/Collection.h"
 #include "../System/Math.h"
-#include <vector>
 using namespace Microsoft::VisualStudio::CppUnitTestFramework;
 using namespace TurboCV::System;
-using namespace std;
 
 namespace UnitTest
 {        
@@ -13,11 +12,11 @@ namespace UnitTest
     public:
         TEST_METHOD(SumTest)
         {
-            vector<int> vec(1);
+            ArrayList<int> vec(1);
             Assert::AreEqual(0, Math::Sum(vec));
 
             for (int i = 1; i < 10; i++)
-                vec.push_back(0);
+                vec.Add(0);
             Assert::AreEqual(0, Math::Sum(vec));
 
             for (int i = 0; i < 10; i++)
@@ -31,11 +30,11 @@ namespace UnitTest
 
         TEST_METHOD(MeanTest)
         {
-            vector<int> vec(1);
+            ArrayList<int> vec(1);
             Assert::AreEqual(0.0, Math::Mean(vec));
 
             for (int i = 1; i < 10; i++)
-                vec.push_back(0);
+                vec.Add(0);
             Assert::AreEqual(0.0, Math::Mean(vec));
 
             for (int i = 0; i < 10; i++)
@@ -49,11 +48,11 @@ namespace UnitTest
 
         TEST_METHOD(StandardDeviationTest)
         {
-            vector<int> vec(1);
+            ArrayList<int> vec(1);
             Assert::AreEqual(0.0, Math::StandardDeviation(vec));
 
             for (int i = 1; i < 10; i++)
-                vec.push_back(0);
+                vec.Add(0);
             Assert::AreEqual(0.0, Math::StandardDeviation(vec));
 
             for (int i = 0; i < 10; i++)
@@ -67,11 +66,11 @@ namespace UnitTest
 
         TEST_METHOD(DistanceTest)
         {
-            vector<int> u, v;
+            ArrayList<int> u, v;
             for (int i = 0; i < 10; i++)
             {
-                u.push_back(1);
-                v.push_back(i + 1);
+                u.Add(1);
+                v.Add(i + 1);
             }
 
             Assert::AreEqual(45.0, Math::NormOneDistance(u, v));

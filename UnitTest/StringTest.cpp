@@ -1,6 +1,7 @@
 #include "stdafx.h"
 #include "CppUnitTest.h"
-#include "../System/String.h"
+#include "../System/Collection.h"
+#include "../System/Type.h"
 using namespace Microsoft::VisualStudio::CppUnitTestFramework;
 using namespace TurboCV::System;
 
@@ -174,57 +175,57 @@ namespace UnitTest
         TEST_METHOD(SplitTest)
         {
             String expected[] = { "Good", "Morning", "Hello", "World" };
-            vector<String> actual;
+            ArrayList<String> actual;
             String test;
             
             test = "Good Morning, Hello World!";
             actual = test.Split(" ,!");
-            Assert::AreEqual(4, (int)actual.size());
-            for (int i = 0; i < actual.size(); i++)
+            Assert::AreEqual(4, (int)actual.Count());
+            for (int i = 0; i < actual.Count(); i++)
                 Assert::AreEqual((const char*)expected[i], (const char*)actual[i]);
 
             test = "  Good   Morning,  Hello  World!  ";
             actual = test.Split(" ,!");
-            Assert::AreEqual(4, (int)actual.size());
-            for (int i = 0; i < actual.size(); i++)
+            Assert::AreEqual(4, (int)actual.Count());
+            for (int i = 0; i < actual.Count(); i++)
                 Assert::AreEqual((const char*)expected[i], (const char*)actual[i]);
 
             test = "  Good   Morning   Hello  World   ";
             actual = test.Split(" ,!");
-            Assert::AreEqual(4, (int)actual.size());
-            for (int i = 0; i < actual.size(); i++)
+            Assert::AreEqual(4, (int)actual.Count());
+            for (int i = 0; i < actual.Count(); i++)
                 Assert::AreEqual((const char*)expected[i], (const char*)actual[i]);
 
             test = "  Good Morning  Hello World     ";
             actual = test.Split(' ');
-            Assert::AreEqual(4, (int)actual.size());
-            for (int i = 0; i < actual.size(); i++)
+            Assert::AreEqual(4, (int)actual.Count());
+            for (int i = 0; i < actual.Count(); i++)
                 Assert::AreEqual((const char*)expected[i], (const char*)actual[i]);
 
             test = "              ";
             actual = test.Split(" ,!");
-            Assert::AreEqual(0, (int)actual.size());
+            Assert::AreEqual(0, (int)actual.Count());
 
             test = "              ";
             actual = test.Split(' ');
-            Assert::AreEqual(0, (int)actual.size());
+            Assert::AreEqual(0, (int)actual.Count());
 
             test = "";
             actual = test.Split(" ,!");
-            Assert::AreEqual(0, (int)actual.size());
+            Assert::AreEqual(0, (int)actual.Count());
 
             test = "";
             actual = test.Split(' ');
-            Assert::AreEqual(0, (int)actual.size());
+            Assert::AreEqual(0, (int)actual.Count());
 
             test = "Hello World!";
             actual = test.Split(",");
-            Assert::AreEqual(1, (int)actual.size());
+            Assert::AreEqual(1, (int)actual.Count());
             Assert::AreEqual((const char*)test, (const char*)actual[0]);
 
             test = "Hello World!";
             actual = test.Split(',');
-            Assert::AreEqual(1, (int)actual.size());
+            Assert::AreEqual(1, (int)actual.Count());
             Assert::AreEqual((const char*)test, (const char*)actual[0]);
         }
     };

@@ -77,14 +77,14 @@ namespace System
                 const ArrayList<T>& evaluationSet,
                 const ArrayList<int>& evaluationLabels,
                 double (*GetDistance)(const T&, const T&),
-                bool softVoting = true,
+                double sigma = 0.4,
                 int K = 4)
 	        {
                 assert(trainingSet.Count() == trainingLabels.Count());
                 assert(evaluationSet.Count() == evaluationSet.Count());
 
 		        Train(trainingSet, trainingLabels);
-		        ArrayList<int> predict = Predict(evaluationSet, GetDistance, softVoting, K);
+		        ArrayList<int> predict = Predict(evaluationSet, GetDistance, sigma, K);
 
                 size_t evaluationNum = evaluationSet.Count(), correctNum = 0;
                 unordered_map<int, int> evaluationNumPerClass, correctNumPerClass;
@@ -115,14 +115,14 @@ namespace System
                 const ArrayList<int>& trainingLabels,
                 const ArrayList<T>& evaluationSet,
                 const ArrayList<int>& evaluationLabels,
-                bool softVoting = true,
+                double sigma = 0.4,
                 int K = 4)
             {
                 assert(trainingSet.Count() == trainingLabels.Count());
                 assert(evaluationSet.Count() == evaluationSet.Count());
 
                 Train(trainingSet, trainingLabels);
-                ArrayList<int> predict = Predict(evaluationSet, softVoting, K);
+                ArrayList<int> predict = Predict(evaluationSet, sigma, K);
 
                 size_t evaluationNum = evaluationSet.Count(), correctNum = 0;
                 unordered_map<int, int> evaluationNumPerClass, correctNumPerClass;
@@ -163,7 +163,7 @@ namespace System
             ArrayList<int> Predict(
                 const ArrayList<T>& samples, 
                 double (*GetDistance)(const T&, const T&), 
-                bool softVoting = true, 
+                double sigma = 0.4, 
                 int K = 4)
 	        {
                 int sampleNum = samples.Count();
@@ -172,14 +172,13 @@ namespace System
 		        #pragma omp parallel for
 		        for (int i = 0; i < sampleNum; i++)
 		        {
-			        results[i] = predictOneSample(samples[i], GetDistance, softVoting, K);
+			        results[i] = predictOneSample(samples[i], GetDistance, sigma, K);
 		        }
 
 		        return results;
 	        }
 
-            ArrayList<int> Predict(const ArrayList<T>& samples, 
-                bool softVoting = true, int K = 4)
+            ArrayList<int> Predict(const ArrayList<T>& samples, double sigma = 0.4, int K = 4)
             {
                 int sampleNum = samples.Count();
                 ArrayList<int> results(sampleNum);
@@ -187,15 +186,17 @@ namespace System
                 #pragma omp parallel for
                 for (int i = 0; i < sampleNum; i++)
                 {
-                    results[i] = predictOneSample(samples[i], softVoting, K);
+                    results[i] = predictOneSample(samples[i], sigma, K);
                 }
 
                 return results;
             }
 
+            static const double HARD_VOTING;
+
         private:
             int predictOneSample(const T& sample, double (*GetDistance)(const T&, const T&), 
-                bool softVoting = true, int K = 4)
+                double sigma, int K)
 	        {
                 size_t dataNum = _data.Count();
 
@@ -207,22 +208,23 @@ namespace System
 		        partial_sort(distances.begin(), distances.begin() + K, distances.end());
 
                 unordered_map<int, double> votes;
-                if (!softVoting)
-                {
-                    for (int i = 0; i < K; i++)
-                    {
-                        int& label = distances[i].second;
-                        votes[label]++;
-                    }
-                }
-                else
+                bool softVoting = sigma > 0;
+                if (softVoting)
                 {
                     for (int i = 0; i < K; i++)
                     {
                         double& distance = distances[i].first;
                         int& label = distances[i].second;
-                        votes[label] += Math::Gauss(distance, 0.4);
-                    }
+                        votes[label] += Math::Gauss(distance, sigma);
+                    }          
+                }
+                else
+                {
+                    for (int i = 0; i < K; i++)
+                    {
+                        int& label = distances[i].second;
+                        votes[label]++;
+                    } 
                 }
 	
 		        double maxFreq = -1;
@@ -240,7 +242,7 @@ namespace System
                 return index;
             }
 
-            int predictOneSample(const T& sample, bool softVoting = true, int K = 4)
+            int predictOneSample(const T& sample, double sigma, int K)
             {
                 size_t dataNum = _data.Count();
                 ArrayList<pair<double, int>> distances(dataNum);
@@ -253,22 +255,23 @@ namespace System
                 partial_sort(distances.begin(), distances.begin() + K, distances.end());
 
                 unordered_map<int, double> votes;
-                if (!softVoting)
-                {
-                    for (int i = 0; i < K; i++)
-                    {
-                        int& label = distances[i].second;
-                        votes[label]++;
-                    }
-                }
-                else
+                bool softVoting = sigma > 0;
+                if (softVoting)
                 {
                     for (int i = 0; i < K; i++)
                     {
                         double& distance = distances[i].first;
                         int& label = distances[i].second;
-                        votes[label] += Math::Gauss(distance, 0.4);
-                    }
+                        votes[label] += Math::Gauss(distance, sigma);
+                    }          
+                }
+                else
+                {
+                    for (int i = 0; i < K; i++)
+                    {
+                        int& label = distances[i].second;
+                        votes[label]++;
+                    } 
                 }
 
                 double maxFreq = -1;
@@ -290,6 +293,9 @@ namespace System
             ArrayList<T> _data;
             unordered_map<int, int> _dataNumPerClass;
         };
+
+        template<typename T>
+        const double KNN<T>::HARD_VOTING = -1;
     }
 }
 }
