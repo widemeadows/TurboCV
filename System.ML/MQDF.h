@@ -43,7 +43,7 @@ namespace TurboCV
                     }
 
                     std::map<int, double> precisions;
-                    for (auto item : _trainingData)
+                    for (auto item : _categories)
                     {
                         int label = item.first;
                         precisions[label] = (double)correctNumPerClass[label] / 
@@ -62,7 +62,7 @@ namespace TurboCV
                     _K = _D * 0.5;
                     if (_K > dataNum)
                         _K = dataNum;
-                    _trainingData.clear();
+                    _categories.clear();
                     _eigens.clear();
                     _means.clear();
                     _weights.clear();
@@ -74,7 +74,7 @@ namespace TurboCV
                         for (int j = 0; j < data[i].Count(); j++)
                             row.at<double>(0, j) = data[i][j];
 
-                        _trainingData[labels[i]].push_back(row);
+                        _categories[labels[i]].push_back(row);
                         _weights[labels[i]]++;
                     }
 
@@ -85,7 +85,7 @@ namespace TurboCV
                         itr++;
                     }
 
-                    for (auto item : _trainingData)
+                    for (auto item : _categories)
                     {
                         const int label = item.first;
                         const cv::Mat& data = item.second;
@@ -131,32 +131,32 @@ namespace TurboCV
 
                     std::map<double, int> distanceAndLabels;
 
-                    for (auto item : _trainingData)
+                    for (auto item : _categories)
                     {
                         int label = item.first;
                         double factor1 = 0, factor2 = 0;
 
-                        //cv::Mat dif = x - _means[label];
-                        //double tmp = cv::norm(dif, cv::NORM_L2);
-                        //factor1 = tmp * tmp;
-                        //
-                        //double constant = _constants[label];
-                        //for (int j = 0; j < _K; j++)
-                        //{
-                        //    const Tuple<cv::Mat, cv::Mat>& item = _eigens[label];
-                        //    double eigenValue = item.Item1().at<double>(j, 0);
-                        //    cv::Mat eigenVector = item.Item2().row(j);
+                        cv::Mat dif = x - _means[label];
+                        double tmp = cv::norm(dif, cv::NORM_L2);
+                        factor1 = tmp * tmp;
 
-                        //    double tmp = ((cv::Mat)(eigenVector * dif.t())).at<double>(0, 0);
-                        //    factor1 -= (1 - constant / eigenValue) * tmp * tmp;
+                        double constant = _constants[label];
+                        for (int j = 0; j < _K; j++)
+                        {
+                            const Tuple<cv::Mat, cv::Mat>& item = _eigens[label];
+                            double eigenValue = item.Item1().at<double>(j, 0);
+                            cv::Mat eigenVector = item.Item2().row(j);
 
-                        //    factor2 += std::log(eigenValue);
-                        //}
+                            double tmp = ((cv::Mat)(eigenVector * dif.t())).at<double>(0, 0);
+                            factor1 -= (1 - constant / eigenValue) * tmp * tmp;
 
-                        //factor1 /= constant;
-                        //factor2 += (_D - _K) * log(constant);
+                            factor2 += std::log(eigenValue);
+                        }
 
-                        for (int j = 0; j < _D; j++)
+                        factor1 /= constant;
+                        factor2 += (_D - _K) * log(constant);
+
+ /*                       for (int j = 0; j < _D; j++)
                         {
                             const Tuple<cv::Mat, cv::Mat>& item = _eigens[label];
                             double eigenValue = item.Item1().at<double>(j, 0);
@@ -169,18 +169,18 @@ namespace TurboCV
                             factor1 += tmp * tmp / eigenValue;
                             
                             factor2 += log(eigenValue);
-                        }
+                        }*/
 
                         double distance = (factor1 + factor2)/* / _weights[label]*/;
                         distanceAndLabels[distance] = label;
-                        printf("%f %d\n", distance, label);
+                        printf("%f %f %d\n", constant, distance, label);
                     }
 
                     return (distanceAndLabels.begin())->second;
                 }
 
                 int _K, _D;
-                std::unordered_map<int, cv::Mat> _trainingData;
+                std::unordered_map<int, cv::Mat> _categories;
                 std::unordered_map<int, Tuple<cv::Mat, cv::Mat>> _eigens;
                 std::unordered_map<int, cv::Mat> _means;
                 std::unordered_map<int, double> _constants, _weights;

@@ -222,9 +222,9 @@ void GlobalFeatureCrossValidation(const TurboCV::System::String& imageSetPath, c
                 trainingLabels.Add(images[j].Item2());
         }
 
-        KNN<GlobalFeature_f> knn;
+        MQDF<GlobalFeature_f> mqdf;
         pair<double, map<int, double>> precisions = 
-            knn.Evaluate(trainingSet, trainingLabels, evaluationSet, evaluationLabels);
+            mqdf.Evaluate(trainingSet, trainingLabels, evaluationSet, evaluationLabels);
 
         passResult.Add(precisions.first);
         printf("Fold %d Accuracy: %f\n", i + 1, precisions.first);
@@ -604,8 +604,7 @@ void LocalFeatureTest(const TurboCV::System::String& imageSetPath, const LocalFe
 
         KNN<Histogram> knn;
         pair<double, map<int, double>> precisions = 
-            knn.Evaluate(trainingHistograms, trainingLabels, evaluationHistograms, evaluationLabels,
-            KNN<Histogram>::HARD_VOTING);
+            knn.Evaluate(trainingHistograms, trainingLabels, evaluationHistograms, evaluationLabels);
 
         passResult.Add(precisions.first);
         for (auto item : precisions.second)
@@ -687,14 +686,17 @@ int main()
     //LocalFeatureCrossValidation("sketches", RHOG(), 500);
     //printf("\n");
 
-    //GlobalFeatureCrossValidation("oracles", GHOG(), true);
-    //printf("\n");
+    GlobalFeatureCrossValidation("hccr", GHOG(), true);
+    printf("\n");
 
     //EdgeMatchingCrossValidation("oracles", Hitmap(), true);
     //printf("\n");
 
-    LocalFeatureTest("oracles", Test(), 1500);
-    printf("\n");
+    //EdgeMatchingCrossValidation("oracles", XOR(), true);
+    //printf("\n");
+
+    //LocalFeatureTest("oracles", Test(), 1500);
+    //printf("\n");
 
     //LocalFeatureTest("oracles_png", Test(), 1500);
     //printf("\n");
