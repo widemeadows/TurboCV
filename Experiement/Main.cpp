@@ -186,17 +186,17 @@ void GlobalFeatureCrossValidation(const TurboCV::System::String& imageSetPath, c
         images[i].Item1().release();
     }
 
-    printf("Write To File...\n");
-    TurboCV::System::String savePath = feature.GetName() + "_" + imageSetPath;
-    FILE* file = fopen(savePath, "w");
-    for (int i = 0; i < features.Count(); i++)
-    {
-        fprintf(file, "%d", images[i].Item2());
-        for (int j = 0; j < features[i].Count(); j++)
-            fprintf(file, " %d:%f", j + 1, features[i][j]);
-        fprintf(file, "\n");
-    }
-    fclose(file);
+    //printf("Write To File...\n");
+    //TurboCV::System::String savePath = feature.GetName() + "_" + imageSetPath;
+    //FILE* file = fopen(savePath, "w");
+    //for (int i = 0; i < features.Count(); i++)
+    //{
+    //    fprintf(file, "%d", images[i].Item2());
+    //    for (int j = 0; j < features[i].Count(); j++)
+    //        fprintf(file, " %d:%f", j + 1, features[i][j]);
+    //    fprintf(file, "\n");
+    //}
+    //fclose(file);
 
     ArrayList<Tuple<ArrayList<GlobalFeature_f>, ArrayList<GlobalFeature_f>, ArrayList<size_t>>> pass = 
         RandomSplit(features, fold);
@@ -222,9 +222,9 @@ void GlobalFeatureCrossValidation(const TurboCV::System::String& imageSetPath, c
                 trainingLabels.Add(images[j].Item2());
         }
 
-        MQDF<GlobalFeature_f> mqdf;
+        KNN<GlobalFeature_f> knn;
         pair<double, map<int, double>> precisions = 
-            mqdf.Evaluate(trainingSet, trainingLabels, evaluationSet, evaluationLabels);
+            knn.Evaluate(trainingSet, trainingLabels, evaluationSet, evaluationLabels);
 
         passResult.Add(precisions.first);
         printf("Fold %d Accuracy: %f\n", i + 1, precisions.first);
@@ -242,8 +242,8 @@ void GlobalFeatureCrossValidation(const TurboCV::System::String& imageSetPath, c
         }
     }
 
-    savePath = feature.GetName() + "_" + imageSetPath + "_knn.out";
-    file = fopen(savePath, "w");
+    TurboCV::System::String savePath = feature.GetName() + "_" + imageSetPath + "_knn.out";
+    FILE* file = fopen(savePath, "w");
     for (int i = 0; i < passResult.Count(); i++)
         fprintf(file, "Fold %d Accuracy: %f\n", i + 1, passResult[i]);
     fprintf(file, "Average: %f, Standard Deviation: %f\n", Math::Mean(passResult), 

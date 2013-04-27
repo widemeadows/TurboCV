@@ -406,13 +406,13 @@ namespace System
         inline XOR::Info XOR::GetFeatureWithPreprocess(const Mat& sketchImage, bool thinning,
             Size size)
         {
-            double maxDistance = 22 * size.height / 256;
+            double maxDistance = 15 * size.height / 256;
             return Transform(Preprocess(sketchImage, thinning), maxDistance);
         }
 
         inline XOR::Info XOR::GetFeatureWithoutPreprocess(const Mat& sketchImage)
         {
-            double maxDistance = 22 * sketchImage.rows / 256;
+            double maxDistance = 10 * sketchImage.rows / 256;
             return Transform(sketchImage, maxDistance);
         }
 
@@ -431,7 +431,7 @@ namespace System
                 {
                     for (int k = 0; k < uMat.cols; k++)
                     {
-                        unsigned int tmp = uMat.at<unsigned int>(j, k) & vMat.at<unsigned int>(j, k);
+                        unsigned int tmp = uMat.at<int>(j, k) & vMat.at<int>(j, k);
 
                         while (tmp)
                         {
@@ -441,8 +441,6 @@ namespace System
                     }
                 }
             }
-
-            printf("%f\n", sum / (u[0].rows * u[0].cols * 32));
 
             if (sum == 0)
                 return 1;
@@ -504,9 +502,9 @@ namespace System
                         top = (int)floor(channels[i][j].y - maxDistance),
                         bottom = (int)ceil(channels[i][j].y + maxDistance);
                     left = left < 0 ? 0 : left;
-                    right = right > dt.cols ? dt.cols : right;
+                    right = right > sketchImage.cols ? sketchImage.cols : right;
                     top = top < 0 ? 0 : top;
-                    bottom = bottom > dt.rows ? dt.rows : bottom;
+                    bottom = bottom > sketchImage.rows ? sketchImage.rows : bottom;
 
                     for (int m = top; m < bottom; m++)
                     {
@@ -516,7 +514,7 @@ namespace System
                                 (n - channels[i][j].x) * (n - channels[i][j].x));
 
                             if (distance <= maxDistance)
-                                dt.at<unsigned int>(m, n / 32) |= 1 << (n % 32);
+                                dt.at<int>(m, n / 32) |= 1 << (n % 32);
                         }
                     }
                 }
