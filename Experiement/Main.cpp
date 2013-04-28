@@ -686,7 +686,7 @@ int main()
     //LocalFeatureCrossValidation("hccr", RHOG(), 500);
     //printf("\n");
 
-    GlobalFeatureCrossValidation("hccr", GHOG(), true);
+    GlobalFeatureCrossValidation("oracles", GHOG(), true);
     printf("\n");
 
     //EdgeMatchingCrossValidation("oracles", Hitmap(), true);

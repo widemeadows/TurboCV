@@ -109,13 +109,8 @@ namespace TurboCV
                         }
                         smallValueMean /= smallValueNum;
 
-                        for (int j = 0; j < eigenValues.rows; j++)
-                        {
-                            if (eigenValues.at<double>(j, 0) < maxValue / 100)
-                            {
-                                eigenValues.at<double>(j, 0) = smallValueMean;
-                            }
-                        }
+                        for (int j = eigenValues.rows - smallValueNum; j < eigenValues.rows; j++)
+                            eigenValues.at<double>(j, 0) = smallValueMean;
 
                         Mat diag = Mat::zeros(eigenValues.rows, eigenValues.rows, CV_64F);
                         for (int j = 0; j < eigenValues.rows; j++)
