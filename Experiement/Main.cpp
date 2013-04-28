@@ -72,25 +72,25 @@ void LocalFeatureCrossValidation(const TurboCV::System::String& imageSetPath, co
         images[i].Item1().release();
     }
 
-    { // Use a block here to destruct words and freqHistograms immediately.
-        printf("Compute Visual Words...\n");
-        ArrayList<Word_f> words = BOV::GetVisualWords(features, wordNum, sampleNum);
+    //{ // Use a block here to destruct words and freqHistograms immediately.
+    //    printf("Compute Visual Words...\n");
+    //    ArrayList<Word_f> words = BOV::GetVisualWords(features, wordNum, sampleNum);
 
-        printf("Compute Frequency Histograms...\n");
-        ArrayList<Histogram> freqHistograms = BOV::GetFrequencyHistograms(features, words);
+    //    printf("Compute Frequency Histograms...\n");
+    //    ArrayList<Histogram> freqHistograms = BOV::GetFrequencyHistograms(features, words);
 
-        printf("Write To File...\n");
-        TurboCV::System::String savePath = feature.GetName() + "_" + imageSetPath;
-        FILE* file = fopen(savePath, "w");
-        for (int i = 0; i < freqHistograms.Count(); i++)
-        {
-            fprintf(file, "%d", images[i].Item2());
-            for (int j = 0; j < freqHistograms[i].Count(); j++)
-                fprintf(file, " %d:%f", j + 1, freqHistograms[i][j]);
-            fprintf(file, "\n");
-        }
-        fclose(file);
-    }
+    //    printf("Write To File...\n");
+    //    TurboCV::System::String savePath = feature.GetName() + "_" + imageSetPath;
+    //    FILE* file = fopen(savePath, "w");
+    //    for (int i = 0; i < freqHistograms.Count(); i++)
+    //    {
+    //        fprintf(file, "%d", images[i].Item2());
+    //        for (int j = 0; j < freqHistograms[i].Count(); j++)
+    //            fprintf(file, " %d:%f", j + 1, freqHistograms[i][j]);
+    //        fprintf(file, "\n");
+    //    }
+    //    fclose(file);
+    //}
 
     ArrayList<Tuple<ArrayList<LocalFeature_f>, ArrayList<LocalFeature_f>, ArrayList<size_t>>> pass = 
         RandomSplit(features, fold);
@@ -222,9 +222,9 @@ void GlobalFeatureCrossValidation(const TurboCV::System::String& imageSetPath, c
                 trainingLabels.Add(images[j].Item2());
         }
 
-        KNN<GlobalFeature_f> knn;
+        MQDF<GlobalFeature_f> mqdf;
         pair<double, map<int, double>> precisions = 
-            knn.Evaluate(trainingSet, trainingLabels, evaluationSet, evaluationLabels);
+            mqdf.Evaluate(trainingSet, trainingLabels, evaluationSet, evaluationLabels);
 
         passResult.Add(precisions.first);
         printf("Fold %d Accuracy: %f\n", i + 1, precisions.first);
@@ -683,7 +683,7 @@ void Batch(const TurboCV::System::String& imageSetPath, bool thinning = false)
 
 int main()
 {
-    //LocalFeatureCrossValidation("sketches", RHOG(), 500);
+    //LocalFeatureCrossValidation("hccr", RHOG(), 500);
     //printf("\n");
 
     GlobalFeatureCrossValidation("hccr", GHOG(), true);

@@ -59,14 +59,11 @@ namespace TurboCV
 
                     int dataNum = data.Count();
                     _D = data[0].Count();
-                    _K = _D * 0.5;
-                    if (_K > dataNum)
-                        _K = dataNum;
                     _categories.clear();
-                    _eigens.clear();
+                    _invCovariance.clear();
+                    _determine.clear();
                     _means.clear();
                     _weights.clear();
-                    _constants.clear();
 
                     for (int i = 0; i < dataNum; i++)
                     {
@@ -96,15 +93,43 @@ namespace TurboCV
                         cv::Mat eigenValues, eigenVectors;
                         cv::eigen(covariation, eigenValues, eigenVectors);
 
-                        _means[label] = mean;
-                        _eigens[label] = CreateTuple(eigenValues, eigenVectors);
+                        double maxValue = -1e10;
+                        for (int j = 0; j < eigenValues.rows; j++)
+                            maxValue = max(maxValue, eigenValues.at<double>(j, 0));
 
-                        double constant = 0;
-                        const cv::Mat& values = eigenValues;
-                        for (int j = _K; j < _D; j++)
-                            constant += values.at<double>(j, 0);
-                        constant /= (_D - _K);
-                        _constants[label] = constant;
+                        double smallValueMean = 0;
+                        int smallValueNum = 0;
+                        for (int j = 0; j < eigenValues.rows; j++)
+                        {
+                            if (eigenValues.at<double>(j, 0) < maxValue / 100)
+                            {
+                                smallValueMean += eigenValues.at<double>(j, 0);
+                                smallValueNum++;
+                            }
+                        }
+                        smallValueMean /= smallValueNum;
+
+                        for (int j = 0; j < eigenValues.rows; j++)
+                        {
+                            if (eigenValues.at<double>(j, 0) < maxValue / 100)
+                            {
+                                eigenValues.at<double>(j, 0) = smallValueMean;
+                            }
+                        }
+
+                        Mat diag = Mat::zeros(eigenValues.rows, eigenValues.rows, CV_64F);
+                        for (int j = 0; j < eigenValues.rows; j++)
+                            diag.at<double>(j, j) = eigenValues.at<double>(j, 0);
+
+                        covariation = eigenVectors.t() * diag * eigenVectors;
+                        _invCovariance[label] = covariation.inv();
+
+                        double determinant = 0;
+                        for (int j = 0; j < eigenValues.rows - smallValueNum; j++)
+                            determinant += log(eigenValues.at<double>(j, 0));
+                        _determine[label] = determinant;
+
+                        _means[label] = mean;
                     }
                 }
 
@@ -129,61 +154,27 @@ namespace TurboCV
                     for (int i = 0; i < sample.Count(); i++)
                         x.at<double>(0, i) = sample[i];
 
-                    std::map<double, int> distanceAndLabels;
+                   ArrayList<Tuple<double, int>> distanceAndLabels;
 
                     for (auto item : _categories)
                     {
                         int label = item.first;
-                        double factor1 = 0, factor2 = 0;
 
                         cv::Mat dif = x - _means[label];
-                        double tmp = cv::norm(dif, cv::NORM_L2);
-                        factor1 = tmp * tmp;
-
-                        double constant = _constants[label];
-                        for (int j = 0; j < _K; j++)
-                        {
-                            const Tuple<cv::Mat, cv::Mat>& item = _eigens[label];
-                            double eigenValue = item.Item1().at<double>(j, 0);
-                            cv::Mat eigenVector = item.Item2().row(j);
-
-                            double tmp = ((cv::Mat)(eigenVector * dif.t())).at<double>(0, 0);
-                            factor1 -= (1 - constant / eigenValue) * tmp * tmp;
-
-                            factor2 += std::log(eigenValue);
-                        }
-
-                        factor1 /= constant;
-                        factor2 += (_D - _K) * log(constant);
-
- /*                       for (int j = 0; j < _D; j++)
-                        {
-                            const Tuple<cv::Mat, cv::Mat>& item = _eigens[label];
-                            double eigenValue = item.Item1().at<double>(j, 0);
-                            cv::Mat eigenVector = item.Item2().row(j);
-
-                            if (abs(eigenValue) < 1e-4)
-                                continue;
-
-                            double tmp = ((cv::Mat)(eigenVector * (x - _means[label]).t())).at<double>(0, 0);
-                            factor1 += tmp * tmp / eigenValue;
-                            
-                            factor2 += log(eigenValue);
-                        }*/
-
-                        double distance = (factor1 + factor2)/* / _weights[label]*/;
-                        distanceAndLabels[distance] = label;
-                        printf("%f %f %d\n", constant, distance, label);
+                        double distance = ((cv::Mat)(dif * _invCovariance[label] * dif.t())).
+                            at<double>(0, 0) - 0.5 * _weights[label]
+                            /*+ _determine[label]*/;
+                        distanceAndLabels.Add(CreateTuple(distance, label));
                     }
 
-                    return (distanceAndLabels.begin())->second;
+                    return Math::Min(distanceAndLabels).Item2();
                 }
 
-                int _K, _D;
-                std::unordered_map<int, cv::Mat> _categories;
-                std::unordered_map<int, Tuple<cv::Mat, cv::Mat>> _eigens;
+                int _D;
+                std::unordered_map<int, cv::Mat> _categories, _invCovariance;
+                std::unordered_map<int, double> _determine;
                 std::unordered_map<int, cv::Mat> _means;
-                std::unordered_map<int, double> _constants, _weights;
+                std::unordered_map<int, double> _weights;
             };
         }
     }
