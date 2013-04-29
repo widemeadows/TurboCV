@@ -60,10 +60,10 @@ namespace TurboCV
                     int dataNum = data.Count();
                     _D = data[0].Count();
                     _categories.clear();
-                    _invCovariance.clear();
-                    _determine.clear();
-                    _means.clear();
-                    _weights.clear();
+                    _invCovariance.Clear();
+                    _detCovariance.Clear();
+                    _means.Clear();
+                    _weights.Clear();
 
                     for (int i = 0; i < dataNum; i++)
                     {
@@ -71,21 +71,29 @@ namespace TurboCV
                         for (int j = 0; j < data[i].Count(); j++)
                             row.at<double>(0, j) = data[i][j];
 
-                        _categories[labels[i]].push_back(row);
-                        _weights[labels[i]]++;
+                        _categories[labels[i]].Item2().push_back(row);
                     }
 
-                    std::unordered_map<int, double>::iterator itr = _weights.begin();
-                    while (itr != _weights.end())
-                    {
-                        itr->second /= dataNum;
-                        itr++;
-                    }
+					int categoryNum = 0;
+					std::unordered_map<int, int> revMapping;
+					std::unordered_map<int, Tuple<int, cv::Mat>>::iterator catItr = _categories.begin();
+					while (catItr != _categories.end())
+					{
+						revMapping[categoryNum] = catItr->first;
+						(catItr->second).Item1() = categoryNum++;
+						catItr++;
 
-                    for (auto item : _categories)
+						_invCovariance.Add(cv::Mat());
+						_detCovariance.Add(0);
+						_means.Add(cv::Mat());
+						_weights.Add(0);
+					}
+
+					#pragma omp parallel for
+                    for (int index = 0; index < categoryNum; index++)
                     {
-                        const int label = item.first;
-                        const cv::Mat& data = item.second;
+                        const cv::Mat& data = _categories[revMapping[index]].Item2();
+						_weights[index] = (double)data.rows / dataNum;
 
                         cv::Mat covariation, mean;
                         cv::calcCovarMatrix(data, covariation, mean, CV_COVAR_ROWS | CV_COVAR_NORMAL);
@@ -117,14 +125,14 @@ namespace TurboCV
                             diag.at<double>(j, j) = eigenValues.at<double>(j, 0);
 
                         covariation = eigenVectors.t() * diag * eigenVectors;
-                        _invCovariance[label] = covariation.inv();
+                        _invCovariance[index] = covariation.inv();
 
                         double determinant = 0;
                         for (int j = 0; j < eigenValues.rows - smallValueNum; j++)
                             determinant += log(eigenValues.at<double>(j, 0));
-                        _determine[label] = determinant;
+                        _detCovariance[index] = determinant;
 
-                        _means[label] = mean;
+                        _means[index] = mean;
                     }
                 }
 
@@ -149,27 +157,28 @@ namespace TurboCV
                     for (int i = 0; i < sample.Count(); i++)
                         x.at<double>(0, i) = sample[i];
 
-                   ArrayList<Tuple<double, int>> distanceAndLabels;
+					ArrayList<Tuple<double, int>> distanceAndLabels;
 
                     for (auto item : _categories)
                     {
-                        int label = item.first;
+                        int index = item.second.Item1();
 
-                        cv::Mat dif = x - _means[label];
-                        double distance = ((cv::Mat)(dif * _invCovariance[label] * dif.t())).
-                            at<double>(0, 0) - 0.5 * _weights[label]
+                        cv::Mat dif = x - _means[index];
+                        double distance = ((cv::Mat)(dif * _invCovariance[index] * dif.t())).
+                            at<double>(0, 0) - 0.5 * _weights[index]
                             /*+ _determine[label]*/;
-                        distanceAndLabels.Add(CreateTuple(distance, label));
+                        distanceAndLabels.Add(CreateTuple(distance, item.first));
                     }
 
                     return Math::Min(distanceAndLabels).Item2();
                 }
 
                 int _D;
-                std::unordered_map<int, cv::Mat> _categories, _invCovariance;
-                std::unordered_map<int, double> _determine;
-                std::unordered_map<int, cv::Mat> _means;
-                std::unordered_map<int, double> _weights;
+                std::unordered_map<int, Tuple<int, cv::Mat>> _categories;
+				ArrayList<cv::Mat> _invCovariance;
+                ArrayList<double> _detCovariance;
+                ArrayList<cv::Mat> _means;
+				ArrayList<double> _weights;
             };
         }
     }
