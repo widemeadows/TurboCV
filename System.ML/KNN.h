@@ -1,12 +1,9 @@
 #pragma once
 
 #include "../System/System.h"
-#include <cv.h>
 #include <map>
 #include <unordered_map>
 #include <algorithm>
-using namespace cv;
-using namespace std;
 
 namespace TurboCV
 {
@@ -14,64 +11,11 @@ namespace System
 {
     namespace ML
     {
-        template<typename T, typename Measurement>
-        pair<ArrayList<ArrayList<double>>, ArrayList<ArrayList<bool>>> GetDistanceMatrix(
-            const ArrayList<T>& trainingSet,
-            const ArrayList<int>& trainingLabels,
-            const ArrayList<T>& evaluationSet,
-            const ArrayList<int>& evaluationLabels,
-            Measurement GetDistance)
-        {
-            assert(trainingSet.Count() == trainingLabels.Count());
-            assert(evaluationSet.Count() == evaluationSet.Count());
-
-            ArrayList<ArrayList<double>> distanceMatrix(evaluationSet.Count());
-            ArrayList<ArrayList<bool>> relevantMatrix(evaluationSet.Count());
-
-            #pragma omp parallel for
-            for (int i = 0; i < evaluationSet.Count(); i++)
-            {
-                for (size_t j = 0; j < trainingSet.Count(); j++)
-                {
-                    distanceMatrix[i].Add(GetDistance(evaluationSet[i], trainingSet[j]));
-                    relevantMatrix[i].Add(evaluationLabels[i] == trainingLabels[j]);
-                }
-            }
-
-            return make_pair(distanceMatrix, relevantMatrix);
-        }
-
-        template<typename T>
-        pair<ArrayList<ArrayList<double>>, ArrayList<ArrayList<bool>>> GetDistanceMatrix(
-            const ArrayList<T>& trainingSet,
-            const ArrayList<int>& trainingLabels,
-            const ArrayList<T>& evaluationSet,
-            const ArrayList<int>& evaluationLabels)
-        {
-            assert(trainingSet.Count() == trainingLabels.Count());
-            assert(evaluationSet.Count() == evaluationSet.Count());
-
-            ArrayList<ArrayList<double>> distanceMatrix(evaluationSet.Count());
-            ArrayList<ArrayList<bool>> relevantMatrix(evaluationSet.Count());
-
-            #pragma omp parallel for
-            for (int i = 0; i < evaluationSet.Count(); i++)
-            {
-                for (size_t j = 0; j < trainingSet.Count(); j++)
-                {
-                    distanceMatrix[i].Add(Math::NormTwoDistance(evaluationSet[i], trainingSet[j]));
-                    relevantMatrix[i].Add(evaluationLabels[i] == trainingLabels[j]);
-                }
-            }
-
-            return make_pair(distanceMatrix, relevantMatrix);
-        }
-
         template<typename T>
         class KNN
         {
         public:
-            pair<double, map<int, double>> Evaluate(
+            std::pair<double, std::map<int, double>> Evaluate(
                 const ArrayList<T>& trainingSet,
                 const ArrayList<int>& trainingLabels,
                 const ArrayList<T>& evaluationSet,
@@ -87,7 +31,7 @@ namespace System
 		        ArrayList<int> predict = Predict(evaluationSet, GetDistance, sigma, K);
 
                 size_t evaluationNum = evaluationSet.Count(), correctNum = 0;
-                unordered_map<int, int> evaluationNumPerClass, correctNumPerClass;
+                std::unordered_map<int, int> evaluationNumPerClass, correctNumPerClass;
 		        for (size_t i = 0; i < evaluationNum; i++)
 		        {
 			        evaluationNumPerClass[evaluationLabels[i]]++;
@@ -99,7 +43,7 @@ namespace System
 			        }
 		        }
 
-		        map<int, double> precisions;
+		        std::map<int, double> precisions;
                 for (auto item : _dataNumPerClass)
                 {
                     int label = item.first;
@@ -107,10 +51,10 @@ namespace System
                         evaluationNumPerClass[label];
                 }
 
-		        return make_pair((double)correctNum / evaluationNum, precisions);
+		        return std::make_pair((double)correctNum / evaluationNum, precisions);
 	        }
 
-            pair<double, map<int, double>> Evaluate(
+            std::pair<double, std::map<int, double>> Evaluate(
                 const ArrayList<T>& trainingSet,
                 const ArrayList<int>& trainingLabels,
                 const ArrayList<T>& evaluationSet,
@@ -125,7 +69,7 @@ namespace System
                 ArrayList<int> predict = Predict(evaluationSet, sigma, K);
 
                 size_t evaluationNum = evaluationSet.Count(), correctNum = 0;
-                unordered_map<int, int> evaluationNumPerClass, correctNumPerClass;
+                std::unordered_map<int, int> evaluationNumPerClass, correctNumPerClass;
                 for (size_t i = 0; i < evaluationNum; i++)
                 {
                     evaluationNumPerClass[evaluationLabels[i]]++;
@@ -137,7 +81,7 @@ namespace System
                     }
                 }
 
-                map<int, double> precisions;
+                std::map<int, double> precisions;
                 for (auto item : _dataNumPerClass)
                 {
                     int label = item.first;
@@ -145,7 +89,7 @@ namespace System
                         evaluationNumPerClass[label];
                 }
 
-                return make_pair((double)correctNum / evaluationNum, precisions);
+                return std::make_pair((double)correctNum / evaluationNum, precisions);
             }
 
             void Train(const ArrayList<T>& data, const ArrayList<int>& labels)
@@ -200,14 +144,14 @@ namespace System
 	        {
                 size_t dataNum = _data.Count();
 
-		        ArrayList<pair<double, int>> distances(dataNum);
+		        ArrayList<std::pair<double, int>> distances(dataNum);
 		        for (size_t i = 0; i < dataNum; i++)
 		        {
 			        distances[i] = make_pair(GetDistance(sample, _data[i]), _labels[i]);
 		        }
-		        partial_sort(distances.begin(), distances.begin() + K, distances.end());
+		        std::partial_sort(distances.begin(), distances.begin() + K, distances.end());
 
-                unordered_map<int, double> votes;
+                std::unordered_map<int, double> votes;
                 bool softVoting = sigma > 0;
                 if (softVoting)
                 {
@@ -245,16 +189,16 @@ namespace System
             int predictOneSample(const T& sample, double sigma, int K)
             {
                 size_t dataNum = _data.Count();
-                ArrayList<pair<double, int>> distances(dataNum);
+                ArrayList<std::pair<double, int>> distances(dataNum);
 
                 for (size_t i = 0; i < dataNum; i++)
                 {
                     distances[i] = make_pair(
                         Math::NormOneDistance(sample, _data[i]), _labels[i]);
                 }
-                partial_sort(distances.begin(), distances.begin() + K, distances.end());
+                std::partial_sort(distances.begin(), distances.begin() + K, distances.end());
 
-                unordered_map<int, double> votes;
+                std::unordered_map<int, double> votes;
                 bool softVoting = sigma > 0;
                 if (softVoting)
                 {
@@ -291,7 +235,7 @@ namespace System
 
             ArrayList<int> _labels;
             ArrayList<T> _data;
-            unordered_map<int, int> _dataNumPerClass;
+            std::unordered_map<int, int> _dataNumPerClass;
         };
 
         template<typename T>

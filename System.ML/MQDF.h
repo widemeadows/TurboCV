@@ -5,7 +5,6 @@
 #include <cmath>
 #include <map>
 #include <unordered_map>
-#include <cv.h>
 
 namespace TurboCV
 {

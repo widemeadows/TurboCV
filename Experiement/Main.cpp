@@ -1,6 +1,7 @@
 #include "../System/System.h"
 #include "../System.Image/System.Image.h"
 #include "../System.ML/System.ML.h"
+#include "Util.h"
 #include <cv.h>
 #include <highgui.h>
 using namespace TurboCV::System;
