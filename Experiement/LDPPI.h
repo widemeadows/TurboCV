@@ -81,6 +81,14 @@ cv::Mat GetConfusionMatrix(const ArrayList<T>& samples, const ArrayList<int>& la
         }
 
         KNN<T> knn;
+        Tuple<double, ConfusionMatrix> result = knn.Evaluate(trainingSet, trainingLabels,
+            evaluationSet, evaluationLabels);
+        confusionMatrixes[i] = result.Item2();
+    }
+
+    ConfusionMatrix finalConfusionMatrix;
+    for (auto matrix : confusionMatrixes)
+    {
 
     }
 }
