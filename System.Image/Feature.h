@@ -4,7 +4,6 @@
 #include "BinaryImage.h"
 #include "Filter.h"
 #include "Geometry.h"
-#include "Sample.h"
 #include "Typedef.h"
 #include <cv.h>
 using namespace cv;

@@ -39,9 +39,6 @@
     <ClInclude Include="BinaryImage.h">
       <Filter>头文件</Filter>
     </ClInclude>
-    <ClInclude Include="Sample.h">
-      <Filter>头文件</Filter>
-    </ClInclude>
     <ClInclude Include="Typedef.h">
       <Filter>头文件</Filter>
     </ClInclude>

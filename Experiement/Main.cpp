@@ -73,29 +73,69 @@ void LocalFeatureCrossValidation(const TurboCV::System::String& imageSetPath, co
         images[i].Item1().release();
     }
 
-    //{ // Use a block here to destruct words and freqHistograms immediately.
-    //    printf("Compute Visual Words...\n");
-    //    ArrayList<Word_f> words = BOV::GetVisualWords(features, wordNum, sampleNum);
+#ifdef SAVE_FEATURE
+    { // Use a block here to destruct words and freqHistograms immediately.
+        printf("Compute Visual Words...\n");
+        ArrayList<Word_f> words = BOV::GetVisualWords(features, wordNum, sampleNum);
 
-    //    printf("Compute Frequency Histograms...\n");
-    //    ArrayList<Histogram> freqHistograms = BOV::GetFrequencyHistograms(features, words);
+        printf("Compute Frequency Histograms...\n");
+        ArrayList<Histogram> freqHistograms = BOV::GetFrequencyHistograms(features, words);
 
-    //    printf("Write To File...\n");
-    //    TurboCV::System::String savePath = feature.GetName() + "_" + imageSetPath;
-    //    FILE* file = fopen(savePath, "w");
-    //    for (int i = 0; i < freqHistograms.Count(); i++)
-    //    {
-    //        fprintf(file, "%d", images[i].Item2());
-    //        for (int j = 0; j < freqHistograms[i].Count(); j++)
-    //            fprintf(file, " %d:%f", j + 1, freqHistograms[i][j]);
-    //        fprintf(file, "\n");
-    //    }
-    //    fclose(file);
-    //}
+        printf("Write To File...\n");
+        TurboCV::System::String savePath = feature.GetName() + "_" + imageSetPath;
+        FILE* file = fopen(savePath, "w");
+        for (int i = 0; i < freqHistograms.Count(); i++)
+        {
+            fprintf(file, "%d", images[i].Item2());
+            for (int j = 0; j < freqHistograms[i].Count(); j++)
+                fprintf(file, " %d:%f", j + 1, freqHistograms[i][j]);
+            fprintf(file, "\n");
+        }
+        fclose(file);
+    }
+#endif
+
+#ifdef SAVE_DISTANCE_MATRIX
+    {
+        Mat distanceMatrix = Mat::zeros(imageNum, imageNum, CV_64F);
+        #pragma omp parallel for
+        for (int i = 0; i < imageNum; i++)
+        {
+            for (int j = 0; j < imageNum; j++)
+            {
+                if (i != j)
+                    distanceMatrix.at<double>(i, j) = Math::NormOneDistance(features[i], features[j]);
+            }
+        }
+
+        printf("Write To File...\n");
+        TurboCV::System::String savePath = feature.GetName() + "_" + imageSetPath + "_matrix";
+        FILE* file = fopen(savePath, "w");
+        for (int i = 0; i < imageNum; i++)
+        {
+            fprintf(file, "%d", images[i].Item2());
+            for (int j = 0; j < imageNum; j++)
+            {
+                if (i != j)
+                {
+                    fprintf(file, " %d:%f", images[i].Item2() == images[j].Item2() ? 1 : 0, 
+                        distanceMatrix.at<double>(i, j));
+                }
+            }
+            fprintf(file, "\n");
+        }
+        fclose(file);
+        distanceMatrix.release();
+    }
+#endif
 
     ArrayList<Tuple<ArrayList<LocalFeature_f>, ArrayList<LocalFeature_f>, ArrayList<size_t>>> pass = 
         RandomSplit(features, fold);
+
+#ifdef SAVE_ROC
     ArrayList<ArrayList<double>> DRs(imageNum), FPRs(imageNum);
+#endif
+
     ArrayList<double> passResult;
     for (int i = 0; i < fold; i++)
     {
@@ -131,18 +171,38 @@ void LocalFeatureCrossValidation(const TurboCV::System::String& imageSetPath, co
         passResult.Add(precisions.first);
         printf("Fold %d Accuracy: %f\n", i + 1, precisions.first);
 
-        //pair<ArrayList<ArrayList<double>>, ArrayList<ArrayList<bool>>> matrix =
-        //    GetDistanceMatrix(trainingHistograms, trainingLabels, evaluationHistograms, evaluationLabels);
-        //ArrayList<ArrayList<double>>& distances = matrix.first;
-        //ArrayList<ArrayList<bool>>& relevants = matrix.second;
-        //for (int j = 0; j < pickUpIndexes.Count(); j++)
-        //{
-        //    int index = pickUpIndexes[j];
-        //    auto roc = ROC(distances[j], relevants[j]);
-        //    DRs[index] = roc.Item1();
-        //    FPRs[index] = roc.Item2();
-        //}
+#ifdef SAVE_ROC
+        pair<ArrayList<ArrayList<double>>, ArrayList<ArrayList<bool>>> matrix =
+            GetDistanceMatrix(trainingHistograms, trainingLabels, evaluationHistograms, evaluationLabels);
+        ArrayList<ArrayList<double>>& distances = matrix.first;
+        ArrayList<ArrayList<bool>>& relevants = matrix.second;
+        for (int j = 0; j < pickUpIndexes.Count(); j++)
+        {
+            int index = pickUpIndexes[j];
+            auto roc = ROC(distances[j], relevants[j]);
+            DRs[index] = roc.Item1();
+            FPRs[index] = roc.Item2();
+        }
+#endif
     }
+
+#ifdef SAVE_ROC
+    {
+        TurboCV::System::String savePath = feature.GetName() + "_" + imageSetPath + "_roc";
+        FILE* file = fopen(savePath, "w");
+        for (int i = 0; i < DRs.Count(); i++)
+        {
+            for (int j = 0; j < DRs[i].Count(); j++)
+                fprintf(file, "%f ", DRs[i][j]);
+            fprintf(file, "\n");
+
+            for (int j = 0; j < FPRs[i].Count(); j++)
+                fprintf(file, "%f ", FPRs[i][j]);
+            fprintf(file, "\n");
+        }
+        fclose(file);
+    }
+#endif
 
     TurboCV::System::String savePath = feature.GetName() + "_" + imageSetPath + "_knn.out";
     FILE* file = fopen(savePath, "w");
@@ -153,20 +213,6 @@ void LocalFeatureCrossValidation(const TurboCV::System::String& imageSetPath, co
     printf("\nAverage: %f, Standard Deviation: %f\n", Math::Mean(passResult), 
         Math::StandardDeviation(passResult));
     fclose(file);
-
-    //savePath = feature.GetName() + "_" + imageSetPath + "_roc";
-    //file = fopen(savePath, "w");
-    //for (int i = 0; i < DRs.Count(); i++)
-    //{
-    //    for (int j = 0; j < DRs[i].Count(); j++)
-    //        fprintf(file, "%f ", DRs[i][j]);
-    //    fprintf(file, "\n");
-
-    //    for (int j = 0; j < FPRs[i].Count(); j++)
-    //        fprintf(file, "%f ", FPRs[i][j]);
-    //    fprintf(file, "\n");
-    //}
-    //fclose(file);
 }
 
 template<typename GlobalFeature>
@@ -187,21 +233,63 @@ void GlobalFeatureCrossValidation(const TurboCV::System::String& imageSetPath, c
         images[i].Item1().release();
     }
 
-    //printf("Write To File...\n");
-    //TurboCV::System::String savePath = feature.GetName() + "_" + imageSetPath;
-    //FILE* file = fopen(savePath, "w");
-    //for (int i = 0; i < features.Count(); i++)
-    //{
-    //    fprintf(file, "%d", images[i].Item2());
-    //    for (int j = 0; j < features[i].Count(); j++)
-    //        fprintf(file, " %d:%f", j + 1, features[i][j]);
-    //    fprintf(file, "\n");
-    //}
-    //fclose(file);
+#ifdef SAVE_FEATURE
+    {
+        printf("Write To File...\n");
+        TurboCV::System::String savePath = feature.GetName() + "_" + imageSetPath;
+        FILE* file = fopen(savePath, "w");
+        for (int i = 0; i < features.Count(); i++)
+        {
+            fprintf(file, "%d", images[i].Item2());
+            for (int j = 0; j < features[i].Count(); j++)
+                fprintf(file, " %d:%f", j + 1, features[i][j]);
+            fprintf(file, "\n");
+        }
+        fclose(file);
+    }
+#endif
+
+#ifdef SAVE_DISTANCE_MATRIX
+    {
+        Mat distanceMatrix = Mat::zeros(imageNum, imageNum, CV_64F);
+        #pragma omp parallel for
+        for (int i = 0; i < imageNum; i++)
+        {
+            for (int j = 0; j < imageNum; j++)
+            {
+                if (i != j)
+                    distanceMatrix.at<double>(i, j) = Math::NormOneDistance(features[i], features[j]);
+            }
+        }
+
+        printf("Write To File...\n");
+        TurboCV::System::String savePath = feature.GetName() + "_" + imageSetPath + "_matrix";
+        FILE* file = fopen(savePath, "w");
+        for (int i = 0; i < imageNum; i++)
+        {
+            fprintf(file, "%d", images[i].Item2());
+            for (int j = 0; j < imageNum; j++)
+            {
+                if (i != j)
+                {
+                    fprintf(file, " %d:%f", images[i].Item2() == images[j].Item2() ? 1 : 0, 
+                        distanceMatrix.at<double>(i, j));
+                }
+            }
+            fprintf(file, "\n");
+        }
+        fclose(file);
+        distanceMatrix.release();
+    }
+#endif
 
     ArrayList<Tuple<ArrayList<GlobalFeature_f>, ArrayList<GlobalFeature_f>, ArrayList<size_t>>> pass = 
         RandomSplit(features, fold);
+
+#ifdef SAVE_ROC
     ArrayList<ArrayList<double>> DRs(imageNum), FPRs(imageNum);
+#endif
+
     ArrayList<double> passResult;
     for (int i = 0; i < fold; i++)
     {
@@ -226,14 +314,6 @@ void GlobalFeatureCrossValidation(const TurboCV::System::String& imageSetPath, c
         KNN<GlobalFeature_f> mqdf;
         pair<double, map<pair<int, int>, double>> precisions = 
             mqdf.Evaluate(trainingSet, trainingLabels, evaluationSet, evaluationLabels);
-        FILE* file = fopen("mm", "w");
-        for (int j = 0; j < 2; j++)
-        {
-            for (int k = 0; k < 2; k++)
-                fprintf(file, "%f ", precisions.second[make_pair(j + 1, k + 1)]);
-            fprintf(file, "\n");
-        }
-        fclose(file);
         //KNN<GlobalFeature_f> knn;
         //pair<double, map<pair<int, int>, double>> precisions = 
         //    knn.Evaluate(trainingSet, trainingLabels, evaluationSet, evaluationLabels);
@@ -241,18 +321,38 @@ void GlobalFeatureCrossValidation(const TurboCV::System::String& imageSetPath, c
         passResult.Add(precisions.first);
         printf("Fold %d Accuracy: %f\n", i + 1, precisions.first);
 
-        //pair<ArrayList<ArrayList<double>>, ArrayList<ArrayList<bool>>> matrix =
-        //    GetDistanceMatrix(trainingSet, trainingLabels, evaluationSet, evaluationLabels);
-        //ArrayList<ArrayList<double>>& distances = matrix.first;
-        //ArrayList<ArrayList<bool>>& relevants = matrix.second;
-        //for (int j = 0; j < pickUpIndexes.Count(); j++)
-        //{
-        //    int index = pickUpIndexes[j];
-        //    auto roc = ROC(distances[j], relevants[j]);
-        //    DRs[index] = roc.Item1();
-        //    FPRs[index] = roc.Item2();
-        //}
+#ifdef SAVE_ROC
+        pair<ArrayList<ArrayList<double>>, ArrayList<ArrayList<bool>>> matrix =
+            GetDistanceMatrix(trainingSet, trainingLabels, evaluationSet, evaluationLabels);
+        ArrayList<ArrayList<double>>& distances = matrix.first;
+        ArrayList<ArrayList<bool>>& relevants = matrix.second;
+        for (int j = 0; j < pickUpIndexes.Count(); j++)
+        {
+            int index = pickUpIndexes[j];
+            auto roc = ROC(distances[j], relevants[j]);
+            DRs[index] = roc.Item1();
+            FPRs[index] = roc.Item2();
+        }
+#endif
     }
+
+#ifdef SAVE_ROC
+    {
+        TurboCV::System::String savePath = feature.GetName() + "_" + imageSetPath + "_roc";
+        FILE* file = fopen(savePath, "w");
+        for (int i = 0; i < DRs.Count(); i++)
+        {
+            for (int j = 0; j < DRs[i].Count(); j++)
+                fprintf(file, "%f ", DRs[i][j]);
+            fprintf(file, "\n");
+
+            for (int j = 0; j < FPRs[i].Count(); j++)
+                fprintf(file, "%f ", FPRs[i][j]);
+            fprintf(file, "\n");
+        }
+        fclose(file);
+    }
+#endif
 
     TurboCV::System::String savePath = feature.GetName() + "_" + imageSetPath + "_knn.out";
     FILE* file = fopen(savePath, "w");
@@ -264,20 +364,6 @@ void GlobalFeatureCrossValidation(const TurboCV::System::String& imageSetPath, c
         Math::StandardDeviation(passResult));
 
     fclose(file);
-
-    //savePath = feature.GetName() + "_" + imageSetPath + "_roc";
-    //file = fopen(savePath, "w");
-    //for (int i = 0; i < DRs.Count(); i++)
-    //{
-    //    for (int j = 0; j < DRs[i].Count(); j++)
-    //        fprintf(file, "%f ", DRs[i][j]);
-    //    fprintf(file, "\n");
-
-    //    for (int j = 0; j < FPRs[i].Count(); j++)
-    //        fprintf(file, "%f ", FPRs[i][j]);
-    //    fprintf(file, "\n");
-    //}
-    //fclose(file);
 }
 
 template<typename EdgeMatching>
@@ -298,39 +384,47 @@ void EdgeMatchingCrossValidation(const TurboCV::System::String& imageSetPath, co
         images[i].Item1().release();
     }
 
-    Mat distanceMatrix(imageNum, imageNum, CV_64F);
-    #pragma omp parallel for
-    for (int i = 0; i < imageNum; i++)
+#ifdef SAVE_DISTANCE_MATRIX
     {
-        for (int j = 0; j < imageNum; j++)
+        Mat distanceMatrix = Mat::zeros(imageNum, imageNum, CV_64F);
+        #pragma omp parallel for
+        for (int i = 0; i < imageNum; i++)
         {
-            if (i != j)
-                distanceMatrix.at<double>(i, j) = EdgeMatching::GetDistance(transforms[i], transforms[j]);
-        }
-    }
-
-    printf("Write To File...\n");
-    TurboCV::System::String savePath = matching.GetName() + "_" + imageSetPath + "_matrix";
-    FILE* file = fopen(savePath, "w");
-    for (int i = 0; i < imageNum; i++)
-    {
-        fprintf(file, "%d", images[i].Item2());
-        for (int j = 0; j < imageNum; j++)
-        {
-            if (i != j)
+            for (int j = 0; j < imageNum; j++)
             {
-                fprintf(file, " %d:%f", images[i].Item2() == images[j].Item2() ? 1 : 0, 
-                    distanceMatrix.at<double>(i, j));
+                if (i != j)
+                    distanceMatrix.at<double>(i, j) = EdgeMatching::GetDistance(transforms[i], transforms[j]);
             }
         }
-        fprintf(file, "\n");
+
+        printf("Write To File...\n");
+        TurboCV::System::String savePath = matching.GetName() + "_" + imageSetPath + "_matrix";
+        FILE* file = fopen(savePath, "w");
+        for (int i = 0; i < imageNum; i++)
+        {
+            fprintf(file, "%d", images[i].Item2());
+            for (int j = 0; j < imageNum; j++)
+            {
+                if (i != j)
+                {
+                    fprintf(file, " %d:%f", images[i].Item2() == images[j].Item2() ? 1 : 0, 
+                        distanceMatrix.at<double>(i, j));
+                }
+            }
+            fprintf(file, "\n");
+        }
+        fclose(file);
+        distanceMatrix.release();
     }
-    fclose(file);
-    distanceMatrix.release();
+#endif
 
     ArrayList<Tuple<ArrayList<EdgeMatching::Info>, ArrayList<EdgeMatching::Info>, ArrayList<size_t>>> pass = 
         RandomSplit(transforms, fold);
+
+#ifdef SAVE_ROC
     ArrayList<ArrayList<double>> DRs(imageNum), FPRs(imageNum);
+#endif
+
     ArrayList<double> passResult;
     for (int i = 0; i < fold; i++)
     {
@@ -360,21 +454,41 @@ void EdgeMatchingCrossValidation(const TurboCV::System::String& imageSetPath, co
         passResult.Add(precisions.first);
         printf("Fold %d Accuracy: %f\n", i + 1, precisions.first);
 
-        //pair<ArrayList<ArrayList<double>>, ArrayList<ArrayList<bool>>> matrix = GetDistanceMatrix(
-        //    trainingSet, trainingLabels, evaluationSet, evaluationLabels, EdgeMatching::GetDistance);
-        //ArrayList<ArrayList<double>>& distances = matrix.first;
-        //ArrayList<ArrayList<bool>>& relevants = matrix.second;
-        //for (int j = 0; j < pickUpIndexes.Count(); j++)
-        //{
-        //    int index = pickUpIndexes[j];
-        //    auto roc = ROC(distances[j], relevants[j]);
-        //    DRs[index] = roc.Item1();
-        //    FPRs[index] = roc.Item2();
-        //}
+#ifdef SAVE_ROC
+        pair<ArrayList<ArrayList<double>>, ArrayList<ArrayList<bool>>> matrix = GetDistanceMatrix(
+            trainingSet, trainingLabels, evaluationSet, evaluationLabels, EdgeMatching::GetDistance);
+        ArrayList<ArrayList<double>>& distances = matrix.first;
+        ArrayList<ArrayList<bool>>& relevants = matrix.second;
+        for (int j = 0; j < pickUpIndexes.Count(); j++)
+        {
+            int index = pickUpIndexes[j];
+            auto roc = ROC(distances[j], relevants[j]);
+            DRs[index] = roc.Item1();
+            FPRs[index] = roc.Item2();
+        }
+#endif
     }
 
-    savePath = matching.GetName() + "_" + imageSetPath + "_knn.out";
-    file = fopen(savePath, "w");
+#ifdef SAVE_ROC
+    {
+        TurboCV::System::String savePath = matching.GetName() + "_" + imageSetPath + "_roc";
+        FILE* file = fopen(savePath, "w");
+        for (int i = 0; i < DRs.Count(); i++)
+        {
+            for (int j = 0; j < DRs[i].Count(); j++)
+                fprintf(file, "%f ", DRs[i][j]);
+            fprintf(file, "\n");
+
+            for (int j = 0; j < FPRs[i].Count(); j++)
+                fprintf(file, "%f ", FPRs[i][j]);
+            fprintf(file, "\n");
+        }
+        fclose(file);
+    }
+#endif
+
+    TurboCV::System::String savePath = matching.GetName() + "_" + imageSetPath + "_knn.out";
+    FILE* file = fopen(savePath, "w");
     for (int i = 0; i < passResult.Count(); i++)
         fprintf(file, "Fold %d Accuracy: %f\n", i + 1, passResult[i]);
     fprintf(file, "Average: %f, Standard Deviation: %f\n", Math::Mean(passResult), 
@@ -382,20 +496,6 @@ void EdgeMatchingCrossValidation(const TurboCV::System::String& imageSetPath, co
     printf("\nAverage: %f, Standard Deviation: %f\n", Math::Mean(passResult), 
         Math::StandardDeviation(passResult));
     fclose(file);
-
-    //savePath = matching.GetName() + "_" + imageSetPath + "_roc";
-    //file = fopen(savePath, "w");
-    //for (int i = 0; i < DRs.Count(); i++)
-    //{
-    //    for (int j = 0; j < DRs[i].Count(); j++)
-    //        fprintf(file, "%f ", DRs[i][j]);
-    //    fprintf(file, "\n");
-
-    //    for (int j = 0; j < FPRs[i].Count(); j++)
-    //        fprintf(file, "%f ", FPRs[i][j]);
-    //    fprintf(file, "\n");
-    //}
-    //fclose(file);
 }
 
 //ArrayList<double> Boosting(const ArrayList<Histogram>& data, const ArrayList<int>& labels)

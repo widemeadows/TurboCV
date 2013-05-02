@@ -150,7 +150,6 @@
     <ClInclude Include="EdgeMatching.h" />
     <ClInclude Include="Eigen.h" />
     <ClInclude Include="Feature.h" />
-    <ClInclude Include="Sample.h" />
     <ClInclude Include="EdgeLink.h" />
     <ClInclude Include="Geometry.h" />
     <ClInclude Include="Typedef.h" />

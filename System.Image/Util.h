@@ -4,7 +4,6 @@
 #include <cv.h>
 #include <highgui.h>
 #include <numeric>
-using namespace cv;
 
 namespace TurboCV
 {
@@ -137,7 +136,7 @@ namespace System
         inline Mat FFTShift(const Mat& data)
         {
 	        int width = data.cols, height = data.rows;
-	        Mat result(data.rows, data.cols, data.type());
+	        cv::Mat result(data.rows, data.cols, data.type());
 
 	        for (int i = 0; i < height / 2; i++)
 	        {
