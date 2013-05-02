@@ -1,9 +1,9 @@
 #pragma once
 
 #include "../System/System.h"
-#include <map>
 #include <unordered_map>
 #include <algorithm>
+#include <cv.h>
 
 namespace TurboCV
 {
@@ -15,7 +15,7 @@ namespace System
         class KNN
         {
         public:
-            std::pair<double, std::map<int, double>> Evaluate(
+            std::pair<double, std::map<std::pair<int, int>, double>> Evaluate(
                 const ArrayList<T>& trainingSet,
                 const ArrayList<int>& trainingLabels,
                 const ArrayList<T>& evaluationSet,
@@ -31,30 +31,27 @@ namespace System
 		        ArrayList<int> predict = Predict(evaluationSet, GetDistance, sigma, K);
 
                 size_t evaluationNum = evaluationSet.Count(), correctNum = 0;
-                std::unordered_map<int, int> evaluationNumPerClass, correctNumPerClass;
+                std::unordered_map<int, int> evaluationNumPerClass;
+                std::map<std::pair<int, int>, double> confusionMatrix;
 		        for (size_t i = 0; i < evaluationNum; i++)
 		        {
 			        evaluationNumPerClass[evaluationLabels[i]]++;
-
+                    confusionMatrix[std::make_pair(evaluationLabels[i], predict[i])]++;
 			        if (predict[i] == evaluationLabels[i])
-			        {
 				        correctNum++;
-				        correctNumPerClass[evaluationLabels[i]]++;
-			        }
 		        }
 
-		        std::map<int, double> precisions;
-                for (auto item : _dataNumPerClass)
+                std::map<std::pair<int, int>, double>::iterator itr = confusionMatrix.begin();
+                while (itr != confusionMatrix.end())
                 {
-                    int label = item.first;
-			        precisions[label] = (double)correctNumPerClass[label] / 
-                        evaluationNumPerClass[label];
+                    itr->second /= evaluationNumPerClass[(itr->first).first];
+                    itr++;
                 }
 
-		        return std::make_pair((double)correctNum / evaluationNum, precisions);
+		        return std::make_pair((double)correctNum / evaluationNum, confusionMatrix);
 	        }
 
-            std::pair<double, std::map<int, double>> Evaluate(
+            std::pair<double, std::map<std::pair<int, int>, double>> Evaluate(
                 const ArrayList<T>& trainingSet,
                 const ArrayList<int>& trainingLabels,
                 const ArrayList<T>& evaluationSet,
@@ -69,27 +66,24 @@ namespace System
                 ArrayList<int> predict = Predict(evaluationSet, sigma, K);
 
                 size_t evaluationNum = evaluationSet.Count(), correctNum = 0;
-                std::unordered_map<int, int> evaluationNumPerClass, correctNumPerClass;
+                std::unordered_map<int, int> evaluationNumPerClass;
+                std::map<std::pair<int, int>, double> confusionMatrix;
                 for (size_t i = 0; i < evaluationNum; i++)
                 {
                     evaluationNumPerClass[evaluationLabels[i]]++;
-
+                    confusionMatrix[std::make_pair(evaluationLabels[i], predict[i])]++;
                     if (predict[i] == evaluationLabels[i])
-                    {
                         correctNum++;
-                        correctNumPerClass[evaluationLabels[i]]++;
-                    }
                 }
 
-                std::map<int, double> precisions;
-                for (auto item : _dataNumPerClass)
+                std::map<std::pair<int, int>, double>::iterator itr = confusionMatrix.begin();
+                while (itr != confusionMatrix.end())
                 {
-                    int label = item.first;
-                    precisions[label] = (double)correctNumPerClass[label] / 
-                        evaluationNumPerClass[label];
+                    itr->second /= evaluationNumPerClass[(itr->first).first];
+                    itr++;
                 }
 
-                return std::make_pair((double)correctNum / evaluationNum, precisions);
+                return std::make_pair((double)correctNum / evaluationNum, confusionMatrix);
             }
 
             void Train(const ArrayList<T>& data, const ArrayList<int>& labels)

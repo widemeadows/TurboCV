@@ -125,7 +125,7 @@ void LocalFeatureCrossValidation(const TurboCV::System::String& imageSetPath, co
         }
 
         KNN<Histogram> knn;
-        pair<double, map<int, double>> precisions = 
+        pair<double, map<pair<int, int>, double>> precisions = 
             knn.Evaluate(trainingHistograms, trainingLabels, evaluationHistograms, evaluationLabels);
        
         passResult.Add(precisions.first);
@@ -223,9 +223,20 @@ void GlobalFeatureCrossValidation(const TurboCV::System::String& imageSetPath, c
                 trainingLabels.Add(images[j].Item2());
         }
 
-        MQDF<GlobalFeature_f> mqdf;
-        pair<double, map<int, double>> precisions = 
+        KNN<GlobalFeature_f> mqdf;
+        pair<double, map<pair<int, int>, double>> precisions = 
             mqdf.Evaluate(trainingSet, trainingLabels, evaluationSet, evaluationLabels);
+        FILE* file = fopen("mm", "w");
+        for (int j = 0; j < 2; j++)
+        {
+            for (int k = 0; k < 2; k++)
+                fprintf(file, "%f ", precisions.second[make_pair(j + 1, k + 1)]);
+            fprintf(file, "\n");
+        }
+        fclose(file);
+        //KNN<GlobalFeature_f> knn;
+        //pair<double, map<pair<int, int>, double>> precisions = 
+        //    knn.Evaluate(trainingSet, trainingLabels, evaluationSet, evaluationLabels);
 
         passResult.Add(precisions.first);
         printf("Fold %d Accuracy: %f\n", i + 1, precisions.first);
@@ -342,7 +353,7 @@ void EdgeMatchingCrossValidation(const TurboCV::System::String& imageSetPath, co
         }
 
         KNN<EdgeMatching::Info> knn;
-        pair<double, map<int, double>> precisions = knn.Evaluate(
+        pair<double, map<pair<int, int>, double>> precisions = knn.Evaluate(
             trainingSet, trainingLabels, evaluationSet, evaluationLabels, 
             EdgeMatching::GetDistance, KNN<EdgeMatching::Info>::HARD_VOTING);
 
