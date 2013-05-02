@@ -91,6 +91,8 @@ namespace TurboCV
 					#pragma omp parallel for
                     for (int index = 0; index < categoryNum; index++)
                     {
+                        printf("Class %d...\n", index + 1);
+
                         const cv::Mat& data = _categories[revMapping[index]].Item2();
 						_weights[index] = (double)data.rows / dataNum;
 
@@ -100,34 +102,18 @@ namespace TurboCV
                         cv::Mat eigenValues, eigenVectors;
                         cv::eigen(covariation, eigenValues, eigenVectors);
 
-                        double maxValue = -1e10;
-                        for (int j = 0; j < eigenValues.rows; j++)
-                            maxValue = max(maxValue, eigenValues.at<double>(j, 0));
-
-                        double smallValueMean = 0;
-                        int smallValueNum = 0;
-                        for (int j = 0; j < eigenValues.rows; j++)
-                        {
-                            if (eigenValues.at<double>(j, 0) < maxValue / 100)
-                            {
-                                smallValueMean += eigenValues.at<double>(j, 0);
-                                smallValueNum++;
-                            }
-                        }
-                        smallValueMean /= smallValueNum;
-
-                        for (int j = eigenValues.rows - smallValueNum; j < eigenValues.rows; j++)
-                            eigenValues.at<double>(j, 0) = smallValueMean;
+                        for (int j = 40; j < eigenValues.rows; j++)
+                            eigenValues.at<double>(j, 0) = 0.035;
 
                         Mat diag = Mat::zeros(eigenValues.rows, eigenValues.rows, CV_64F);
                         for (int j = 0; j < eigenValues.rows; j++)
                             diag.at<double>(j, j) = eigenValues.at<double>(j, 0);
-
                         covariation = eigenVectors.t() * diag * eigenVectors;
+
                         _invCovariance[index] = covariation.inv();
 
                         double determinant = 0;
-                        for (int j = 0; j < eigenValues.rows - smallValueNum; j++)
+                        for (int j = 0; j < eigenValues.rows; j++)
                             determinant += log(eigenValues.at<double>(j, 0));
                         _detCovariance[index] = determinant;
 
@@ -137,6 +123,8 @@ namespace TurboCV
 
                 ArrayList<int> Predict(const ArrayList<T>& samples)
                 {
+                    printf("Predict...\n");
+
                     int sampleNum = samples.Count();
                     ArrayList<int> results(sampleNum);
 
@@ -164,8 +152,8 @@ namespace TurboCV
 
                         cv::Mat dif = x - _means[index];
                         double distance = ((cv::Mat)(dif * _invCovariance[index] * dif.t())).
-                            at<double>(0, 0) - 0.5 * _weights[index]
-                            /*+ _determine[label]*/;
+                            at<double>(0, 0) - 2 * _weights[index] /*+ _detCovariance[index]*/;
+
                         distanceAndLabels.Add(CreateTuple(distance, item.first));
                     }
 

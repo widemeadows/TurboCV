@@ -1,7 +1,7 @@
 #include "../System/System.h"
 #include "../System.Image/System.Image.h"
 #include "../System.ML/System.ML.h"
-#include "Util.h"
+//#include "Util.h"
 #include <cv.h>
 #include <highgui.h>
 using namespace TurboCV::System;
@@ -131,17 +131,17 @@ void LocalFeatureCrossValidation(const TurboCV::System::String& imageSetPath, co
         passResult.Add(precisions.first);
         printf("Fold %d Accuracy: %f\n", i + 1, precisions.first);
 
-        pair<ArrayList<ArrayList<double>>, ArrayList<ArrayList<bool>>> matrix =
-            GetDistanceMatrix(trainingHistograms, trainingLabels, evaluationHistograms, evaluationLabels);
-        ArrayList<ArrayList<double>>& distances = matrix.first;
-        ArrayList<ArrayList<bool>>& relevants = matrix.second;
-        for (int j = 0; j < pickUpIndexes.Count(); j++)
-        {
-            int index = pickUpIndexes[j];
-            auto roc = ROC(distances[j], relevants[j]);
-            DRs[index] = roc.Item1();
-            FPRs[index] = roc.Item2();
-        }
+        //pair<ArrayList<ArrayList<double>>, ArrayList<ArrayList<bool>>> matrix =
+        //    GetDistanceMatrix(trainingHistograms, trainingLabels, evaluationHistograms, evaluationLabels);
+        //ArrayList<ArrayList<double>>& distances = matrix.first;
+        //ArrayList<ArrayList<bool>>& relevants = matrix.second;
+        //for (int j = 0; j < pickUpIndexes.Count(); j++)
+        //{
+        //    int index = pickUpIndexes[j];
+        //    auto roc = ROC(distances[j], relevants[j]);
+        //    DRs[index] = roc.Item1();
+        //    FPRs[index] = roc.Item2();
+        //}
     }
 
     TurboCV::System::String savePath = feature.GetName() + "_" + imageSetPath + "_knn.out";
@@ -154,19 +154,19 @@ void LocalFeatureCrossValidation(const TurboCV::System::String& imageSetPath, co
         Math::StandardDeviation(passResult));
     fclose(file);
 
-    savePath = feature.GetName() + "_" + imageSetPath + "_roc";
-    file = fopen(savePath, "w");
-    for (int i = 0; i < DRs.Count(); i++)
-    {
-        for (int j = 0; j < DRs[i].Count(); j++)
-            fprintf(file, "%f ", DRs[i][j]);
-        fprintf(file, "\n");
+    //savePath = feature.GetName() + "_" + imageSetPath + "_roc";
+    //file = fopen(savePath, "w");
+    //for (int i = 0; i < DRs.Count(); i++)
+    //{
+    //    for (int j = 0; j < DRs[i].Count(); j++)
+    //        fprintf(file, "%f ", DRs[i][j]);
+    //    fprintf(file, "\n");
 
-        for (int j = 0; j < FPRs[i].Count(); j++)
-            fprintf(file, "%f ", FPRs[i][j]);
-        fprintf(file, "\n");
-    }
-    fclose(file);
+    //    for (int j = 0; j < FPRs[i].Count(); j++)
+    //        fprintf(file, "%f ", FPRs[i][j]);
+    //    fprintf(file, "\n");
+    //}
+    //fclose(file);
 }
 
 template<typename GlobalFeature>
@@ -230,17 +230,17 @@ void GlobalFeatureCrossValidation(const TurboCV::System::String& imageSetPath, c
         passResult.Add(precisions.first);
         printf("Fold %d Accuracy: %f\n", i + 1, precisions.first);
 
-        pair<ArrayList<ArrayList<double>>, ArrayList<ArrayList<bool>>> matrix =
-            GetDistanceMatrix(trainingSet, trainingLabels, evaluationSet, evaluationLabels);
-        ArrayList<ArrayList<double>>& distances = matrix.first;
-        ArrayList<ArrayList<bool>>& relevants = matrix.second;
-        for (int j = 0; j < pickUpIndexes.Count(); j++)
-        {
-            int index = pickUpIndexes[j];
-            auto roc = ROC(distances[j], relevants[j]);
-            DRs[index] = roc.Item1();
-            FPRs[index] = roc.Item2();
-        }
+        //pair<ArrayList<ArrayList<double>>, ArrayList<ArrayList<bool>>> matrix =
+        //    GetDistanceMatrix(trainingSet, trainingLabels, evaluationSet, evaluationLabels);
+        //ArrayList<ArrayList<double>>& distances = matrix.first;
+        //ArrayList<ArrayList<bool>>& relevants = matrix.second;
+        //for (int j = 0; j < pickUpIndexes.Count(); j++)
+        //{
+        //    int index = pickUpIndexes[j];
+        //    auto roc = ROC(distances[j], relevants[j]);
+        //    DRs[index] = roc.Item1();
+        //    FPRs[index] = roc.Item2();
+        //}
     }
 
     TurboCV::System::String savePath = feature.GetName() + "_" + imageSetPath + "_knn.out";
@@ -254,19 +254,19 @@ void GlobalFeatureCrossValidation(const TurboCV::System::String& imageSetPath, c
 
     fclose(file);
 
-    savePath = feature.GetName() + "_" + imageSetPath + "_roc";
-    file = fopen(savePath, "w");
-    for (int i = 0; i < DRs.Count(); i++)
-    {
-        for (int j = 0; j < DRs[i].Count(); j++)
-            fprintf(file, "%f ", DRs[i][j]);
-        fprintf(file, "\n");
+    //savePath = feature.GetName() + "_" + imageSetPath + "_roc";
+    //file = fopen(savePath, "w");
+    //for (int i = 0; i < DRs.Count(); i++)
+    //{
+    //    for (int j = 0; j < DRs[i].Count(); j++)
+    //        fprintf(file, "%f ", DRs[i][j]);
+    //    fprintf(file, "\n");
 
-        for (int j = 0; j < FPRs[i].Count(); j++)
-            fprintf(file, "%f ", FPRs[i][j]);
-        fprintf(file, "\n");
-    }
-    fclose(file);
+    //    for (int j = 0; j < FPRs[i].Count(); j++)
+    //        fprintf(file, "%f ", FPRs[i][j]);
+    //    fprintf(file, "\n");
+    //}
+    //fclose(file);
 }
 
 template<typename EdgeMatching>
@@ -349,17 +349,17 @@ void EdgeMatchingCrossValidation(const TurboCV::System::String& imageSetPath, co
         passResult.Add(precisions.first);
         printf("Fold %d Accuracy: %f\n", i + 1, precisions.first);
 
-        pair<ArrayList<ArrayList<double>>, ArrayList<ArrayList<bool>>> matrix = GetDistanceMatrix(
-            trainingSet, trainingLabels, evaluationSet, evaluationLabels, EdgeMatching::GetDistance);
-        ArrayList<ArrayList<double>>& distances = matrix.first;
-        ArrayList<ArrayList<bool>>& relevants = matrix.second;
-        for (int j = 0; j < pickUpIndexes.Count(); j++)
-        {
-            int index = pickUpIndexes[j];
-            auto roc = ROC(distances[j], relevants[j]);
-            DRs[index] = roc.Item1();
-            FPRs[index] = roc.Item2();
-        }
+        //pair<ArrayList<ArrayList<double>>, ArrayList<ArrayList<bool>>> matrix = GetDistanceMatrix(
+        //    trainingSet, trainingLabels, evaluationSet, evaluationLabels, EdgeMatching::GetDistance);
+        //ArrayList<ArrayList<double>>& distances = matrix.first;
+        //ArrayList<ArrayList<bool>>& relevants = matrix.second;
+        //for (int j = 0; j < pickUpIndexes.Count(); j++)
+        //{
+        //    int index = pickUpIndexes[j];
+        //    auto roc = ROC(distances[j], relevants[j]);
+        //    DRs[index] = roc.Item1();
+        //    FPRs[index] = roc.Item2();
+        //}
     }
 
     savePath = matching.GetName() + "_" + imageSetPath + "_knn.out";
@@ -372,19 +372,19 @@ void EdgeMatchingCrossValidation(const TurboCV::System::String& imageSetPath, co
         Math::StandardDeviation(passResult));
     fclose(file);
 
-    savePath = matching.GetName() + "_" + imageSetPath + "_roc";
-    file = fopen(savePath, "w");
-    for (int i = 0; i < DRs.Count(); i++)
-    {
-        for (int j = 0; j < DRs[i].Count(); j++)
-            fprintf(file, "%f ", DRs[i][j]);
-        fprintf(file, "\n");
+    //savePath = matching.GetName() + "_" + imageSetPath + "_roc";
+    //file = fopen(savePath, "w");
+    //for (int i = 0; i < DRs.Count(); i++)
+    //{
+    //    for (int j = 0; j < DRs[i].Count(); j++)
+    //        fprintf(file, "%f ", DRs[i][j]);
+    //    fprintf(file, "\n");
 
-        for (int j = 0; j < FPRs[i].Count(); j++)
-            fprintf(file, "%f ", FPRs[i][j]);
-        fprintf(file, "\n");
-    }
-    fclose(file);
+    //    for (int j = 0; j < FPRs[i].Count(); j++)
+    //        fprintf(file, "%f ", FPRs[i][j]);
+    //    fprintf(file, "\n");
+    //}
+    //fclose(file);
 }
 
 //ArrayList<double> Boosting(const ArrayList<Histogram>& data, const ArrayList<int>& labels)
