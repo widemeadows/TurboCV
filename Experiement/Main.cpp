@@ -1,7 +1,8 @@
 #include "../System/System.h"
 #include "../System.Image/System.Image.h"
 #include "../System.ML/System.ML.h"
-//#include "Util.h"
+#include "Util.h"
+#include "LDPPI.h"
 #include <cv.h>
 #include <highgui.h>
 using namespace TurboCV::System;
@@ -311,12 +312,12 @@ void GlobalFeatureCrossValidation(const TurboCV::System::String& imageSetPath, c
                 trainingLabels.Add(images[j].Item2());
         }
 
-        KNN<GlobalFeature_f> mqdf;
-        pair<double, map<pair<int, int>, double>> precisions = 
-            mqdf.Evaluate(trainingSet, trainingLabels, evaluationSet, evaluationLabels);
-        //KNN<GlobalFeature_f> knn;
+        //MQDF<GlobalFeature_f> mqdf;
         //pair<double, map<pair<int, int>, double>> precisions = 
-        //    knn.Evaluate(trainingSet, trainingLabels, evaluationSet, evaluationLabels);
+        //    mqdf.Evaluate(trainingSet, trainingLabels, evaluationSet, evaluationLabels);
+        KNN<GlobalFeature_f> knn;
+        pair<double, map<pair<int, int>, double>> precisions = 
+            knn.Evaluate(trainingSet, trainingLabels, evaluationSet, evaluationLabels);
 
         passResult.Add(precisions.first);
         printf("Fold %d Accuracy: %f\n", i + 1, precisions.first);
@@ -353,6 +354,11 @@ void GlobalFeatureCrossValidation(const TurboCV::System::String& imageSetPath, c
         fclose(file);
     }
 #endif
+
+    ArrayList<int> labels;
+    for (int i = 0; i < imageNum; i++)
+        labels.Add(images[i].Item2());
+    LDPPI(features, labels);
 
     TurboCV::System::String savePath = feature.GetName() + "_" + imageSetPath + "_knn.out";
     FILE* file = fopen(savePath, "w");

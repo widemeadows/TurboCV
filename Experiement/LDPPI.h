@@ -53,18 +53,18 @@ cv::Mat GetSimilarityMatrix(const ArrayList<T>& samples, double sigma = 0.4,
     return similarityMatrix;
 }
 
+typedef std::map<std::pair<int, int>, double> ConfusionMatrix;
+
 template<typename T>
-cv::Mat GetConfusionMatrix(const ArrayList<T>& samples, const ArrayList<int>& labels)
+ConfusionMatrix GetConfusionMatrix(const ArrayList<T>& samples, const ArrayList<int>& labels)
 {
-    typedef std::unordered_map<std::pair<int, int>, double> ConfusionMatrix;
+    ArrayList<int> predictLabels(samples.Count());
 
-    ArrayList<ConfusionMatrix> confusionMatrixes(samples.Count());
-
-    #pragma omp parallel for
+    //#pragma omp parallel for
     for (int i = 0; i < samples.Count(); i++)
     {
         ArrayList<T> trainingSet, evaluationSet;
-        ArrayList<int> trainingLabels, evaluationLabels;
+        ArrayList<int> trainingLabels;
 
         for (int j = 0; j < samples.Count(); j++)
         {
@@ -76,26 +76,41 @@ cv::Mat GetConfusionMatrix(const ArrayList<T>& samples, const ArrayList<int>& la
             else
             {
                 evaluationSet.Add(samples[j]);
-                evaluationLabels.Add(labels[j]);
             }
         }
 
         KNN<T> knn;
-        Tuple<double, ConfusionMatrix> result = knn.Evaluate(trainingSet, trainingLabels,
-            evaluationSet, evaluationLabels);
-        confusionMatrixes[i] = result.Item2();
+        knn.Train(trainingSet, trainingLabels);
+        predictLabels[i] = knn.Predict(evaluationSet)[0];
     }
 
-    ConfusionMatrix finalConfusionMatrix;
-    for (auto matrix : confusionMatrixes)
+    ConfusionMatrix confusionMatrix;
+    std::unordered_map<int, int> sampleNumPerClass;
+    for (int i = 0; i < labels.Count(); i++)
     {
-
+        sampleNumPerClass[labels[i]]++;
+        confusionMatrix[std::make_pair(labels[i], predictLabels[i])]++;
     }
+
+    ConfusionMatrix::iterator itr = confusionMatrix.begin();
+    while (itr != confusionMatrix.end())
+    {
+        itr->second /= sampleNumPerClass[(itr->first).first];
+        itr++;
+    }
+
+    return confusionMatrix;
 }
 
 template<typename T>
 void LDPPI(const ArrayList<T>& samples, const ArrayList<int>& labels)
 {
-    KNN<T> knn;
-    knn.Evaluate()
+    ConfusionMatrix confusionMatrix = GetConfusionMatrix(samples, labels);
+
+    for (int i = 1; i <= 2; i++)
+    {
+        for (int j = 1; j <= 2; j++)
+            printf("%f ", confusionMatrix[std::make_pair(i, j)]);
+        printf("\n");
+    }
 }

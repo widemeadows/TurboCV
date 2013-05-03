@@ -107,7 +107,7 @@ namespace TurboCV
                             diag.at<double>(j, j) = eigenValues.at<double>(j, 0);
                         covariation = eigenVectors.t() * diag * eigenVectors;
 
-                        _invCovariance[index] = covariation.inv();
+                        ((cv::Mat)covariation.inv()).convertTo(_invCovariance[index], CV_32F);
 
                         double determinant = 0;
                         for (int j = 0; j < eigenValues.rows; j++)
@@ -147,9 +147,11 @@ namespace TurboCV
                     {
                         int index = item.second.Item1();
 
-                        cv::Mat dif = x - _means[index];
+                        cv::Mat dif;
+                        ((cv::Mat)(x - _means[index])).convertTo(dif, CV_32F);
+
                         double distance = ((cv::Mat)(dif * _invCovariance[index] * dif.t())).
-                            at<double>(0, 0) - 2 * _weights[index] /*+ _detCovariance[index]*/;
+                            at<float>(0, 0) - 2 * _weights[index] /*+ _detCovariance[index]*/;
 
                         distanceAndLabels.Add(CreateTuple(distance, item.first));
                     }
