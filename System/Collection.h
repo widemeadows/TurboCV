@@ -11,41 +11,30 @@ namespace System
     class ThreadSafeCounter
     {
     public:
-        explicit ThreadSafeCounter(T* object) : count(1), instance(object) 
-        {
-            InitializeCriticalSection(&lock);
-        };
+        explicit ThreadSafeCounter(T* object) : count(1), instance(object) {};
 
         void AddRef() 
         { 
-            EnterCriticalSection(&lock);
-
-            count++; 
-
-            LeaveCriticalSection(&lock);
+            InterlockedIncrement(&count); 
         }
 
         void Release() 
         { 
-            EnterCriticalSection(&lock);
+            InterlockedDecrement(&count);
 
-            count--; 
             if (!count)
             {
                 Dispose();
                 delete this;
             }
-
-            LeaveCriticalSection(&lock);
         }
 
     protected:
         void Dispose() { delete instance; }
 
     private:
-        int count;
+        unsigned int count;
         T* instance;
-        CRITICAL_SECTION lock;
     };
 
     template<typename T>
@@ -163,6 +152,8 @@ namespace System
 
             return false;
         }
+
+        void Shrink() { ptr->shrink_to_fit(); }
 
         void Clear() { ptr->clear(); }
 

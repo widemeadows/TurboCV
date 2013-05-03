@@ -35,6 +35,8 @@ namespace System
 
                 dst.Add(tmp);
             }
+
+            dst.Shrink();
         }
 
         inline void Convert(const GlobalFeatureVec& src, GlobalFeature_f& dst)
@@ -43,6 +45,8 @@ namespace System
 
             for (auto item : src)
                 dst.Add((float)item);
+
+            dst.Shrink();
         }
     }
 }

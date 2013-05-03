@@ -54,31 +54,32 @@ namespace TurboCV
                     assert(data.Count() == labels.Count() && data.Count() > 0);
 
                     int dataNum = data.Count();
-                    _D = data[0].Count();
-                    _categories.clear();
+                    _mapping.clear();
                     _invCovariance.Clear();
                     _detCovariance.Clear();
                     _means.Clear();
                     _weights.Clear();
 
+                    int categoryNum = 0;
+                    for (int i = 0; i < dataNum; i++)
+                    {
+                        std::unordered_map<int, int>::iterator itr = _mapping.find(labels[i]);
+                        if (itr == _mapping.end())
+                            _mapping.insert(std::make_pair(labels[i], categoryNum++));
+                    }
+
+                    ArrayList<cv::Mat> categories(categoryNum);
                     for (int i = 0; i < dataNum; i++)
                     {
                         cv::Mat row(1, data[i].Count(), CV_64F);
                         for (int j = 0; j < data[i].Count(); j++)
                             row.at<double>(0, j) = data[i][j];
 
-                        _categories[labels[i]].Item2().push_back(row);
+                        categories[_mapping[labels[i]]].push_back(row);
                     }
-
-					int categoryNum = 0;
-					std::unordered_map<int, int> revMapping;
-					std::unordered_map<int, Tuple<int, cv::Mat>>::iterator catItr = _categories.begin();
-					while (catItr != _categories.end())
-					{
-						revMapping[categoryNum] = catItr->first;
-						(catItr->second).Item1() = categoryNum++;
-						catItr++;
-
+	
+					for (int i = 0; i < categoryNum; i++)
+                    {
 						_invCovariance.Add(cv::Mat());
 						_detCovariance.Add(0);
 						_means.Add(cv::Mat());
@@ -90,7 +91,7 @@ namespace TurboCV
                     {
                         printf("Class %d...\n", index + 1);
 
-                        const cv::Mat& data = _categories[revMapping[index]].Item2();
+                        const cv::Mat& data = categories[index];
 						_weights[index] = (double)data.rows / dataNum;
 
                         cv::Mat covariation, mean;
@@ -102,7 +103,7 @@ namespace TurboCV
                         for (int j = 40; j < eigenValues.rows; j++)
                             eigenValues.at<double>(j, 0) = 0.035;
 
-                        Mat diag = Mat::zeros(eigenValues.rows, eigenValues.rows, CV_64F);
+                        cv::Mat diag = cv::Mat::zeros(eigenValues.rows, eigenValues.rows, CV_64F);
                         for (int j = 0; j < eigenValues.rows; j++)
                             diag.at<double>(j, j) = eigenValues.at<double>(j, 0);
                         covariation = eigenVectors.t() * diag * eigenVectors;
@@ -143,9 +144,9 @@ namespace TurboCV
 
 					ArrayList<Tuple<double, int>> distanceAndLabels;
 
-                    for (auto item : _categories)
+                    for (auto item : _mapping)
                     {
-                        int index = item.second.Item1();
+                        int index = item.second;
 
                         cv::Mat dif;
                         ((cv::Mat)(x - _means[index])).convertTo(dif, CV_32F);
@@ -159,8 +160,7 @@ namespace TurboCV
                     return Math::Min(distanceAndLabels).Item2();
                 }
 
-                int _D;
-                std::unordered_map<int, Tuple<int, cv::Mat>> _categories;
+                std::unordered_map<int, int> _mapping;
 				ArrayList<cv::Mat> _invCovariance;
                 ArrayList<double> _detCovariance;
                 ArrayList<cv::Mat> _means;
