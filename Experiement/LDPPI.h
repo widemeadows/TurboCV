@@ -60,7 +60,7 @@ ConfusionMatrix GetConfusionMatrix(const ArrayList<T>& samples, const ArrayList<
 {
     ArrayList<int> predictLabels(samples.Count());
 
-    //#pragma omp parallel for
+    #pragma omp parallel for
     for (int i = 0; i < samples.Count(); i++)
     {
         ArrayList<T> trainingSet, evaluationSet;

@@ -1,27 +1,42 @@
 #pragma once
 
 #include <vector>
+#include <windows.h>
 
 namespace TurboCV
 {
 namespace System
 {
     template<typename T>
-    class ThreadUnsafeCounter
+    class ThreadSafeCounter
     {
     public:
-        explicit ThreadUnsafeCounter(T* object) : count(1), instance(object) {};
+        explicit ThreadSafeCounter(T* object) : count(1), instance(object) 
+        {
+            InitializeCriticalSection(&lock);
+        };
 
-        void AddRef() { count++; }
+        void AddRef() 
+        { 
+            EnterCriticalSection(&lock);
+
+            count++; 
+
+            LeaveCriticalSection(&lock);
+        }
 
         void Release() 
         { 
+            EnterCriticalSection(&lock);
+
             count--; 
             if (!count)
             {
                 Dispose();
                 delete this;
             }
+
+            LeaveCriticalSection(&lock);
         }
 
     protected:
@@ -30,31 +45,32 @@ namespace System
     private:
         int count;
         T* instance;
+        CRITICAL_SECTION lock;
     };
 
     template<typename T>
-    class ThreadUnsafeSmartPtr
+    class ThreadSafeSmartPtr
     {
     public:
-        explicit ThreadUnsafeSmartPtr() : instance(NULL), counter(NULL) {};
+        explicit ThreadSafeSmartPtr() : instance(NULL), counter(NULL) {};
 
-        explicit ThreadUnsafeSmartPtr(T* object) : 
-        instance(object), counter(new ThreadUnsafeCounter<T>(object)) {};
+        explicit ThreadSafeSmartPtr(T* object) : 
+            instance(object), counter(new ThreadSafeCounter<T>(object)) {};
 
-        explicit ThreadUnsafeSmartPtr(const ThreadUnsafeSmartPtr& u) : 
-        instance(u.instance), counter(u.counter)
+        explicit ThreadSafeSmartPtr(const ThreadSafeSmartPtr& u) : 
+            instance(u.instance), counter(u.counter)
         {
             if (counter)
                 counter->AddRef();
         }
 
-        ~ThreadUnsafeSmartPtr()
+        ~ThreadSafeSmartPtr()
         {
             if (counter)
                 counter->Release();
         }
 
-        ThreadUnsafeSmartPtr& operator=(const ThreadUnsafeSmartPtr& u)
+        ThreadSafeSmartPtr& operator=(const ThreadSafeSmartPtr& u)
         {
             instance = u.instance;
 
@@ -76,7 +92,7 @@ namespace System
 
     private:
         T* instance;
-        ThreadUnsafeCounter<T>* counter;
+        ThreadSafeCounter<T>* counter;
     };
 
     ///////////////////////////////////////////////////////////////////////
@@ -153,7 +169,7 @@ namespace System
         size_t Count() const { return ptr->size(); }
 
     private:
-        ThreadUnsafeSmartPtr<std::vector<T>> ptr;
+        ThreadSafeSmartPtr<std::vector<T>> ptr;
     };
 }
 }
