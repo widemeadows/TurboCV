@@ -20,12 +20,17 @@ public:
         assert(data.Count() == labels.Count() && data.Count() > 0);
 
         int categoryNum = 0;
+		unordered_map<int, int> mapping;
         for (int i = 0; i < data.Count(); i++)
         {
-            std::unordered_map<int, int>::iterator itr = _mapping.find(labels[i]);
-            if (itr == _mapping.end())
-                _mapping.insert(std::make_pair(labels[i], categoryNum++));
+            std::unordered_map<int, int>::iterator itr = mapping.find(labels[i]);
+            if (itr == mapping.end())
+                mapping.insert(std::make_pair(labels[i], categoryNum++));
         }
+
+		ArrayList<int> normalizedLabels(labels.Count());
+		for (int i = 0; i < labels.Count(); i++)
+			normalizedLabels[i] = mapping[labels[i]];
 
 		cv::Mat samples;
         ArrayList<cv::Mat> categories(categoryNum);
@@ -35,7 +40,7 @@ public:
             for (int j = 0; j < data[i].Count(); j++)
                 row.at<double>(0, j) = data[i][j];
 
-            categories[_mapping[labels[i]]].push_back(row);
+            categories[normalizedLabels[i]].push_back(row);
 			samples.push_back(row);
         }
 
@@ -54,42 +59,47 @@ public:
             means.push_back(mean);
         }
 
-        _similarity = GetSimilarityMatrix(data);
-		
-		cv::Mat tmp = cv::Mat::zeros(_similarity.size(), CV_64F);
-		for (int i = 0; i < _similarity.rows; i++)
-			for (int j = 0; j < _similarity.cols; j++)
-				tmp.at<double>(i, i) += _similarity.at<double>(i, j);
+        //cv::Mat similarity = GetSimilarityMatrix(data);
+		cv::Mat similarity = cv::Mat::zeros(data.Count(), data.Count(), CV_64F);
+		for (int i = 0; i < data.Count(); i++)
+			for (int j = 0; j < data.Count(); j++)
+				if (normalizedLabels[i] == normalizedLabels[j])
+					similarity.at<double>(i, j) = 1;
 
-		cv::Mat Ln = tmp - _similarity;
+		cv::Mat tmp = cv::Mat::zeros(similarity.size(), CV_64F);
+		for (int i = 0; i < similarity.rows; i++)
+			for (int j = 0; j < similarity.cols; j++)
+				tmp.at<double>(i, i) += similarity.at<double>(i, j);
 
-		ArrayList<int> normalizedLabels(labels.Count());
-		for (int i = 0; i < labels.Count(); i++)
-			normalizedLabels[i] = _mapping[labels[i]];
-		_confusion = GetConfusionMatrix(data, normalizedLabels);
+		cv::Mat Ln = tmp - similarity;
 
-		tmp = cv::Mat::zeros(_confusion.size(), CV_64F);
-		for (int i = 0; i < _confusion.rows; i++)
-			for (int j = 0; j < _confusion.cols; j++)
-				tmp.at<double>(i, i) += _confusion.at<double>(i, j);
+		//cv::Mat confusion = GetConfusionMatrix(data, normalizedLabels);
+		cv::Mat confusion = Mat::zeros(mapping.size(), mapping.size(), CV_64F);
+		for (int i = 0; i < confusion.rows; i++)
+			for (int j = 0; j < confusion.cols; j++)
+				if (i != j)
+					confusion.at<double>(i, j) = 1;
 
-		cv::Mat Ls = tmp - _confusion;
+		tmp = cv::Mat::zeros(confusion.size(), CV_64F);
+		for (int i = 0; i < confusion.rows; i++)
+			for (int j = 0; j < confusion.cols; j++)
+				tmp.at<double>(i, i) += confusion.at<double>(i, j);
+
+		cv::Mat Ls = tmp - confusion;
 		
 		cv::Mat left = samples.t() * Ln * samples;
 		cv::Mat right = means.t() * Ls * means;
 
 		cv::Mat eigenValues, eigenVectors;
 		eigen(left, right, eigenValues, eigenVectors);
-
-		printf("1\n");
     }
 
 private:
     cv::Mat GetSimilarityMatrix(
         const ArrayList<T>& samples, 
-        double sigma = 0.4, 
+        //double sigma = 4, 
         double (*GetDistance)(const T&, const T&) = Math::NormOneDistance, 
-        int K = 20)
+        int K = 100)
     {
         ArrayList<ArrayList<int>> topIndexes(samples.Count());
 
@@ -109,7 +119,7 @@ private:
         {
             ArrayList<Tuple<double, int>> distanceAndIndexes(samples.Count());
             for (int j = 0; j < samples.Count(); j++)
-                distanceAndIndexes.Add(CreateTuple(distanceMatrix.at<double>(i, j), j));
+                distanceAndIndexes[j] = CreateTuple(distanceMatrix.at<double>(i, j), j);
 
             std::sort(distanceAndIndexes.begin(), distanceAndIndexes.end());
 
@@ -126,7 +136,7 @@ private:
                 double similarity = 0;
 
                 if (topIndexes[i].Contains(j) && topIndexes[j].Contains(i))
-                    similarity = Math::Gauss(distanceMatrix.at<double>(i, j), sigma);
+                    similarity = 1;
 
                 similarityMatrix.at<double>(j, i) = similarityMatrix.at<double>(i, j) = similarity;
             }
@@ -180,7 +190,4 @@ private:
 
         return confusionMatrix;
     }
-
-    std::unordered_map<int, int> _mapping;
-	cv::Mat _similarity, _confusion;
 };

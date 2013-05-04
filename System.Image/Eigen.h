@@ -60,10 +60,10 @@ namespace System
         void eigen(cv::InputArray A, cv::InputArray B, 
                    cv::OutputArray values, cv::OutputArray vectors)
         {
-            cv::Mat a = A.getMat(), b = B.getMat();
+            cv::Mat mat = A.getMat().inv() * B.getMat();
 
-            Eigen::MatrixXd tmp;
-            cv2eigen(b.inv() * a, tmp);
+            Eigen::MatrixXd tmp(mat.rows, mat.cols);
+            cv2eigen(mat, tmp);
 
             Eigen::EigenSolver<Eigen::MatrixXd> eigenSolver(tmp);
 
