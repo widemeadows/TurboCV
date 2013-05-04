@@ -1,6 +1,12 @@
+#pragma once
+
 #include "../System/System.h"
 #include "../System.Image/System.Image.h"
+#include "../System.Image/Eigen.h"
 #include "../System.ML/System.ML.h"
+#include <cassert>
+#include <unordered_map>
+#include <cv.h>
 using namespace TurboCV::System;
 using namespace TurboCV::System::Image;
 using namespace TurboCV::System::ML;
@@ -9,32 +15,31 @@ template<typename T>
 class LDPPI
 {
 public:
-    void Train(const ArrayList<T>& data, const ArrayList<int>& labels)
+    LDPPI(const ArrayList<T>& data, const ArrayList<int>& labels)
     {
         assert(data.Count() == labels.Count() && data.Count() > 0);
 
-        int dataNum = data.Count();
-        _mapping.clear();
-        _means.Clear();
-
         int categoryNum = 0;
-        for (int i = 0; i < dataNum; i++)
+        for (int i = 0; i < data.Count(); i++)
         {
             std::unordered_map<int, int>::iterator itr = _mapping.find(labels[i]);
             if (itr == _mapping.end())
                 _mapping.insert(std::make_pair(labels[i], categoryNum++));
         }
 
+		cv::Mat samples;
         ArrayList<cv::Mat> categories(categoryNum);
-        for (int i = 0; i < dataNum; i++)
+        for (int i = 0; i < data.Count(); i++)
         {
             cv::Mat row(1, data[i].Count(), CV_64F);
             for (int j = 0; j < data[i].Count(); j++)
                 row.at<double>(0, j) = data[i][j];
 
             categories[_mapping[labels[i]]].push_back(row);
+			samples.push_back(row);
         }
 
+		cv::Mat means;
         for (int i = 0; i < categoryNum; i++)
         {
             cv::Mat mean = cv::Mat::zeros(1, categories[i].cols, CV_64F);
@@ -46,40 +51,37 @@ public:
             for (int j = 0; j < categories[i].cols; j++)
                 mean.at<double>(0, j) /= categories[i].rows;
 
-            _means.Add(mean);
+            means.push_back(mean);
         }
 
-        #pragma omp parallel for
-        for (int index = 0; index < categoryNum; index++)
-        {
-            printf("Class %d...\n", index + 1);
+        _similarity = GetSimilarityMatrix(data);
+		
+		cv::Mat tmp = cv::Mat::zeros(_similarity.size(), CV_64F);
+		for (int i = 0; i < _similarity.rows; i++)
+			for (int j = 0; j < _similarity.cols; j++)
+				tmp.at<double>(i, i) += _similarity.at<double>(i, j);
 
-            const cv::Mat& data = categories[index];
-            _weights[index] = (double)data.rows / dataNum;
+		cv::Mat Ln = tmp - _similarity;
 
-            cv::Mat covariation, mean;
-            cv::calcCovarMatrix(data, covariation, mean, CV_COVAR_ROWS | CV_COVAR_NORMAL);
+		ArrayList<int> normalizedLabels(labels.Count());
+		for (int i = 0; i < labels.Count(); i++)
+			normalizedLabels[i] = _mapping[labels[i]];
+		_confusion = GetConfusionMatrix(data, normalizedLabels);
 
-            cv::Mat eigenValues, eigenVectors;
-            cv::eigen(covariation, eigenValues, eigenVectors);
+		tmp = cv::Mat::zeros(_confusion.size(), CV_64F);
+		for (int i = 0; i < _confusion.rows; i++)
+			for (int j = 0; j < _confusion.cols; j++)
+				tmp.at<double>(i, i) += _confusion.at<double>(i, j);
 
-            for (int j = 40; j < eigenValues.rows; j++)
-                eigenValues.at<double>(j, 0) = 0.035;
+		cv::Mat Ls = tmp - _confusion;
+		
+		cv::Mat left = samples.t() * Ln * samples;
+		cv::Mat right = means.t() * Ls * means;
 
-            cv::Mat diag = cv::Mat::zeros(eigenValues.rows, eigenValues.rows, CV_64F);
-            for (int j = 0; j < eigenValues.rows; j++)
-                diag.at<double>(j, j) = eigenValues.at<double>(j, 0);
-            covariation = eigenVectors.t() * diag * eigenVectors;
+		cv::Mat eigenValues, eigenVectors;
+		eigen(left, right, eigenValues, eigenVectors);
 
-            ((cv::Mat)covariation.inv()).convertTo(_invCovariance[index], CV_32F);
-
-            double determinant = 0;
-            for (int j = 0; j < eigenValues.rows; j++)
-                determinant += log(eigenValues.at<double>(j, 0));
-            _detCovariance[index] = determinant;
-
-            _means[index] = mean;
-        }
+		printf("1\n");
     }
 
 private:
@@ -89,7 +91,7 @@ private:
         double (*GetDistance)(const T&, const T&) = Math::NormOneDistance, 
         int K = 20)
     {
-        ArrayList<ArrayList<int>> topResults(samples.Count());
+        ArrayList<ArrayList<int>> topIndexes(samples.Count());
 
         cv::Mat distanceMatrix = Mat::zeros(samples.Count(), samples.Count(), CV_64F);
         #pragma omp parallel for
@@ -112,27 +114,28 @@ private:
             std::sort(distanceAndIndexes.begin(), distanceAndIndexes.end());
 
             for (int j = 0; j < K; j++)
-                topResults[i].Add(distanceAndIndexes[j].Item2());
+                topIndexes[i].Add(distanceAndIndexes[j].Item2());
         }
 
         cv::Mat similarityMatrix(samples.Count(), samples.Count(), CV_64F);
         #pragma omp parallel for
         for (int i = 0; i < samples.Count(); i++)
         {
-            for (int j = 0; j < samples.Count(); j++)
+            for (int j = i; j < samples.Count(); j++)
             {
                 double similarity = 0;
 
-                if (topResults[i].Contains(j))
+                if (topIndexes[i].Contains(j) && topIndexes[j].Contains(i))
                     similarity = Math::Gauss(distanceMatrix.at<double>(i, j), sigma);
 
-                similarityMatrix.at<double>(i, j) = similarity;
+                similarityMatrix.at<double>(j, i) = similarityMatrix.at<double>(i, j) = similarity;
             }
         }
 
         return similarityMatrix;
     }
 
+	// Attention: labels should be normalized to [0,...,C-1], where C is the category number.
     cv::Mat GetConfusionMatrix(const ArrayList<T>& samples, const ArrayList<int>& labels)
     {
         ArrayList<int> predictLabels(samples.Count());
@@ -161,33 +164,23 @@ private:
             predictLabels[i] = knn.Predict(evaluationSet)[0];
         }
 
-        ConfusionMatrix confusionMatrix;
-        std::unordered_map<int, int> sampleNumPerClass;
-        for (int i = 0; i < labels.Count(); i++)
-        {
-            sampleNumPerClass[labels[i]]++;
-            confusionMatrix[std::make_pair(labels[i], predictLabels[i])]++;
-        }
+		std::unordered_map<int, int> sampleNumPerCategory;
+		for (int i = 0; i < labels.Count(); i++)
+		{
+			sampleNumPerCategory[labels[i]]++;
+		}
 
-        ConfusionMatrix::iterator itr = confusionMatrix.begin();
-        while (itr != confusionMatrix.end())
-        {
-            itr->second /= sampleNumPerClass[(itr->first).first];
-            itr++;
-        }
+        cv::Mat confusionMatrix(sampleNumPerCategory.size(), sampleNumPerCategory.size(), CV_64F);
+		for (int i = 0; i < labels.Count(); i++)
+			confusionMatrix.at<double>(labels[i], predictLabels[i])++;
+        
+		for (int i = 0; i < confusionMatrix.rows; i++)
+			for (int j = 0; j < confusionMatrix.cols; j++)
+				confusionMatrix.at<double>(i, j) /= sampleNumPerCategory[i];
 
         return confusionMatrix;
     }
 
     std::unordered_map<int, int> _mapping;
-    ArrayList<cv::Mat> _means, _similarity, _confusion;
+	cv::Mat _similarity, _confusion;
 };
-
-
-//template<typename T>
-//void LDPPI(const ArrayList<T>& samples, const ArrayList<int>& labels)
-//{
-//    ConfusionMatrix confusionMatrix = GetConfusionMatrix(samples, labels);
-//
-//    
-//}
