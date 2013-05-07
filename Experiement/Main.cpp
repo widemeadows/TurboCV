@@ -318,9 +318,18 @@ void GlobalFeatureCrossValidation(const TurboCV::System::String& imageSetPath, c
                 trainingLabels.Add(images[j].Item2());
         }
 
+        ArrayList<size_t> actualIndexes = RandomPermutate(evaluationSet.Count(), 10000);
+        ArrayList<GlobalFeature_f> actualEvaSet;
+        ArrayList<int> actualEvaLabels;
+        for (int i = 0; i < actualIndexes.Count(); i++)
+        {
+            actualEvaSet.Add(evaluationSet[actualIndexes[i]]);
+            actualEvaLabels.Add(evaluationLabels[actualIndexes[i]]);
+        }
+
         //MQDF<GlobalFeature_f> mqdf;
         //pair<double, map<pair<int, int>, double>> precisions = 
-        //    mqdf.Evaluate(trainingSet, trainingLabels, evaluationSet, evaluationLabels);
+        //    mqdf.Evaluate(trainingSet, trainingLabels, actualEvaSet, actualEvaLabels);
         KNN<GlobalFeature_f> knn;
         pair<double, map<pair<int, int>, double>> precisions = 
             knn.Evaluate(trainingSet, trainingLabels, evaluationSet, evaluationLabels);
@@ -360,11 +369,6 @@ void GlobalFeatureCrossValidation(const TurboCV::System::String& imageSetPath, c
         fclose(file);
     }
 #endif
-
-	ArrayList<int> labels;
-	for (int i = 0; i < imageNum; i++)
-		labels.Add(images[i].Item2());
-	LDPPI<GlobalFeature_f> ldppi(features, labels);
 
     TurboCV::System::String savePath = algo.GetName() + "_" + imageSetPath + "_knn.out";
     FILE* file = fopen(savePath, "w");
@@ -807,10 +811,10 @@ void Batch(const TurboCV::System::String& imageSetPath, bool thinning = false)
 
 int main()
 {
-    //LocalFeatureCrossValidation("hccr", RHOG(), 500);
+    //LocalFeatureCrossValidation("oracles", Test(), 1500, true);
     //printf("\n");
 
-    GlobalFeatureCrossValidation("oracles", GHOG(), true);
+    GlobalFeatureCrossValidation("hccr", GHOG(), true);
     printf("\n");
 
     //EdgeMatchingCrossValidation("oracles", Hitmap(), true);

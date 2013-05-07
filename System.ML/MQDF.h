@@ -86,11 +86,10 @@ namespace TurboCV
 						_weights.Add(0);
 					}
 
+                    printf("Train...\n");
 					#pragma omp parallel for
                     for (int index = 0; index < categoryNum; index++)
                     {
-                        printf("Class %d...\n", index + 1);
-
                         const cv::Mat& data = categories[index];
 						_weights[index] = (double)data.rows / dataNum;
 
