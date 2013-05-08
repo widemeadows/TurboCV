@@ -612,11 +612,34 @@ void LocalFeatureTest(const TurboCV::System::String& imageSetPath, const LocalFe
     for (int i = 0; i < imageNum; i++)
         Convert(machine.GetFeatureWithPreprocess(images[i].Item1(), true), features[i]);
 
+    { // Use a block here to destruct words and freqHistograms immediately.
+        printf("Compute Visual Words...\n");
+        ArrayList<Word_f> words = BOV::GetVisualWords(features, wordNum, sampleNum);
+
+        printf("Compute Frequency Histograms...\n");
+        ArrayList<Histogram> freqHistograms = BOV::GetFrequencyHistograms(features, words);
+
+        printf("Write To File...\n");
+        TurboCV::System::String savePath = feature.GetName() + "_features";
+        FILE* file = fopen(savePath, "w");
+        for (int i = 0; i < freqHistograms.Count(); i++)
+        {
+            for (int j = 0; j < freqHistograms[i].Count(); j++)
+                fprintf(file, "%.12f ", freqHistograms[i][j]);
+            fprintf(file, "\n");
+        }
+        fclose(file);
+
+        savePath = feature.GetName() + "_labels";
+        file = fopen(savePath, "w");
+        for (int i = 0; i < features.Count(); i++)
+            fprintf(file, "%d\n", images[i].Item2());
+        fclose(file);
+    }
+
     ArrayList<Tuple<ArrayList<LocalFeature_f>, ArrayList<LocalFeature_f>, ArrayList<size_t>>> pass = 
         RandomSplit(features, fold);
     ArrayList<double> passResult;
-    map<int, double> ap;
-    map<int, int> count;
     for (int i = 0; i < fold; i++)
     {
         printf("\nBegin Fold %d...\n", i + 1);
@@ -731,15 +754,10 @@ void LocalFeatureTest(const TurboCV::System::String& imageSetPath, const LocalFe
         //evaluationHistograms = result.second;
 
         KNN<Histogram> knn;
-        pair<double, map<int, double>> precisions = 
+        auto precisions = 
             knn.Evaluate(trainingHistograms, trainingLabels, evaluationHistograms, evaluationLabels);
 
         passResult.Add(precisions.first);
-        for (auto item : precisions.second)
-        {
-            ap[item.first] += item.second;
-            count[item.first]++;
-        }
 
         printf("Fold %d Accuracy: %f\n", i + 1, precisions.first);
     }
@@ -754,9 +772,6 @@ void LocalFeatureTest(const TurboCV::System::String& imageSetPath, const LocalFe
         Math::StandardDeviation(passResult));
     printf("\nAverage: %f, Standard Deviation: %f\n", Math::Mean(passResult), 
         Math::StandardDeviation(passResult));
-
-    for (auto item : ap)
-        fprintf(file, "Class %d: %f\n", item.first, item.second / count[item.first]);
 
     fclose(file);
 }
@@ -814,17 +829,14 @@ int main()
     //LocalFeatureCrossValidation("oracles", Test(), 1500, true);
     //printf("\n");
 
-    GlobalFeatureCrossValidation("hccr", GHOG(), true);
-    printf("\n");
+    //GlobalFeatureCrossValidation("hccr", GHOG(), true);
+    //printf("\n");
 
     //EdgeMatchingCrossValidation("oracles", Hitmap(), true);
     //printf("\n");
 
-    //EdgeMatchingCrossValidation("oracles", XOR(), true);
-    //printf("\n");
-
-    //LocalFeatureTest("oracles", Test(), 1500);
-    //printf("\n");
+    LocalFeatureTest("oracles", Test(), 1500);
+    printf("\n");
 
     //LocalFeatureTest("oracles_png", Test(), 1500);
     //printf("\n");
