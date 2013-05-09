@@ -332,7 +332,7 @@ void GlobalFeatureCrossValidation(const TurboCV::System::String& imageSetPath, c
         //    mqdf.Evaluate(trainingSet, trainingLabels, actualEvaSet, actualEvaLabels);
         KNN<GlobalFeature_f> knn;
         pair<double, map<pair<int, int>, double>> precisions = 
-            knn.Evaluate(trainingSet, trainingLabels, evaluationSet, evaluationLabels);
+            knn.Evaluate(trainingSet, trainingLabels, actualEvaSet, actualEvaLabels);
 
         passResult.Add(precisions.first);
         printf("Fold %d Accuracy: %f\n", i + 1, precisions.first);
@@ -829,14 +829,14 @@ int main()
     //LocalFeatureCrossValidation("oracles", Test(), 1500, true);
     //printf("\n");
 
-    //GlobalFeatureCrossValidation("hccr", GHOG(), true);
-    //printf("\n");
+    GlobalFeatureCrossValidation("hccr", GHOG(), true);
+    printf("\n");
 
     //EdgeMatchingCrossValidation("oracles", Hitmap(), true);
     //printf("\n");
 
-    LocalFeatureTest("oracles", Test(), 1500);
-    printf("\n");
+    //LocalFeatureTest("sketches", Test(), 1500);
+    //printf("\n");
 
     //LocalFeatureTest("oracles_png", Test(), 1500);
     //printf("\n");
