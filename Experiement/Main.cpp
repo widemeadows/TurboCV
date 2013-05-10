@@ -846,9 +846,6 @@ int main()
         }
 
         count++;
-
-        if (count >= 320)
-            break;
     }
 
     fin.close();

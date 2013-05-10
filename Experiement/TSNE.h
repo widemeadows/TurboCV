@@ -56,13 +56,8 @@ namespace System
 				{
 					cv::Mat D = cv::Mat::zeros(n, n, CV_64F);
 					for (int j = 0; j < n; j++)
-                    {
-						for (int k = j + 1; k < n; k++)
-                        {
-                            cv::Mat diff = Y.row(j) - Y.row(k);
-							D.at<double>(j, k) = D.at<double>(k, j) = diff.dot(diff);
-                        }
-                    }
+                        for(int k = j + 1; k < n; k++)
+                            D.at<double>(j, k) = D.at<double>(k, j) = rowDistance(Y, j, k);
 					D = 1 / (1 + D);
 					for (int j = 0; j < n; j++)
 						D.at<double>(j, j) = 0;
@@ -70,12 +65,13 @@ namespace System
 					cv::Mat Q = D / cv::sum(D)[0];
 					Q = cv::max(1e-12, Q);
 
-					cv::Mat PQ = P - Q;
-					cv::Mat dY = cv::Mat::zeros(n, dims, CV_64F);
-					for (int j = 0; j < n; j++)
+                    cv::Mat PQ = P - Q;
+                    cv::Mat dY = cv::Mat::zeros(n, dims, CV_64F);
+                    for (int j = 0; j < n; j++)
                         for (int k = 0; k < n; k++)
-                            dY.row(j) += PQ.at<double>(j, k) * D.at<double>(j, k) *
-                                (Y.row(j) - Y.row(k));
+                            for (int m = 0; m < dims; m++)
+                                dY.at<double>(j, m) += PQ.at<double>(j, k) * D.at<double>(j, k) *
+                                    (Y.at<double>(j, m) - Y.at<double>(k, m));
 
                     cv::Mat tmp1;
                     ((cv::Mat)((dY > 0) != (iY > 0))).convertTo(tmp1, CV_64F);
@@ -86,16 +82,16 @@ namespace System
                     tmp2 = cv::min(tmp2, 1.0);
 
                     gains = (gains + 0.2).mul(tmp1) + (gains * 0.8).mul(tmp2);
-					gains = cv::max(minGain, gains);
+                    gains = cv::max(minGain, gains);
 
                     double momentum = i < 20 ? initMomentum : finalMomentum;
-					iY = momentum * iY - eta * gains.mul(dY);
-					Y = Y + iY;
-					
+                    iY = momentum * iY - eta * gains.mul(dY);
+                    Y = Y + iY;
+
                     cv::Mat center(1, dims, CV_64F);
-					for (int j = 0; j < dims; j++)
-						center.at<double>(0, j) = cv::mean(Y.col(j))[0];
-					for (int j = 0; j < n; j++)
+                    for (int j = 0; j < dims; j++)
+                        center.at<double>(0, j) = cv::mean(Y.col(j))[0];
+                    for (int j = 0; j < n; j++)
                         Y.row(j) -= center;
 
                     if ((i + 1) % 10 == 0)
@@ -127,19 +123,27 @@ namespace System
 				return CreateTuple(H, Pi);
 			}
 
+            static inline double rowDistance(const cv::Mat& mat, int row1, int row2)
+            {
+                double sum = 0;
+
+                for (int k = 0; k < mat.cols; k++)
+                {
+                    sum += (mat.at<double>(row1, k) - mat.at<double>(row2, k)) * 
+                        (mat.at<double>(row1, k) - mat.at<double>(row2, k));
+                }
+
+                return sum;
+            }
+
             static cv::Mat x2p(cv::Mat X, double tolerance = 1e-5, double perplexity = 30.0)
             {
                 int n = X.rows, d = X.cols;
 
-				cv::Mat D(n, n, CV_64F);
+				cv::Mat D = cv::Mat::zeros(n, n, CV_64F);
 				for (int i = 0; i < n; i++)
-                {
-					for (int j = 0; j < n; j++)
-                    {
-                        cv::Mat diff = X.row(i) - X.row(j);
-						D.at<double>(i, j) = diff.dot(diff);
-                    }
-                }
+                    for (int j = i + 1; j < n; j++)
+                        D.at<double>(i, j) = D.at<double>(j, i) = rowDistance(X, i, j);
 
 				cv::Mat P = cv::Mat::zeros(n, n, CV_64F);
 				cv::Mat beta = cv::Mat::ones(n, 1, CV_64F);
@@ -153,7 +157,7 @@ namespace System
 
 					cv::Mat Di(1, n - 1, CV_64F);
 					for (int j = 0; j < i; j++)
-						Di.at<double>(0, j) = D.at<double>(i, j);
+                        Di.at<double>(0, j) = D.at<double>(i, j);
 					for (int j = i + 1; j < n; j++)
 						Di.at<double>(0, j - 1) = D.at<double>(i, j);
 				
@@ -193,9 +197,9 @@ namespace System
 					}
 
 					for (int j = 0; j < i; j++)
-						P.at<double>(i, j) = Pi.at<double>(0, j);
+                        P.at<double>(i, j) = Pi.at<double>(0, j);
 					for (int j = i + 1; j < n; j++)
-						P.at<double>(i, j) = Pi.at<double>(0, j - 1);
+                        P.at<double>(i, j) = Pi.at<double>(0, j - 1);
 				}
 
 				P += P.t();
