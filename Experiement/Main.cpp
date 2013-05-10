@@ -2,9 +2,10 @@
 #include "../System.Image/System.Image.h"
 #include "../System.ML/System.ML.h"
 #include "Util.h"
-#include "LDPPI.h"
+#include "TSNE.h"
 #include <cv.h>
 #include <highgui.h>
+#include <fstream>
 using namespace TurboCV::System;
 using namespace TurboCV::System::IO;
 using namespace TurboCV::System::Image;
@@ -327,13 +328,13 @@ void GlobalFeatureCrossValidation(const TurboCV::System::String& imageSetPath, c
             actualEvaLabels.Add(evaluationLabels[actualIndexes[i]]);
         }
 
-        //MQDF<GlobalFeature_f> mqdf;
-        //pair<double, map<pair<int, int>, double>> precisions = 
-        //    mqdf.Evaluate(trainingSet, trainingLabels, actualEvaSet, actualEvaLabels);
-        KNN<GlobalFeature_f> knn;
+        MQDF<GlobalFeature_f> mqdf;
         pair<double, map<pair<int, int>, double>> precisions = 
-            knn.Evaluate(trainingSet, trainingLabels, actualEvaSet, actualEvaLabels,
-            Math::NormOneDistance, 4.0, 4);
+            mqdf.Evaluate(trainingSet, trainingLabels, actualEvaSet, actualEvaLabels);
+        //KNN<GlobalFeature_f> knn;
+        //pair<double, map<pair<int, int>, double>> precisions = 
+        //    knn.Evaluate(trainingSet, trainingLabels, actualEvaSet, actualEvaLabels,
+        //    Math::NormOneDistance, 4.0, 4);
 
         passResult.Add(precisions.first);
         printf("Fold %d Accuracy: %f\n", i + 1, precisions.first);
@@ -827,19 +828,54 @@ void Batch(const TurboCV::System::String& imageSetPath, bool thinning = false)
 
 int main()
 {
+    fstream fin("features.txt");
+
+    ArrayList<ArrayList<double>> samples;
+    double token;
+    int count = 0;
+
+    while (fin >> token)
+    {
+        samples.Add(ArrayList<double>());
+
+        samples[count].Add(token);
+        for (int i = 1; i < 1500; i++)
+        {
+            fin >> token;
+            samples[count].Add(token);
+        }
+
+        count++;
+
+        if (count >= 320)
+            break;
+    }
+
+    fin.close();
+
+    cv::Mat Y = TSNE::Compute(samples, 2, 20);
+
+    FILE* file = fopen("y.txt", "w");
+
+    for (int i = 0; i < Y.rows; i++)
+    {
+        for (int j = 0; j < Y.cols; j++)
+            fprintf(file, "%f ", Y.at<double>(i, j));
+        fprintf(file, "\n");
+    }
+
+    fclose(file);
+
     //LocalFeatureCrossValidation("oracles", Test(), 1500, true);
     //printf("\n");
 
-    GlobalFeatureCrossValidation("hccr", GHOG(), true);
-    printf("\n");
+    //GlobalFeatureCrossValidation("hccr", GHOG(), true);
+    //printf("\n");
 
     //EdgeMatchingCrossValidation("oracles", Hitmap(), true);
     //printf("\n");
 
     //LocalFeatureTest("sketches", Test(), 1500);
-    //printf("\n");
-
-    //LocalFeatureTest("oracles_png", Test(), 1500);
     //printf("\n");
 
     //Batch("sketches", false);
