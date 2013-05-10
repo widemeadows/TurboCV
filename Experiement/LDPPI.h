@@ -20,7 +20,7 @@ public:
         assert(data.Count() == labels.Count() && data.Count() > 0);
 
         int categoryNum = 0;
-		unordered_map<int, int> mapping;
+        unordered_map<int, int> mapping;
         for (int i = 0; i < data.Count(); i++)
         {
             std::unordered_map<int, int>::iterator itr = mapping.find(labels[i]);
@@ -28,11 +28,11 @@ public:
                 mapping.insert(std::make_pair(labels[i], categoryNum++));
         }
 
-		ArrayList<int> normalizedLabels(labels.Count());
-		for (int i = 0; i < labels.Count(); i++)
-			normalizedLabels[i] = mapping[labels[i]];
+        ArrayList<int> normalizedLabels(labels.Count());
+        for (int i = 0; i < labels.Count(); i++)
+            normalizedLabels[i] = mapping[labels[i]];
 
-		cv::Mat samples;
+        cv::Mat samples;
         ArrayList<cv::Mat> categories(categoryNum);
         for (int i = 0; i < data.Count(); i++)
         {
@@ -41,10 +41,10 @@ public:
                 row.at<double>(0, j) = data[i][j];
 
             categories[normalizedLabels[i]].push_back(row);
-			samples.push_back(row);
+            samples.push_back(row);
         }
 
-		cv::Mat means;
+        cv::Mat means;
         for (int i = 0; i < categoryNum; i++)
         {
             cv::Mat mean = cv::Mat::zeros(1, categories[i].cols, CV_64F);
@@ -60,38 +60,38 @@ public:
         }
 
         //cv::Mat similarity = GetSimilarityMatrix(data);
-		cv::Mat similarity = cv::Mat::zeros(data.Count(), data.Count(), CV_64F);
-		for (int i = 0; i < data.Count(); i++)
-			for (int j = 0; j < data.Count(); j++)
-				if (normalizedLabels[i] == normalizedLabels[j])
-					similarity.at<double>(i, j) = 1;
+        cv::Mat similarity = cv::Mat::zeros(data.Count(), data.Count(), CV_64F);
+        for (int i = 0; i < data.Count(); i++)
+            for (int j = 0; j < data.Count(); j++)
+                if (normalizedLabels[i] == normalizedLabels[j])
+                    similarity.at<double>(i, j) = 1;
 
-		cv::Mat tmp = cv::Mat::zeros(similarity.size(), CV_64F);
-		for (int i = 0; i < similarity.rows; i++)
-			for (int j = 0; j < similarity.cols; j++)
-				tmp.at<double>(i, i) += similarity.at<double>(i, j);
+        cv::Mat tmp = cv::Mat::zeros(similarity.size(), CV_64F);
+        for (int i = 0; i < similarity.rows; i++)
+            for (int j = 0; j < similarity.cols; j++)
+                tmp.at<double>(i, i) += similarity.at<double>(i, j);
 
-		cv::Mat Ln = tmp - similarity;
+        cv::Mat Ln = tmp - similarity;
 
-		//cv::Mat confusion = GetConfusionMatrix(data, normalizedLabels);
-		cv::Mat confusion = Mat::zeros(mapping.size(), mapping.size(), CV_64F);
-		for (int i = 0; i < confusion.rows; i++)
-			for (int j = 0; j < confusion.cols; j++)
-				if (i != j)
-					confusion.at<double>(i, j) = 1;
+        //cv::Mat confusion = GetConfusionMatrix(data, normalizedLabels);
+        cv::Mat confusion = Mat::zeros(mapping.size(), mapping.size(), CV_64F);
+        for (int i = 0; i < confusion.rows; i++)
+            for (int j = 0; j < confusion.cols; j++)
+                if (i != j)
+                    confusion.at<double>(i, j) = 1;
 
-		tmp = cv::Mat::zeros(confusion.size(), CV_64F);
-		for (int i = 0; i < confusion.rows; i++)
-			for (int j = 0; j < confusion.cols; j++)
-				tmp.at<double>(i, i) += confusion.at<double>(i, j);
+        tmp = cv::Mat::zeros(confusion.size(), CV_64F);
+        for (int i = 0; i < confusion.rows; i++)
+            for (int j = 0; j < confusion.cols; j++)
+                tmp.at<double>(i, i) += confusion.at<double>(i, j);
 
-		cv::Mat Ls = tmp - confusion;
-		
-		cv::Mat left = samples.t() * Ln * samples;
-		cv::Mat right = means.t() * Ls * means;
+        cv::Mat Ls = tmp - confusion;
+        
+        cv::Mat left = samples.t() * Ln * samples;
+        cv::Mat right = means.t() * Ls * means;
 
-		cv::Mat eigenValues, eigenVectors;
-		eigen(left, right, eigenValues, eigenVectors);
+        cv::Mat eigenValues, eigenVectors;
+        eigen(left, right, eigenValues, eigenVectors);
     }
 
 private:
@@ -145,7 +145,7 @@ private:
         return similarityMatrix;
     }
 
-	// Attention: labels should be normalized to [0,...,C-1], where C is the category number.
+    // Attention: labels should be normalized to [0,...,C-1], where C is the category number.
     cv::Mat GetConfusionMatrix(const ArrayList<T>& samples, const ArrayList<int>& labels)
     {
         ArrayList<int> predictLabels(samples.Count());
@@ -174,19 +174,19 @@ private:
             predictLabels[i] = knn.Predict(evaluationSet)[0];
         }
 
-		std::unordered_map<int, int> sampleNumPerCategory;
-		for (int i = 0; i < labels.Count(); i++)
-		{
-			sampleNumPerCategory[labels[i]]++;
-		}
+        std::unordered_map<int, int> sampleNumPerCategory;
+        for (int i = 0; i < labels.Count(); i++)
+        {
+            sampleNumPerCategory[labels[i]]++;
+        }
 
         cv::Mat confusionMatrix(sampleNumPerCategory.size(), sampleNumPerCategory.size(), CV_64F);
-		for (int i = 0; i < labels.Count(); i++)
-			confusionMatrix.at<double>(labels[i], predictLabels[i])++;
+        for (int i = 0; i < labels.Count(); i++)
+            confusionMatrix.at<double>(labels[i], predictLabels[i])++;
         
-		for (int i = 0; i < confusionMatrix.rows; i++)
-			for (int j = 0; j < confusionMatrix.cols; j++)
-				confusionMatrix.at<double>(i, j) /= sampleNumPerCategory[i];
+        for (int i = 0; i < confusionMatrix.rows; i++)
+            for (int j = 0; j < confusionMatrix.cols; j++)
+                confusionMatrix.at<double>(i, j) /= sampleNumPerCategory[i];
 
         return confusionMatrix;
     }

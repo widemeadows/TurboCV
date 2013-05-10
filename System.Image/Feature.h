@@ -808,57 +808,57 @@ namespace System
             const Point& pivot, const ArrayList<Point>& points,
             const ArrayList<double>& logDistances, int angleNum, int orientNum)
         {
-	        int pointNum = points.Count();
+            int pointNum = points.Count();
             assert(pointNum > 1);
 
             ArrayList<double> distances = Geometry::EulerDistance(pivot, points);
             ArrayList<double> angles = Geometry::Angle(pivot, points);
-	        double mean = Math::Sum(distances) / (pointNum - 1); // Except pivot
-	        for (int i = 0; i < pointNum; i++)
-		        distances[i] /= mean;
+            double mean = Math::Sum(distances) / (pointNum - 1); // Except pivot
+            for (int i = 0; i < pointNum; i++)
+                distances[i] /= mean;
 
             int distanceNum = logDistances.Count() - 1;
-	        int dims[] = { distanceNum, angleNum, orientNum };
-	        Mat bins(3, dims, CV_64F);
+            int dims[] = { distanceNum, angleNum, orientNum };
+            Mat bins(3, dims, CV_64F);
             bins = Scalar::all(0);
             double orientStep = CV_PI / orientNum, sigma = 10;
-	        for (int i = 0; i < pointNum; i++)
-	        {
-		        if (points[i] == pivot)
-			        continue;
+            for (int i = 0; i < pointNum; i++)
+            {
+                if (points[i] == pivot)
+                    continue;
 
-		        for (int j = 0; j < distanceNum; j++)
-		        {
-			        if (distances[i] >= logDistances[j] && distances[i] < logDistances[j + 1])
-			        {
-				        int a = FindBinIndex(angles[i], 0, 2 * CV_PI, angleNum, true);
+                for (int j = 0; j < distanceNum; j++)
+                {
+                    if (distances[i] >= logDistances[j] && distances[i] < logDistances[j + 1])
+                    {
+                        int a = FindBinIndex(angles[i], 0, 2 * CV_PI, angleNum, true);
 
                         double orient = orientImage.at<double>(points[i].y, points[i].x);
                         int o = (int)(orient / orientStep);
 
-				        double value = Math::Gauss(((o + 0.5) * orientStep - orient) * 180 / CV_PI, sigma);
-				        bins.at<double>(j, a, RoundIndex(o, orientNum, true)) += value;
+                        double value = Math::Gauss(((o + 0.5) * orientStep - orient) * 180 / CV_PI, sigma);
+                        bins.at<double>(j, a, RoundIndex(o, orientNum, true)) += value;
 
-				        break;
-			        }
-		        }
-	        }
+                        break;
+                    }
+                }
+            }
 
             Descriptor descriptor;
-	        for (int i = 0; i < distanceNum; i++)
-	        {
+            for (int i = 0; i < distanceNum; i++)
+            {
                 ArrayList<double> ring;
-		        for (int j = 0; j < angleNum; j++)
-			        for (int k = 0; k < orientNum; k++)
-				        ring.Add(bins.at<double>(i, j, k));
+                for (int j = 0; j < angleNum; j++)
+                    for (int k = 0; k < orientNum; k++)
+                        ring.Add(bins.at<double>(i, j, k));
 
-		        NormOneNormalize(ring.begin(), ring.end());
+                NormOneNormalize(ring.begin(), ring.end());
 
                 for (auto item : ring)
                     descriptor.Add(item);
-	        }
+            }
 
-	        return descriptor;
+            return descriptor;
         }
 
         ///////////////////////////////////////////////////////////////////////
@@ -1003,43 +1003,43 @@ namespace System
 
             ArrayList<double> distances = Geometry::EulerDistance(pivot, pivots);
             ArrayList<double> angles = Geometry::Angle(pivot, pivots);
-	        double mean = Math::Sum(distances) / (pivotNum - 1); // Except pivot
-	        for (int i = 0; i < pivotNum; i++)
-		        distances[i] /= mean;
+            double mean = Math::Sum(distances) / (pivotNum - 1); // Except pivot
+            for (int i = 0; i < pivotNum; i++)
+                distances[i] /= mean;
 
             int distanceNum = logDistances.Count() - 1;
-	        Mat bins = Mat::zeros(distanceNum, angleNum, CV_64F);
-	        for (int i = 0; i < pivotNum; i++)
-	        {
-		        if (pivots[i] == pivot)
-			        continue;
+            Mat bins = Mat::zeros(distanceNum, angleNum, CV_64F);
+            for (int i = 0; i < pivotNum; i++)
+            {
+                if (pivots[i] == pivot)
+                    continue;
 
-		        for (int j = 0; j < distanceNum; j++)
-		        {
-			        if (distances[i] >= logDistances[j] && distances[i] < logDistances[j + 1])
-			        {
-				        int a = FindBinIndex(angles[i], 0, 2 * CV_PI, angleNum, true);
-				        bins.at<double>(j, a)++;
+                for (int j = 0; j < distanceNum; j++)
+                {
+                    if (distances[i] >= logDistances[j] && distances[i] < logDistances[j + 1])
+                    {
+                        int a = FindBinIndex(angles[i], 0, 2 * CV_PI, angleNum, true);
+                        bins.at<double>(j, a)++;
 
-				        break;
-			        }
-		        }
-	        }
+                        break;
+                    }
+                }
+            }
 
             Descriptor descriptor;
-	        for (int i = 0; i < distanceNum; i++)
-	        {
+            for (int i = 0; i < distanceNum; i++)
+            {
                 ArrayList<double> ring;
-		        for (int j = 0; j < angleNum; j++)
-				    ring.Add(bins.at<double>(i, j));
+                for (int j = 0; j < angleNum; j++)
+                    ring.Add(bins.at<double>(i, j));
 
-		        NormOneNormalize(ring.begin(), ring.end());
+                NormOneNormalize(ring.begin(), ring.end());
 
                 for (auto item : ring)
                     descriptor.Add(item);
-	        }
+            }
 
-	        return descriptor;
+            return descriptor;
         }
 
         ///////////////////////////////////////////////////////////////////////
@@ -1168,48 +1168,48 @@ namespace System
             ArrayList<double> distances = Geometry::EulerDistance(center, pivots);
             ArrayList<double> angles = Geometry::Angle(center, pivots);
 
-	        double mean;
+            double mean;
             if (pivots.Contains(center))
                 mean = Math::Sum(distances) / (pivotNum - 1); // Except pivot
             else
                 mean = Math::Sum(distances) / pivotNum;
 
-	        for (int i = 0; i < pivotNum; i++)
-		        distances[i] /= mean;
+            for (int i = 0; i < pivotNum; i++)
+                distances[i] /= mean;
 
             int distanceNum = logDistances.Count() - 1;
-	        Mat bins = Mat::zeros(distanceNum, angleNum, CV_64F);
-	        for (int i = 0; i < pivotNum; i++)
-	        {
-		        if (pivots[i] == center)
-			        continue;
+            Mat bins = Mat::zeros(distanceNum, angleNum, CV_64F);
+            for (int i = 0; i < pivotNum; i++)
+            {
+                if (pivots[i] == center)
+                    continue;
 
-		        for (int j = 0; j < distanceNum; j++)
-		        {
-			        if (distances[i] >= logDistances[j] && distances[i] < logDistances[j + 1])
-			        {
-				        int a = FindBinIndex(angles[i], 0, 2 * CV_PI, angleNum, true);
-				        bins.at<double>(j, a)++;
+                for (int j = 0; j < distanceNum; j++)
+                {
+                    if (distances[i] >= logDistances[j] && distances[i] < logDistances[j + 1])
+                    {
+                        int a = FindBinIndex(angles[i], 0, 2 * CV_PI, angleNum, true);
+                        bins.at<double>(j, a)++;
 
-				        break;
-			        }
-		        }
-	        }
+                        break;
+                    }
+                }
+            }
 
             Descriptor descriptor;
-	        for (int i = 0; i < distanceNum; i++)
-	        {
+            for (int i = 0; i < distanceNum; i++)
+            {
                 ArrayList<double> ring;
-		        for (int j = 0; j < angleNum; j++)
-				    ring.Add(bins.at<double>(i, j));
+                for (int j = 0; j < angleNum; j++)
+                    ring.Add(bins.at<double>(i, j));
 
-		        NormOneNormalize(ring.begin(), ring.end());
+                NormOneNormalize(ring.begin(), ring.end());
 
                 for (auto item : ring)
                     descriptor.Add(item);
-	        }
+            }
 
-	        return descriptor;
+            return descriptor;
         }
 
         ///////////////////////////////////////////////////////////////////////
@@ -1325,47 +1325,47 @@ namespace System
                 orientNumPerScale);
             
             Mat dftInReal, dftOutComplex, dftOutPlanes[2];
-	        sketchImage.convertTo(dftInReal, CV_64FC1);
-	        dft(dftInReal, dftOutComplex, DFT_COMPLEX_OUTPUT);
-	        split(dftOutComplex, dftOutPlanes);
+            sketchImage.convertTo(dftInReal, CV_64FC1);
+            dft(dftInReal, dftOutComplex, DFT_COMPLEX_OUTPUT);
+            split(dftOutComplex, dftOutPlanes);
 
             GlobalFeatureVec feature;
-	        for (int i = 0; i < gaborsInFreqDomain.Count(); i++)
-	        {
-		        Mat idftInPlanes[] = { Mat::zeros(sketchImage.size(), CV_64F), 
+            for (int i = 0; i < gaborsInFreqDomain.Count(); i++)
+            {
+                Mat idftInPlanes[] = { Mat::zeros(sketchImage.size(), CV_64F), 
                     Mat::zeros(sketchImage.size(), CV_64F) };
-		        for (int j = 0; j < sketchImage.rows; j++)
-			        for (int k = 0; k < sketchImage.cols; k++)
-			        {
-				        idftInPlanes[0].at<double>(j, k) = dftOutPlanes[0].at<double>(j, k) *
-					        gaborsInFreqDomain[i].at<double>(j, k);
-				        idftInPlanes[1].at<double>(j, k) = dftOutPlanes[1].at<double>(j, k) *
-					        gaborsInFreqDomain[i].at<double>(j, k);
-			        }
+                for (int j = 0; j < sketchImage.rows; j++)
+                    for (int k = 0; k < sketchImage.cols; k++)
+                    {
+                        idftInPlanes[0].at<double>(j, k) = dftOutPlanes[0].at<double>(j, k) *
+                            gaborsInFreqDomain[i].at<double>(j, k);
+                        idftInPlanes[1].at<double>(j, k) = dftOutPlanes[1].at<double>(j, k) *
+                            gaborsInFreqDomain[i].at<double>(j, k);
+                    }
 
-		        Mat idftInComplex, idftOutComplex, idftOutPlanes[2];
-		        merge(idftInPlanes, 2, idftInComplex);
-		        idft(idftInComplex, idftOutComplex, DFT_SCALE);
-		        split(idftOutComplex, idftOutPlanes);
+                Mat idftInComplex, idftOutComplex, idftOutPlanes[2];
+                merge(idftInPlanes, 2, idftInComplex);
+                idft(idftInComplex, idftOutComplex, DFT_SCALE);
+                split(idftOutComplex, idftOutPlanes);
 
-		        Mat finalImage;
-		        magnitude(idftOutPlanes[0], idftOutPlanes[1], finalImage);
+                Mat finalImage;
+                magnitude(idftOutPlanes[0], idftOutPlanes[1], finalImage);
 
                 int blockHeight = finalImage.rows / blockNum, 
                     blockWidth = finalImage.cols / blockNum;
-		        for (int j = 0; j < blockNum; j++)
+                for (int j = 0; j < blockNum; j++)
                 {
                     for (int k = 0; k < blockNum; k++)
                     {
                         double sum = 0;
-			            for (int r = 0; r < blockHeight; r++)
-				            for (int c = 0; c < blockWidth; c++)
-					            sum += finalImage.at<double>(j * blockHeight + r, k * blockWidth + c);
+                        for (int r = 0; r < blockHeight; r++)
+                            for (int c = 0; c < blockWidth; c++)
+                                sum += finalImage.at<double>(j * blockHeight + r, k * blockWidth + c);
 
                         feature.Add(sum / (blockWidth * blockHeight));
                     }
                 }
-	        }
+            }
 
             NormTwoNormalize(feature.begin(), feature.end());
             return feature;
@@ -1377,60 +1377,60 @@ namespace System
             int height = size.height, width = size.width;
 
             int filterNum = 0;
-	        for (int i = orientNumPerScale.Count() - 1; i >= 0; i--)
-		        filterNum += orientNumPerScale[i];
+            for (int i = orientNumPerScale.Count() - 1; i >= 0; i--)
+                filterNum += orientNumPerScale[i];
 
-	        Mat param(filterNum, 4, CV_64F);
-	        int l = 0;
-	        for (int i = 0; i < orientNumPerScale.Count(); i++)
+            Mat param(filterNum, 4, CV_64F);
+            int l = 0;
+            for (int i = 0; i < orientNumPerScale.Count(); i++)
             {
-		        for (int j = 0; j < orientNumPerScale[i]; j++)
-		        {
-			        param.at<double>(l, 0) = 0.35;
-			        param.at<double>(l, 1) = 0.3 / pow(1.85, i);
-			        param.at<double>(l, 2) = 16 * pow(orientNumPerScale[i], 2) / pow(32, 2);
-			        param.at<double>(l, 3) = CV_PI / orientNumPerScale[i] * j;
-			        l++;
-		        }
+                for (int j = 0; j < orientNumPerScale[i]; j++)
+                {
+                    param.at<double>(l, 0) = 0.35;
+                    param.at<double>(l, 1) = 0.3 / pow(1.85, i);
+                    param.at<double>(l, 2) = 16 * pow(orientNumPerScale[i], 2) / pow(32, 2);
+                    param.at<double>(l, 3) = CV_PI / orientNumPerScale[i] * j;
+                    l++;
+                }
             }
 
-	        Mat fp(size, CV_64F);
-	        Mat fo(size, CV_64F);
-	        for (int i = 0; i < height; i++)
+            Mat fp(size, CV_64F);
+            Mat fo(size, CV_64F);
+            for (int i = 0; i < height; i++)
             {
-		        for (int j = 0; j < width; j++)
-		        {
-			        double fx = j - width / 2.0, fy = i - height / 2.0;
-			        fp.at<double>(i, j) = sqrt(fx * fx + fy * fy);
-			        fo.at<double>(i, j) = atan2(fy, fx);
-		        }
+                for (int j = 0; j < width; j++)
+                {
+                    double fx = j - width / 2.0, fy = i - height / 2.0;
+                    fp.at<double>(i, j) = sqrt(fx * fx + fy * fy);
+                    fo.at<double>(i, j) = atan2(fy, fx);
+                }
             }
             fp = FFTShift(fp);
             fo = FFTShift(fo);
 
             ArrayList<Mat> gaborsInFreqDomain;
-	        for (int i = 0; i < filterNum; i++)
-	        {
-		        Mat gaborInFreqDomain(size, CV_64F);
+            for (int i = 0; i < filterNum; i++)
+            {
+                Mat gaborInFreqDomain(size, CV_64F);
 
-		        for (int j = 0; j < height; j++)
-			        for (int k = 0; k < width; k++)
-			        {
-				        double tmp = fo.at<double>(j, k) + param.at<double>(i, 3);
-				        while (tmp < -CV_PI)
-					        tmp += 2 * CV_PI;
-				        while (tmp > CV_PI)
-					        tmp -= 2 * CV_PI;
+                for (int j = 0; j < height; j++)
+                    for (int k = 0; k < width; k++)
+                    {
+                        double tmp = fo.at<double>(j, k) + param.at<double>(i, 3);
+                        while (tmp < -CV_PI)
+                            tmp += 2 * CV_PI;
+                        while (tmp > CV_PI)
+                            tmp -= 2 * CV_PI;
 
-				        gaborInFreqDomain.at<double>(j, k) = exp(-10.0 * param.at<double>(i, 0) * 
-					        (fp.at<double>(j, k) / height / param.at<double>(i, 1) - 1) * 
-					        (fp.at<double>(j, k) / width / param.at<double>(i, 1) - 1) - 
-					        2.0 * param.at<double>(i, 2) * CV_PI * tmp * tmp);
+                        gaborInFreqDomain.at<double>(j, k) = exp(-10.0 * param.at<double>(i, 0) * 
+                            (fp.at<double>(j, k) / height / param.at<double>(i, 1) - 1) * 
+                            (fp.at<double>(j, k) / width / param.at<double>(i, 1) - 1) - 
+                            2.0 * param.at<double>(i, 2) * CV_PI * tmp * tmp);
 
-			        }
+                    }
 
-		        gaborsInFreqDomain.Add(gaborInFreqDomain);
-	        }
+                gaborsInFreqDomain.Add(gaborInFreqDomain);
+            }
 
             return gaborsInFreqDomain;
         }

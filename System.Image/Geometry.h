@@ -34,26 +34,26 @@ namespace System
             ArrayList<double> distances(vec.Count());
 
             for (int i = 0; i < vec.Count(); i++)
-		        distances[i] = Geometry::EulerDistance(u, vec[i]);
+                distances[i] = Geometry::EulerDistance(u, vec[i]);
 
             return distances;
         }
 
         inline double Geometry::Angle(const Point& start, const Point& end)
         {
-	        double deltaY = end.y - start.y;
-	        double deltaX = end.x - start.x;
-	        
+            double deltaY = end.y - start.y;
+            double deltaX = end.x - start.x;
+            
             if (deltaX == 0 && deltaY == 0)
                 return INF;
 
-	        double angle = atan2(deltaY, deltaX) + CV_PI;
-	        if (angle < 0)
-		        angle = 0;
-	        if (angle > 2 * CV_PI)
-		        angle = 2 * CV_PI;
+            double angle = atan2(deltaY, deltaX) + CV_PI;
+            if (angle < 0)
+                angle = 0;
+            if (angle > 2 * CV_PI)
+                angle = 2 * CV_PI;
 
-	        return angle;
+            return angle;
         }
 
         inline ArrayList<double> Geometry::Angle(const Point& start, const ArrayList<Point>& ends)

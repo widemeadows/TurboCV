@@ -23,23 +23,23 @@ namespace System
                 double (*GetDistance)(const T&, const T&) = Math::NormOneDistance,
                 double sigma = 0.4,
                 int K = 4)
-	        {
+            {
                 assert(trainingSet.Count() == trainingLabels.Count());
                 assert(evaluationSet.Count() == evaluationSet.Count());
 
-		        Train(trainingSet, trainingLabels);
-		        ArrayList<int> predict = Predict(evaluationSet, GetDistance, sigma, K);
+                Train(trainingSet, trainingLabels);
+                ArrayList<int> predict = Predict(evaluationSet, GetDistance, sigma, K);
 
                 size_t evaluationNum = evaluationSet.Count(), correctNum = 0;
                 std::unordered_map<int, int> evaluationNumPerClass;
                 std::map<std::pair<int, int>, double> confusionMatrix;
-		        for (size_t i = 0; i < evaluationNum; i++)
-		        {
-			        evaluationNumPerClass[evaluationLabels[i]]++;
+                for (size_t i = 0; i < evaluationNum; i++)
+                {
+                    evaluationNumPerClass[evaluationLabels[i]]++;
                     confusionMatrix[std::make_pair(evaluationLabels[i], predict[i])]++;
-			        if (predict[i] == evaluationLabels[i])
-				        correctNum++;
-		        }
+                    if (predict[i] == evaluationLabels[i])
+                        correctNum++;
+                }
 
                 std::map<std::pair<int, int>, double>::iterator itr = confusionMatrix.begin();
                 while (itr != confusionMatrix.end())
@@ -48,38 +48,38 @@ namespace System
                     itr++;
                 }
 
-		        return std::make_pair((double)correctNum / evaluationNum, confusionMatrix);
-	        }
+                return std::make_pair((double)correctNum / evaluationNum, confusionMatrix);
+            }
 
             void Train(const ArrayList<T>& data, const ArrayList<int>& labels)
-	        {
+            {
                 assert(data.Count() == labels.Count() && data.Count() > 0);
                 int dataNum = (int)data.Count();
 
-		        _labels = labels;
-		        _data = data;
+                _labels = labels;
+                _data = data;
                 _dataNumPerClass.clear();
-		        for (int i = 0; i < dataNum; i++)
+                for (int i = 0; i < dataNum; i++)
                     _dataNumPerClass[_labels[i]]++;
-	        }
+            }
 
             ArrayList<int> Predict(
                 const ArrayList<T>& samples, 
                 double (*GetDistance)(const T&, const T&) = Math::NormOneDistance, 
                 double sigma = 0.4, 
                 int K = 4)
-	        {
+            {
                 int sampleNum = samples.Count();
-		        ArrayList<int> results(sampleNum);
+                ArrayList<int> results(sampleNum);
 
-		        #pragma omp parallel for
-		        for (int i = 0; i < sampleNum; i++)
-		        {
-			        results[i] = predictOneSample(samples[i], GetDistance, sigma, K);
-		        }
+                #pragma omp parallel for
+                for (int i = 0; i < sampleNum; i++)
+                {
+                    results[i] = predictOneSample(samples[i], GetDistance, sigma, K);
+                }
 
-		        return results;
-	        }
+                return results;
+            }
 
             static const double HARD_VOTING;
 
@@ -89,15 +89,15 @@ namespace System
                 double (*GetDistance)(const T&, const T&) = Math::NormOneDistance, 
                 double sigma = 0.4, 
                 int K = 4)
-	        {
+            {
                 size_t dataNum = _data.Count();
 
-		        ArrayList<std::pair<double, int>> distances(dataNum);
-		        for (size_t i = 0; i < dataNum; i++)
-		        {
-			        distances[i] = make_pair(GetDistance(sample, _data[i]), _labels[i]);
-		        }
-		        std::partial_sort(distances.begin(), distances.begin() + K, distances.end());
+                ArrayList<std::pair<double, int>> distances(dataNum);
+                for (size_t i = 0; i < dataNum; i++)
+                {
+                    distances[i] = make_pair(GetDistance(sample, _data[i]), _labels[i]);
+                }
+                std::partial_sort(distances.begin(), distances.begin() + K, distances.end());
 
                 std::unordered_map<int, double> votes;
                 bool softVoting = sigma > 0;
@@ -118,18 +118,18 @@ namespace System
                         votes[label]++;
                     } 
                 }
-	
-		        double maxFreq = -1;
-		        int index = -1;
-		        for (auto vote : votes)
-		        {
-			        double freq = vote.second / _dataNumPerClass[vote.first];
-			        if (freq > maxFreq)
-			        {
-				        maxFreq = freq;
-				        index = vote.first;
-			        }
-		        }
+    
+                double maxFreq = -1;
+                int index = -1;
+                for (auto vote : votes)
+                {
+                    double freq = vote.second / _dataNumPerClass[vote.first];
+                    if (freq > maxFreq)
+                    {
+                        maxFreq = freq;
+                        index = vote.first;
+                    }
+                }
 
                 return index;
             }

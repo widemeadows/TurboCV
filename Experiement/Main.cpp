@@ -5,7 +5,6 @@
 #include "TSNE.h"
 #include <cv.h>
 #include <highgui.h>
-#include <fstream>
 using namespace TurboCV::System;
 using namespace TurboCV::System::IO;
 using namespace TurboCV::System::Image;
@@ -99,9 +98,9 @@ void LocalFeatureCrossValidation(const TurboCV::System::String& imageSetPath, co
 
 #ifdef SAVE_DISTANCE_MATRIX
     {
-		ArrayList<Word_f> words = BOV::GetVisualWords(features, wordNum, sampleNum);
+        ArrayList<Word_f> words = BOV::GetVisualWords(features, wordNum, sampleNum);
 
-		ArrayList<Histogram> freqHistograms = BOV::GetFrequencyHistograms(features, words);
+        ArrayList<Histogram> freqHistograms = BOV::GetFrequencyHistograms(features, words);
 
         Mat distanceMatrix = Mat::zeros(imageNum, imageNum, CV_64F);
         #pragma omp parallel for
@@ -111,7 +110,7 @@ void LocalFeatureCrossValidation(const TurboCV::System::String& imageSetPath, co
             {
                 if (i != j)
                     distanceMatrix.at<double>(i, j) = 
-						Math::NormOneDistance(freqHistograms[i], freqHistograms[j]);
+                        Math::NormOneDistance(freqHistograms[i], freqHistograms[j]);
             }
         }
 
@@ -266,7 +265,7 @@ void GlobalFeatureCrossValidation(const TurboCV::System::String& imageSetPath, c
             {
                 if (i != j)
                     distanceMatrix.at<double>(i, j) = 
-						Math::NormOneDistance(features[i], features[j]);
+                        Math::NormOneDistance(features[i], features[j]);
             }
         }
 
@@ -828,43 +827,40 @@ void Batch(const TurboCV::System::String& imageSetPath, bool thinning = false)
 
 int main()
 {
-    fstream fin("features.txt");
+    //FILE* file = fopen("features.txt", "r");
+    //ArrayList<ArrayList<double>> samples;
+    //double token;
 
-    ArrayList<ArrayList<double>> samples;
-    double token;
-    int count = 0;
+    //while (fscanf(file, "%lf", &token) != EOF)
+    //{
+    //    ArrayList<double> sample;
 
-    while (fin >> token)
-    {
-        samples.Add(ArrayList<double>());
+    //    sample.Add(token);
+    //    for (int i = 1; i < 1500; i++)
+    //    {
+    //        fscanf(file, "%lf", &token);
+    //        sample.Add(token);
+    //    }
 
-        samples[count].Add(token);
-        for (int i = 1; i < 1500; i++)
-        {
-            fin >> token;
-            samples[count].Add(token);
-        }
+    //    samples.Add(sample);
+    //}
 
-        count++;
-    }
+    //fclose(file);
 
-    fin.close();
+    //file = fopen("Y.txt", "w");
+    //cv::Mat Y = TSNE::Compute(samples, 2, 20);
 
-    cv::Mat Y = TSNE::Compute(samples, 2, 20);
+    //for (int i = 0; i < Y.rows; i++)
+    //{
+    //    for (int j = 0; j < Y.cols; j++)
+    //        fprintf(file, "%f ", Y.at<double>(i, j));
+    //    fprintf(file, "\n");
+    //}
 
-    FILE* file = fopen("y.txt", "w");
+    //fclose(file);
 
-    for (int i = 0; i < Y.rows; i++)
-    {
-        for (int j = 0; j < Y.cols; j++)
-            fprintf(file, "%f ", Y.at<double>(i, j));
-        fprintf(file, "\n");
-    }
-
-    fclose(file);
-
-    //LocalFeatureCrossValidation("oracles", Test(), 1500, true);
-    //printf("\n");
+	//LocalFeatureCrossValidation("oracles", Test(), 1500, true);
+	//printf("\n");
 
     //GlobalFeatureCrossValidation("hccr", GHOG(), true);
     //printf("\n");
@@ -872,8 +868,8 @@ int main()
     //EdgeMatchingCrossValidation("oracles", Hitmap(), true);
     //printf("\n");
 
-    //LocalFeatureTest("sketches", Test(), 1500);
-    //printf("\n");
+	LocalFeatureTest("oracles", Test(), 1500);
+	printf("\n");
 
     //Batch("sketches", false);
     //Batch("oracles", true);

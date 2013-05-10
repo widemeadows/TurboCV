@@ -135,32 +135,32 @@ namespace System
 
         inline Mat FFTShift(const Mat& data)
         {
-	        int width = data.cols, height = data.rows;
-	        cv::Mat result(data.rows, data.cols, data.type());
+            int width = data.cols, height = data.rows;
+            cv::Mat result(data.rows, data.cols, data.type());
 
-	        for (int i = 0; i < height / 2; i++)
-	        {
-		        for (int j = 0; j < width / 2; j++)
-			        result.at<double>(i, j) = 
+            for (int i = 0; i < height / 2; i++)
+            {
+                for (int j = 0; j < width / 2; j++)
+                    result.at<double>(i, j) = 
                         data.at<double>(i + (height + 1) / 2, j + (width + 1) / 2);
 
-		        for (int j = 0; j < (width + 1) / 2; j++)
-			        result.at<double>(i, j + width / 2) = 
+                for (int j = 0; j < (width + 1) / 2; j++)
+                    result.at<double>(i, j + width / 2) = 
                         data.at<double>(i + (height + 1) / 2, j);
-	        }
+            }
 
-	        for (int i = 0; i < (height + 1) / 2; i++)
-	        {
-		        for (int j = 0; j < width / 2; j++)
-			        result.at<double>(i + height / 2, j) = 
+            for (int i = 0; i < (height + 1) / 2; i++)
+            {
+                for (int j = 0; j < width / 2; j++)
+                    result.at<double>(i + height / 2, j) = 
                         data.at<double>(i, j + (width + 1) / 2);
 
-		        for (int j = 0; j < (width + 1) / 2; j++)
-			        result.at<double>(i + height / 2, j + width / 2) = 
+                for (int j = 0; j < (width + 1) / 2; j++)
+                    result.at<double>(i + height / 2, j + width / 2) = 
                         data.at<double>(i, j);
-	        }
+            }
 
-	        return result;
+            return result;
         }
 
         inline ArrayList<double> linspace(double start, double end, int pointNum)

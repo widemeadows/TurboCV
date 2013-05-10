@@ -19,13 +19,13 @@ namespace System
             {
                 assert(samples.Count() > 0);
 
-				int n = samples.Count();
-				int d = samples[0].Count();
+                int n = samples.Count();
+                int d = samples[0].Count();
 
-				cv::Mat tmp(n, d, CV_64F);
-				for (int i = 0; i < n; i++)
-					for (int j = 0; j < d; j++)
-						tmp.at<double>(i, j) = samples[i][j];
+                cv::Mat tmp(n, d, CV_64F);
+                for (int i = 0; i < n; i++)
+                    for (int j = 0; j < d; j++)
+                        tmp.at<double>(i, j) = samples[i][j];
                 cv::Mat center(1, d, CV_64F);
                 for (int j = 0; j < d; j++)
                     center.at<double>(0, j) = cv::mean(tmp.col(j))[0];
@@ -49,21 +49,21 @@ namespace System
                 cv::Mat gains = cv::Mat::ones(n, dims, CV_64F);
 
                 printf("Compute P...\n");
-				cv::Mat P = x2p(X, 1e-5, perplexity);
-				P *= 4;
-				P = cv::max(1e-12, P);
-				for (int i = 0; i < maxIter; i++)
-				{
-					cv::Mat D = cv::Mat::zeros(n, n, CV_64F);
-					for (int j = 0; j < n; j++)
+                cv::Mat P = x2p(X, 1e-5, perplexity);
+                P *= 4;
+                P = cv::max(1e-12, P);
+                for (int i = 0; i < maxIter; i++)
+                {
+                    cv::Mat D = cv::Mat::zeros(n, n, CV_64F);
+                    for (int j = 0; j < n; j++)
                         for(int k = j + 1; k < n; k++)
                             D.at<double>(j, k) = D.at<double>(k, j) = rowDistance(Y, j, k);
-					D = 1 / (1 + D);
-					for (int j = 0; j < n; j++)
-						D.at<double>(j, j) = 0;
+                    D = 1 / (1 + D);
+                    for (int j = 0; j < n; j++)
+                        D.at<double>(j, j) = 0;
 
-					cv::Mat Q = D / cv::sum(D)[0];
-					Q = cv::max(1e-12, Q);
+                    cv::Mat Q = D / cv::sum(D)[0];
+                    Q = cv::max(1e-12, Q);
 
                     cv::Mat PQ = P - Q;
                     cv::Mat dY = cv::Mat::zeros(n, dims, CV_64F);
@@ -102,26 +102,26 @@ namespace System
                         printf("Iteration %d: error is %f\n", i + 1, C);
                     }
 
-					if (i == 100)
-						P /= 4;
-				}
+                    if (i == 100)
+                        P /= 4;
+                }
 
-				return Y;
+                return Y;
             }
 
         private:
-			static Tuple<double, cv::Mat> Hbeta(cv::Mat Di, double beta = 1.0)
-			{
-				cv::Mat gaussianD(Di.size(), CV_64F);
-				cv::exp(Di * -beta, gaussianD);
+            static Tuple<double, cv::Mat> Hbeta(cv::Mat Di, double beta = 1.0)
+            {
+                cv::Mat gaussianD(Di.size(), CV_64F);
+                cv::exp(Di * -beta, gaussianD);
 
-				double sumGD = cv::sum(gaussianD)[0];
-				
-				double H = std::log(sumGD) + beta / sumGD * Di.dot(gaussianD);
-				cv::Mat Pi = gaussianD / sumGD;
+                double sumGD = cv::sum(gaussianD)[0];
+                
+                double H = std::log(sumGD) + beta / sumGD * Di.dot(gaussianD);
+                cv::Mat Pi = gaussianD / sumGD;
 
-				return CreateTuple(H, Pi);
-			}
+                return CreateTuple(H, Pi);
+            }
 
             static inline double rowDistance(const cv::Mat& mat, int row1, int row2)
             {
@@ -140,69 +140,69 @@ namespace System
             {
                 int n = X.rows, d = X.cols;
 
-				cv::Mat D = cv::Mat::zeros(n, n, CV_64F);
-				for (int i = 0; i < n; i++)
+                cv::Mat D = cv::Mat::zeros(n, n, CV_64F);
+                for (int i = 0; i < n; i++)
                     for (int j = i + 1; j < n; j++)
                         D.at<double>(i, j) = D.at<double>(j, i) = rowDistance(X, i, j);
 
-				cv::Mat P = cv::Mat::zeros(n, n, CV_64F);
-				cv::Mat beta = cv::Mat::ones(n, 1, CV_64F);
-				double logU = std::log(perplexity);
+                cv::Mat P = cv::Mat::zeros(n, n, CV_64F);
+                cv::Mat beta = cv::Mat::ones(n, 1, CV_64F);
+                double logU = std::log(perplexity);
 
-				for (int i = 0; i < n; i++)
-				{
-					double INF = 1e12;
-					double betaMin = -INF;
-					double betaMax = INF;
+                for (int i = 0; i < n; i++)
+                {
+                    double INF = 1e12;
+                    double betaMin = -INF;
+                    double betaMax = INF;
 
-					cv::Mat Di(1, n - 1, CV_64F);
-					for (int j = 0; j < i; j++)
+                    cv::Mat Di(1, n - 1, CV_64F);
+                    for (int j = 0; j < i; j++)
                         Di.at<double>(0, j) = D.at<double>(i, j);
-					for (int j = i + 1; j < n; j++)
-						Di.at<double>(0, j - 1) = D.at<double>(i, j);
-				
-					Tuple<double, cv::Mat> result = Hbeta(Di, beta.at<double>(i, 0));
-					double H = result.Item1();
-					cv::Mat Pi = result.Item2();
+                    for (int j = i + 1; j < n; j++)
+                        Di.at<double>(0, j - 1) = D.at<double>(i, j);
+                
+                    Tuple<double, cv::Mat> result = Hbeta(Di, beta.at<double>(i, 0));
+                    double H = result.Item1();
+                    cv::Mat Pi = result.Item2();
 
-					double Hdiff = H - logU;
-					int tries = 0;
-					while (std::abs(Hdiff) > tolerance && tries < 50)
-					{
-						if (Hdiff > 0)
-						{
-							betaMin = beta.at<double>(i, 0);
+                    double Hdiff = H - logU;
+                    int tries = 0;
+                    while (std::abs(Hdiff) > tolerance && tries < 50)
+                    {
+                        if (Hdiff > 0)
+                        {
+                            betaMin = beta.at<double>(i, 0);
 
-							if (betaMax == INF || betaMax == -INF)
-								beta.at<double>(i, 0) *= 2;
-							else
-								beta.at<double>(i, 0) = (beta.at<double>(i, 0) + betaMax) / 2;
-						}
-						else
-						{
-							betaMax = beta.at<double>(i, 0);
+                            if (betaMax == INF || betaMax == -INF)
+                                beta.at<double>(i, 0) *= 2;
+                            else
+                                beta.at<double>(i, 0) = (beta.at<double>(i, 0) + betaMax) / 2;
+                        }
+                        else
+                        {
+                            betaMax = beta.at<double>(i, 0);
 
-							if (betaMin == INF || betaMin == -INF)
-								beta.at<double>(i, 0) /= 2;
-							else
-								beta.at<double>(i, 0) = (beta.at<double>(i, 0) + betaMin) / 2;
-						}
+                            if (betaMin == INF || betaMin == -INF)
+                                beta.at<double>(i, 0) /= 2;
+                            else
+                                beta.at<double>(i, 0) = (beta.at<double>(i, 0) + betaMin) / 2;
+                        }
 
-						result = Hbeta(Di, beta.at<double>(i, 0));
-						H = result.Item1();
-						Pi = result.Item2();
+                        result = Hbeta(Di, beta.at<double>(i, 0));
+                        H = result.Item1();
+                        Pi = result.Item2();
 
-						Hdiff = H - logU;
-						tries++;
-					}
+                        Hdiff = H - logU;
+                        tries++;
+                    }
 
-					for (int j = 0; j < i; j++)
+                    for (int j = 0; j < i; j++)
                         P.at<double>(i, j) = Pi.at<double>(0, j);
-					for (int j = i + 1; j < n; j++)
+                    for (int j = i + 1; j < n; j++)
                         P.at<double>(i, j) = Pi.at<double>(0, j - 1);
-				}
+                }
 
-				P += P.t();
+                P += P.t();
                 return P / cv::sum(P)[0];
             }
         };

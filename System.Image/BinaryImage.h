@@ -175,14 +175,14 @@ namespace System
         // Assume: Edgels are 1 and Background is 0.
         inline ArrayList<Point> GetEdgels(const Mat& sketchImage)
         {
-	        ArrayList<Point> points;
+            ArrayList<Point> points;
 
-	        for (int i = 0; i < sketchImage.rows; i++)
-		        for (int j = 0; j < sketchImage.cols; j++)
-			        if (sketchImage.at<uchar>(i, j))
-				        points.Add(Point(j, i));
+            for (int i = 0; i < sketchImage.rows; i++)
+                for (int j = 0; j < sketchImage.cols; j++)
+                    if (sketchImage.at<uchar>(i, j))
+                        points.Add(Point(j, i));
 
-	        return points;
+            return points;
         }
     }
 }

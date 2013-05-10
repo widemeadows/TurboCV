@@ -77,21 +77,21 @@ namespace TurboCV
 
                         categories[_mapping[labels[i]]].push_back(row);
                     }
-	
-					for (int i = 0; i < categoryNum; i++)
+    
+                    for (int i = 0; i < categoryNum; i++)
                     {
-						_invCovariance.Add(cv::Mat());
-						_detCovariance.Add(0);
-						_means.Add(cv::Mat());
-						_weights.Add(0);
-					}
+                        _invCovariance.Add(cv::Mat());
+                        _detCovariance.Add(0);
+                        _means.Add(cv::Mat());
+                        _weights.Add(0);
+                    }
 
                     printf("Train...\n");
-					#pragma omp parallel for
+                    #pragma omp parallel for
                     for (int index = 0; index < categoryNum; index++)
                     {
                         const cv::Mat& data = categories[index];
-						_weights[index] = (double)data.rows / dataNum;
+                        _weights[index] = (double)data.rows / dataNum;
 
                         cv::Mat covariation, mean;
                         cv::calcCovarMatrix(data, covariation, mean, CV_COVAR_ROWS | CV_COVAR_NORMAL);
@@ -141,7 +141,7 @@ namespace TurboCV
                     for (int i = 0; i < sample.Count(); i++)
                         x.at<double>(0, i) = sample[i];
 
-					ArrayList<Tuple<double, int>> distanceAndLabels;
+                    ArrayList<Tuple<double, int>> distanceAndLabels;
 
                     for (auto item : _mapping)
                     {
@@ -160,10 +160,10 @@ namespace TurboCV
                 }
 
                 std::unordered_map<int, int> _mapping;
-				ArrayList<cv::Mat> _invCovariance;
+                ArrayList<cv::Mat> _invCovariance;
                 ArrayList<double> _detCovariance;
                 ArrayList<cv::Mat> _means;
-				ArrayList<double> _weights;
+                ArrayList<double> _weights;
             };
         }
     }
