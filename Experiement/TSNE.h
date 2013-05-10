@@ -50,11 +50,9 @@ namespace System
 
 				for (int i = 0; i < maxIter; i++)
 				{
-					cv::pow(Y, 2, tmp);
-
 					cv::Mat YSqr(n, 1, CV_64F);
-					for (int i = 0; i < n; i++)
-						YSqr.at<double>(i, 0) = cv::sum(tmp.row(i))[0];
+					for (int j = 0; j < n; j++)
+						YSqr.at<double>(j, 0) = Y.row(j).dot(Y.row(j));
 				
 					cv::Mat D(n, n, CV_64F);
 					for (int j = 0; j < n; j++)
@@ -102,29 +100,26 @@ namespace System
             }
 
         private:
-			Tuple<double, cv::Mat> Hbeta(cv::Mat DistanceMatrix, double beta = 1.0)
+			Tuple<double, cv::Mat> Hbeta(cv::Mat Di, double beta = 1.0)
 			{
-				cv::Mat P(DistanceMatrix.size(), CV_64F);
-				cv::exp(-DistanceMatrix * beta, P);
+				cv::Mat Pi(Di.size(), CV_64F);
+				cv::exp(-Di * beta, Pi);
 
-				double sumP = cv::sum(P)[0];
+				double sumP = cv::sum(Pi)[0];
 				
-				double H = std::log(sumP) + beta * sum(DistanceMatrix * P)[0] / sumP;
-				P = P / sumP;
+				double H = std::log(sumP) + beta * Di.dot(Pi) / sumP;
+				Pi /= sumP;
 
-				return CreateTuple(H, P);
+				return CreateTuple(H, Pi);
 			}
 
             cv::Mat x2p(cv::Mat X, double tolerance = 1e-5, double perplexity = 30.0)
             {
                 int n = X.rows, d = X.cols;
 
-				cv::Mat tmp(X.size(), CV_64F);
-				cv::pow(X, 2, tmp);
-
 				cv::Mat XSqr(n, 1, CV_64F);
 				for (int i = 0; i < n; i++)
-					XSqr.at<double>(i, 0) = cv::sum(tmp.row(i))[0];
+					XSqr.at<double>(i, 0) = X.row(i).dot(X.row(i));
 
 				cv::Mat D(n, n, CV_64F);
 				for (int i = 0; i < n; i++)
@@ -138,7 +133,7 @@ namespace System
 
 				for (int i = 0; i < n; i++)
 				{
-					double INF = std::numeric_limits<double>::max();
+					double INF = 1e8;
 					double betaMin = -INF;
 					double betaMax = INF;
 

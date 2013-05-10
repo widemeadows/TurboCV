@@ -27,8 +27,5 @@
     <ClInclude Include="MQDF.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="TSNE.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
   </ItemGroup>
 </Project>
