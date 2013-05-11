@@ -26,9 +26,10 @@ namespace System
                         tmp.at<double>(i, j) = samples[i][j];
                 cv::Mat center = normalizeVectors(tmp);
 
-                printf("Perform PCA...\n");
-                cv::PCA pca(tmp, center, CV_PCA_DATA_AS_ROW, 50);
-                cv::Mat X = pca.project(tmp);
+                //printf("Perform PCA...\n");
+                //cv::PCA pca(tmp, center, CV_PCA_DATA_AS_ROW, 50);
+                //cv::Mat X = pca.project(tmp);
+				cv::Mat X = tmp;
 
                 int maxIter = 1000;
                 double initMomentum = 0.5;
@@ -107,15 +108,16 @@ namespace System
 			static cv::Mat getDistanceMatrix(InputArray matrix)
 			{
 				cv::Mat mat = matrix.getMat();
-				cv::Mat D = cv::Mat::zeros(mat.rows, mat.rows, CV_64F);
+				int n = mat.rows, d = mat.cols;
+				cv::Mat D = cv::Mat::zeros(n, n, CV_64F);
 
-				for (int i = 0; i < mat.rows; i++)
+				for (int i = 0; i < n; i++)
 				{
-					for (int j = i + 1; j < mat.rows; j++)
+					for (int j = i + 1; j < n; j++)
 					{
 						double sum = 0;
 						
-						for (int k = 0; k < mat.cols; k++)
+						for (int k = 0; k < d; k++)
 							sum += (mat.at<double>(i, k) - mat.at<double>(j, k)) *
 								(mat.at<double>(i, k) - mat.at<double>(j, k));
 
@@ -136,7 +138,7 @@ namespace System
 						center.at<double>(0, j) += mat.at<double>(i, j);
 
 				for (int i = 0; i < mat.cols; i++)
-					center.at<double>(0, i) /= mat.cols;
+					center.at<double>(0, i) /= mat.rows;
 
 				for (int i = 0; i < mat.rows; i++)
 					for (int j = 0; j < mat.cols; j++)
