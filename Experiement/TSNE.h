@@ -14,26 +14,20 @@ namespace System
         {
         public:
             template<typename T>
-            static cv::Mat Compute(ArrayList<ArrayList<T>> samples, int dims, 
+            static cv::Mat Compute(ArrayList<ArrayList<T>> samples, int yDims, 
                 double perplexity = 30.0)
             {
                 assert(samples.Count() > 0);
+				int n = samples.Count(), xDims = samples[0].Count();
 
-                int n = samples.Count();
-                int d = samples[0].Count();
-
-                cv::Mat tmp(n, d, CV_64F);
+                cv::Mat tmp(n, xDims, CV_64F);
                 for (int i = 0; i < n; i++)
-                    for (int j = 0; j < d; j++)
+                    for (int j = 0; j < xDims; j++)
                         tmp.at<double>(i, j) = samples[i][j];
-                cv::Mat center(1, d, CV_64F);
-                for (int j = 0; j < d; j++)
-                    center.at<double>(0, j) = cv::mean(tmp.col(j))[0];
-                for (int j = 0; j < n; j++)
-                    tmp.row(j) -= center;
+                cv::Mat center = normalizeVectors(tmp);
 
                 printf("Perform PCA...\n");
-                cv::PCA pca(tmp, cv::Mat(), CV_PCA_DATA_AS_ROW, 50);
+                cv::PCA pca(tmp, center, CV_PCA_DATA_AS_ROW, 50);
                 cv::Mat X = pca.project(tmp);
 
                 int maxIter = 1000;
@@ -42,22 +36,20 @@ namespace System
                 double eta = 500;
                 double minGain = 0.01;
 
-                cv::Mat Y(n, dims, CV_64F);
+                cv::Mat Y(n, yDims, CV_64F);
                 cv::randn(Y, 0, 1);
 
-                cv::Mat iY = cv::Mat::zeros(n, dims, CV_64F);
-                cv::Mat gains = cv::Mat::ones(n, dims, CV_64F);
+                cv::Mat iY = cv::Mat::zeros(n, yDims, CV_64F);
+                cv::Mat gains = cv::Mat::ones(n, yDims, CV_64F);
 
                 printf("Compute P...\n");
                 cv::Mat P = x2p(X, 1e-5, perplexity);
                 P *= 4;
                 P = cv::max(1e-12, P);
+
                 for (int i = 0; i < maxIter; i++)
                 {
-                    cv::Mat D = cv::Mat::zeros(n, n, CV_64F);
-                    for (int j = 0; j < n; j++)
-                        for(int k = j + 1; k < n; k++)
-                            D.at<double>(j, k) = D.at<double>(k, j) = rowDistance(Y, j, k);
+                    cv::Mat D = getDistanceMatrix(Y);
                     D = 1 / (1 + D);
                     for (int j = 0; j < n; j++)
                         D.at<double>(j, j) = 0;
@@ -66,12 +58,18 @@ namespace System
                     Q = cv::max(1e-12, Q);
 
                     cv::Mat PQ = P - Q;
-                    cv::Mat dY = cv::Mat::zeros(n, dims, CV_64F);
+                    cv::Mat dY = cv::Mat::zeros(n, yDims, CV_64F);
                     for (int j = 0; j < n; j++)
+					{
                         for (int k = 0; k < n; k++)
-                            for (int m = 0; m < dims; m++)
-                                dY.at<double>(j, m) += PQ.at<double>(j, k) * D.at<double>(j, k) *
-                                    (Y.at<double>(j, m) - Y.at<double>(k, m));
+						{
+							double tmp = PQ.at<double>(j, k) * D.at<double>(j, k);
+
+                            for (int m = 0; m < yDims; m++)
+                                dY.at<double>(j, m) += tmp *
+									(Y.at<double>(j, m) - Y.at<double>(k, m));
+						}
+					}
 
                     cv::Mat tmp1;
                     ((cv::Mat)((dY > 0) != (iY > 0))).convertTo(tmp1, CV_64F);
@@ -86,13 +84,9 @@ namespace System
 
                     double momentum = i < 20 ? initMomentum : finalMomentum;
                     iY = momentum * iY - eta * gains.mul(dY);
-                    Y = Y + iY;
-
-                    cv::Mat center(1, dims, CV_64F);
-                    for (int j = 0; j < dims; j++)
-                        center.at<double>(0, j) = cv::mean(Y.col(j))[0];
-                    for (int j = 0; j < n; j++)
-                        Y.row(j) -= center;
+                    
+					Y = Y + iY;
+					normalizeVectors(Y);
 
                     if ((i + 1) % 10 == 0)
                     {
@@ -110,6 +104,47 @@ namespace System
             }
 
         private:
+			static cv::Mat getDistanceMatrix(InputArray matrix)
+			{
+				cv::Mat mat = matrix.getMat();
+				cv::Mat D = cv::Mat::zeros(mat.rows, mat.rows, CV_64F);
+
+				for (int i = 0; i < mat.rows; i++)
+				{
+					for (int j = i + 1; j < mat.rows; j++)
+					{
+						double sum = 0;
+						
+						for (int k = 0; k < mat.cols; k++)
+							sum += (mat.at<double>(i, k) - mat.at<double>(j, k)) *
+								(mat.at<double>(i, k) - mat.at<double>(j, k));
+
+						D.at<double>(i, j) = D.at<double>(j, i) = sum;
+					}
+				}
+
+				return D;
+			}
+						
+			static cv::Mat normalizeVectors(InputOutputArray matrix)
+			{
+				cv::Mat mat = matrix.getMat();
+
+				cv::Mat center = cv::Mat::zeros(1, mat.cols, CV_64F);
+				for (int i = 0; i < mat.rows; i++)
+					for (int j = 0; j < mat.cols; j++)
+						center.at<double>(0, j) += mat.at<double>(i, j);
+
+				for (int i = 0; i < mat.cols; i++)
+					center.at<double>(0, i) /= mat.cols;
+
+				for (int i = 0; i < mat.rows; i++)
+					for (int j = 0; j < mat.cols; j++)
+						mat.at<double>(i, j) -= center.at<double>(0, j);
+			
+				return center;
+			}
+
             static Tuple<double, cv::Mat> Hbeta(cv::Mat Di, double beta = 1.0)
             {
                 cv::Mat gaussianD(Di.size(), CV_64F);
@@ -123,28 +158,11 @@ namespace System
                 return CreateTuple(H, Pi);
             }
 
-            static inline double rowDistance(const cv::Mat& mat, int row1, int row2)
-            {
-                double sum = 0;
-
-                for (int k = 0; k < mat.cols; k++)
-                {
-                    sum += (mat.at<double>(row1, k) - mat.at<double>(row2, k)) * 
-                        (mat.at<double>(row1, k) - mat.at<double>(row2, k));
-                }
-
-                return sum;
-            }
-
             static cv::Mat x2p(cv::Mat X, double tolerance = 1e-5, double perplexity = 30.0)
             {
                 int n = X.rows, d = X.cols;
 
-                cv::Mat D = cv::Mat::zeros(n, n, CV_64F);
-                for (int i = 0; i < n; i++)
-                    for (int j = i + 1; j < n; j++)
-                        D.at<double>(i, j) = D.at<double>(j, i) = rowDistance(X, i, j);
-
+                cv::Mat D = getDistanceMatrix(X);
                 cv::Mat P = cv::Mat::zeros(n, n, CV_64F);
                 cv::Mat beta = cv::Mat::ones(n, 1, CV_64F);
                 double logU = std::log(perplexity);
