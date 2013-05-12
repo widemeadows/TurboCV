@@ -94,6 +94,8 @@ namespace System
 
         ArrayList(size_t size) : ptr(new std::vector<T>(size)) {}
 
+		ArrayList(size_t size, const T& val) : ptr(new std::vector<T>(size, val)) {}
+
         template<typename RandomAccessIterator>
         ArrayList(RandomAccessIterator begin, RandomAccessIterator end) :
             ptr(new std::vector<T>(begin, end)) {}

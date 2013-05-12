@@ -848,7 +848,8 @@ int main()
 	fclose(file);
 
 	file = fopen("Y.txt", "w");
-	cv::Mat Y = TSNE::Compute(samples, 2, 20);
+	TSNE tsne;
+	cv::Mat Y = tsne.Compute(samples);
 
 	for (int i = 0; i < Y.rows; i++)
 	{

@@ -13,29 +13,33 @@ namespace System
         class TSNE
         {
         public:
-            template<typename T>
-            static cv::Mat Compute(ArrayList<ArrayList<T>> samples, int yDims, 
-                double perplexity = 30.0)
-            {
-                assert(samples.Count() > 0);
+			template<typename T>
+			cv::Mat Compute(ArrayList<ArrayList<T>> samples, double perplexity = 30.0, 
+				int yDims = 2)
+			{
+				assert(samples.Count() > 0);
 				int n = samples.Count(), xDims = samples[0].Count();
 
-                cv::Mat tmp(n, xDims, CV_64F);
-                for (int i = 0; i < n; i++)
-                    for (int j = 0; j < xDims; j++)
-                        tmp.at<double>(i, j) = samples[i][j];
-                cv::Mat center = normalizeVectors(tmp);
+				cv::Mat X(n, xDims, CV_64F);
+				for (int i = 0; i < n; i++)
+					for (int j = 0; j < xDims; j++)
+						X.at<double>(i, j) = samples[i][j];
 
-                //printf("Perform PCA...\n");
-                //cv::PCA pca(tmp, center, CV_PCA_DATA_AS_ROW, 50);
-                //cv::Mat X = pca.project(tmp);
-				cv::Mat X = tmp;
+				return Compute(X, perplexity, yDims);
+			}
 
-                int maxIter = 1000;
-                double initMomentum = 0.5;
-                double finalMomentum = 0.8;
-                double eta = 500;
-                double minGain = 0.01;
+            cv::Mat Compute(InputArray samples, double perplexity = 30.0, int yDims = 2)
+            {
+				cv::Mat X = samples.getMat().clone();
+				normalizeVectors(X);
+
+				const int n = X.rows;
+				const double eps = 1e-12;
+                const int MAX_ITER = 1000;
+                const double INIT_MOMENTUM = 0.5;
+                const double FINAL_MOMENTUM = 0.8;
+                const double eta = 500;
+                const double MIN_GAIN = 0.01;
 
                 cv::Mat Y(n, yDims, CV_64F);
                 cv::randn(Y, 0, 1);
@@ -44,11 +48,11 @@ namespace System
                 cv::Mat gains = cv::Mat::ones(n, yDims, CV_64F);
 
                 printf("Compute P...\n");
-                cv::Mat P = x2p(X, 1e-5, perplexity);
+                cv::Mat P = getP(X, 1e-5, perplexity);
                 P *= 4;
-                P = cv::max(1e-12, P);
+                P = cv::max(eps, P);
 
-                for (int i = 0; i < maxIter; i++)
+                for (int i = 0; i < MAX_ITER; i++)
                 {
                     cv::Mat D = getDistanceMatrix(Y);
                     D = 1 / (1 + D);
@@ -56,7 +60,7 @@ namespace System
                         D.at<double>(j, j) = 0;
 
                     cv::Mat Q = D / cv::sum(D)[0];
-                    Q = cv::max(1e-12, Q);
+                    Q = cv::max(eps, Q);
 
                     cv::Mat PQ = P - Q;
                     cv::Mat dY = cv::Mat::zeros(n, yDims, CV_64F);
@@ -81,9 +85,9 @@ namespace System
                     tmp2 = cv::min(tmp2, 1.0);
 
                     gains = (gains + 0.2).mul(tmp1) + (gains * 0.8).mul(tmp2);
-                    gains = cv::max(minGain, gains);
+                    gains = cv::max(MIN_GAIN, gains);
 
-                    double momentum = i < 20 ? initMomentum : finalMomentum;
+                    double momentum = i < 20 ? INIT_MOMENTUM : FINAL_MOMENTUM;
                     iY = momentum * iY - eta * gains.mul(dY);
                     
 					Y = Y + iY;
@@ -147,75 +151,63 @@ namespace System
 				return center;
 			}
 
-            static Tuple<double, cv::Mat> Hbeta(cv::Mat Di, double beta = 1.0)
-            {
-                cv::Mat gaussianD(Di.size(), CV_64F);
-                cv::exp(Di * -beta, gaussianD);
-
-                double sumGD = cv::sum(gaussianD)[0];
-                
-                double H = std::log(sumGD) + beta / sumGD * Di.dot(gaussianD);
-                cv::Mat Pi = gaussianD / sumGD;
-
-                return CreateTuple(H, Pi);
-            }
-
-            static cv::Mat x2p(cv::Mat X, double tolerance = 1e-5, double perplexity = 30.0)
+            static cv::Mat getP(cv::Mat X, double tolerance = 1e-5, double perplexity = 30.0)
             {
                 int n = X.rows, d = X.cols;
-
                 cv::Mat D = getDistanceMatrix(X);
                 cv::Mat P = cv::Mat::zeros(n, n, CV_64F);
-                cv::Mat beta = cv::Mat::ones(n, 1, CV_64F);
-                double logU = std::log(perplexity);
+                ArrayList<double> sigmaSqr(n, 1.0);
+                const double logU = std::log(perplexity);
+				const double INF = 1e12;
 
+				#pragma omp parallel for
                 for (int i = 0; i < n; i++)
                 {
-                    double INF = 1e12;
-                    double betaMin = -INF;
-                    double betaMax = INF;
+                    double lowerBound = -INF;
+                    double upperBound = INF;
 
                     cv::Mat Di(1, n - 1, CV_64F);
                     for (int j = 0; j < i; j++)
                         Di.at<double>(0, j) = D.at<double>(i, j);
                     for (int j = i + 1; j < n; j++)
                         Di.at<double>(0, j - 1) = D.at<double>(i, j);
-                
-                    Tuple<double, cv::Mat> result = Hbeta(Di, beta.at<double>(i, 0));
-                    double H = result.Item1();
-                    cv::Mat Pi = result.Item2();
 
-                    double Hdiff = H - logU;
-                    int tries = 0;
-                    while (std::abs(Hdiff) > tolerance && tries < 50)
-                    {
-                        if (Hdiff > 0)
-                        {
-                            betaMin = beta.at<double>(i, 0);
+                    cv::Mat Pi;
+					double Hdiff = 0;
+					int tries = 0;
+					do 
+					{
+						cv::Mat gaussDi(Di.size(), CV_64F);
+						cv::exp(Di / -sigmaSqr[i], gaussDi);
+						double sumGD = cv::sum(gaussDi)[0];
 
-                            if (betaMax == INF || betaMax == -INF)
-                                beta.at<double>(i, 0) *= 2;
-                            else
-                                beta.at<double>(i, 0) = (beta.at<double>(i, 0) + betaMax) / 2;
-                        }
-                        else
-                        {
-                            betaMax = beta.at<double>(i, 0);
+						double H = Di.dot(gaussDi) / (sumGD * sigmaSqr[i]) + std::log(sumGD);
+						Hdiff = logU - H;
 
-                            if (betaMin == INF || betaMin == -INF)
-                                beta.at<double>(i, 0) /= 2;
-                            else
-                                beta.at<double>(i, 0) = (beta.at<double>(i, 0) + betaMin) / 2;
-                        }
+						Pi = gaussDi / sumGD;
 
-                        result = Hbeta(Di, beta.at<double>(i, 0));
-                        H = result.Item1();
-                        Pi = result.Item2();
+						if (Hdiff > 0)
+						{
+							lowerBound = sigmaSqr[i];
 
-                        Hdiff = H - logU;
-                        tries++;
-                    }
+							if (upperBound == INF)
+								sigmaSqr[i] *= 2;
+							else
+								sigmaSqr[i] = (sigmaSqr[i] + upperBound) / 2;
+						}
+						else
+						{
+							upperBound = sigmaSqr[i];
 
+							if (lowerBound == -INF)
+								sigmaSqr[i] /= 2;
+							else
+								sigmaSqr[i] = (sigmaSqr[i] + lowerBound) / 2;
+						}
+
+						tries++;
+					} while (std::abs(Hdiff) > tolerance && tries < 50);
+                    
                     for (int j = 0; j < i; j++)
                         P.at<double>(i, j) = Pi.at<double>(0, j);
                     for (int j = i + 1; j < n; j++)
