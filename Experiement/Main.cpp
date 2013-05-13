@@ -858,6 +858,15 @@ int main()
 		fprintf(file, "\n");
 	}
 
+    //TSNE tsne;
+    //cv::Mat Y = tsne.Compute(samples, 30, 1);
+
+    //for (int i = 0; i < Y.rows; i++)
+    //{
+    //    fprintf(file, "%f ", Y.at<double>(i, 0));
+    //    fprintf(file, "0\n");
+    //}
+
 	fclose(file);
 
 	//LocalFeatureCrossValidation("oracles", Test(), 1500, true);
