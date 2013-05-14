@@ -827,36 +827,110 @@ void Batch(const TurboCV::System::String& imageSetPath, bool thinning = false)
 
 int main()
 {
-	FILE* file = fopen("features.txt", "r");
-	ArrayList<ArrayList<double>> samples;
-	double token;
+    //cv::Mat mat = imread("00001.png", CV_LOAD_IMAGE_GRAYSCALE);
 
-	while (fscanf(file, "%lf", &token) != EOF)
-	{
-		ArrayList<double> sample;
+    //cv::Mat power = Gradient::GetGradient(mat).Item2();
+    //imshow(power);
+    //waitKey();
 
-		sample.Add(token);
-		for (int i = 1; i < 1500; i++)
-		{
-			fscanf(file, "%lf", &token);
-			sample.Add(token);
-		}
 
-		samples.Add(sample);
-	}
+    /*FILE* file = fopen("DNN.txt", "r");
+    double tmp;
+    ArrayList<ArrayList<double>> features;
+    ArrayList<int> labels;
 
-	fclose(file);
+    for (int i = 0; i < 20000; i++)
+    {
+    ArrayList<double> feature;
 
-	file = fopen("Y.txt", "w");
-	TSNE tsne;
-	cv::Mat Y = tsne.Compute(samples);
+    for (int j = 0; j < 4096; j++)
+    {
+    fscanf(file, "%lf", &tmp);
+    feature.Add(tmp);
+    }
 
-	for (int i = 0; i < Y.rows; i++)
-	{
-		for (int j = 0; j < Y.cols; j++)
-			fprintf(file, "%f ", Y.at<double>(i, j));
-		fprintf(file, "\n");
-	}
+    features.Add(feature);
+    labels.Add(i / 80);
+    }
+    fclose(file);
+
+    ArrayList<Tuple<ArrayList<ArrayList<double>>, ArrayList<ArrayList<double>>, ArrayList<size_t>>> pass = 
+    RandomSplit(features, 3);
+    ArrayList<double> passResult;
+    for (int i = 0; i < 3; i++)
+    {
+    printf("\nBegin Fold %d...\n", i + 1);
+    ArrayList<ArrayList<double>>& evaluationSet = pass[i].Item1();
+    ArrayList<ArrayList<double>>& trainingSet = pass[i].Item2();
+    ArrayList<size_t>& pickUpIndexes = pass[i].Item3();
+
+    ArrayList<int> trainingLabels, evaluationLabels;
+    int counter = 0;
+    for (int k = 0; k < 20000; k++)
+    {
+    if (counter < pickUpIndexes.Count() && k == pickUpIndexes[counter])
+    {
+    evaluationLabels.Add(labels[k]);
+    counter++;
+    }
+    else
+    trainingLabels.Add(labels[k]);
+    }
+
+    KNN<ArrayList<double>> knn;
+    auto precisions = 
+    knn.Evaluate(trainingSet, trainingLabels, evaluationSet, evaluationLabels, 
+    Math::NormOneDistance, KNN<ArrayList<double>>::HARD_VOTING);
+
+    passResult.Add(precisions.first);
+
+    printf("Fold %d Accuracy: %f\n", i + 1, precisions.first);
+    }
+
+    TurboCV::System::String savePath = "DNN_sketches_knn.out";
+    file = fopen(savePath, "w");
+
+    for (int i = 0; i < passResult.Count(); i++)
+    fprintf(file, "Fold %d Accuracy: %f\n", i + 1, passResult[i]);
+
+    fprintf(file, "Average: %f, Standard Deviation: %f\n", Math::Mean(passResult), 
+    Math::StandardDeviation(passResult));
+    printf("\nAverage: %f, Standard Deviation: %f\n", Math::Mean(passResult), 
+    Math::StandardDeviation(passResult));
+
+    fclose(file);*/
+
+    
+    //FILE* file = fopen("features.txt", "r");
+	//ArrayList<ArrayList<double>> samples;
+	//double token;
+
+	//while (fscanf(file, "%lf", &token) != EOF)
+	//{
+	//	ArrayList<double> sample;
+
+	//	sample.Add(token);
+	//	for (int i = 1; i < 1500; i++)
+	//	{
+	//		fscanf(file, "%lf", &token);
+	//		sample.Add(token);
+	//	}
+
+	//	samples.Add(sample);
+	//}
+
+	//fclose(file);
+
+	//file = fopen("Y.txt", "w");
+	//TSNE tsne;
+	//cv::Mat Y = tsne.Compute(samples);
+
+	//for (int i = 0; i < Y.rows; i++)
+	//{
+	//	for (int j = 0; j < Y.cols; j++)
+	//		fprintf(file, "%f ", Y.at<double>(i, j));
+	//	fprintf(file, "\n");
+	//}
 
     //TSNE tsne;
     //cv::Mat Y = tsne.Compute(samples, 30, 1);
@@ -867,7 +941,7 @@ int main()
     //    fprintf(file, "0\n");
     //}
 
-	fclose(file);
+	//fclose(file);
 
 	//LocalFeatureCrossValidation("oracles", Test(), 1500, true);
 	//printf("\n");
@@ -878,17 +952,12 @@ int main()
     //EdgeMatchingCrossValidation("oracles", Hitmap(), true);
     //printf("\n");
 
-	//LocalFeatureTest("oracles", Test(), 1500);
-	//printf("\n");
+    LocalFeatureTest("sketches", Test(), 1500);
+    printf("\n");
 
     //Batch("sketches", false);
     //Batch("oracles", true);
 
-    //Mat trans = getRotationMatrix2D(Point(image.rows / 2, image.cols / 2), -20, 1);
-    //warpAffine(image, image, trans, image.size());
-    //threshold(image, image, 0.1, 1, CV_THRESH_BINARY);
-    //thin(image, image);
-    //threshold(image, image, 0.1, 255, CV_THRESH_BINARY);
 
     /*ArrayList<Point> points = GetEdgels(image);
     ArrayList<int> xCount(image.cols);
