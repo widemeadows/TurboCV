@@ -827,12 +827,10 @@ void Batch(const TurboCV::System::String& imageSetPath, bool thinning = false)
 
 int main()
 {
-    //cv::Mat mat = imread("00001.png", CV_LOAD_IMAGE_GRAYSCALE);
+    cv::Mat mat = imread("00001.png", CV_LOAD_IMAGE_GRAYSCALE);
 
-    //cv::Mat power = Gradient::GetGradient(mat).Item2();
-    //imshow(power);
-    //waitKey();
-
+    Test test;
+    test.GetFeatureWithPreprocess(mat);
 
     /*FILE* file = fopen("DNN.txt", "r");
     double tmp;
@@ -952,8 +950,8 @@ int main()
     //EdgeMatchingCrossValidation("oracles", Hitmap(), true);
     //printf("\n");
 
-    LocalFeatureTest("sketches", Test(), 1500);
-    printf("\n");
+    //LocalFeatureTest("sketches", Test(), 1500);
+    //printf("\n");
 
     //Batch("sketches", false);
     //Batch("oracles", true);
