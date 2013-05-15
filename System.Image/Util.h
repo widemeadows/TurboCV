@@ -233,7 +233,7 @@ namespace System
             return CreateTuple(DR, FPR);
         }
 
-        inline void imshow(const Mat& image, bool scale = true)
+        inline cv::Mat imshow(const Mat& image, bool scale = true)
         {
             double maximum = 1e-14, minimum = 1e14;
             int type = image.type();
@@ -271,6 +271,8 @@ namespace System
             }
 
             imshow("OpenCV", tmp);
+
+            return tmp;
         }
     }
 }

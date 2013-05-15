@@ -893,8 +893,50 @@ int main()
 	}
 	fclose(file);
 
-	assert(samples.Count() == labels.Count());
-	CrossValidation(samples, labels);
+    cv::Mat mat = imread("00001.png", CV_LOAD_IMAGE_GRAYSCALE);
+
+    Test test;
+    test.GetFeatureWithPreprocess(mat);
+
+    /*FILE* file = fopen("DNN.txt", "r");
+    double tmp;
+    ArrayList<ArrayList<double>> features;
+    ArrayList<int> labels;
+
+    for (int i = 0; i < 20000; i++)
+    {
+    ArrayList<double> feature;
+
+    for (int j = 0; j < 4096; j++)
+    {
+    fscanf(file, "%lf", &tmp);
+    feature.Add(tmp);
+    }
+
+    features.Add(feature);
+    labels.Add(i / 80);
+    }
+    fclose(file);
+    
+    //FILE* file = fopen("features.txt", "r");
+	//ArrayList<ArrayList<double>> samples;
+	//double token;
+
+	//while (fscanf(file, "%lf", &token) != EOF)
+	//{
+	//	ArrayList<double> sample;
+
+	//	sample.Add(token);
+	//	for (int i = 1; i < 1500; i++)
+	//	{
+	//		fscanf(file, "%lf", &token);
+	//		sample.Add(token);
+	//	}
+
+	//	samples.Add(sample);
+	//}
+
+	//fclose(file);
 
 	//file = fopen("Y.txt", "w");
 	//TSNE tsne;
@@ -907,6 +949,15 @@ int main()
 	//	fprintf(file, "\n");
 	//}
 
+    //TSNE tsne;
+    //cv::Mat Y = tsne.Compute(samples, 30, 1);
+
+    //for (int i = 0; i < Y.rows; i++)
+    //{
+    //    fprintf(file, "%f ", Y.at<double>(i, 0));
+    //    fprintf(file, "0\n");
+    //}
+
 	//fclose(file);
 
 	//LocalFeatureCrossValidation("oracles", Test(), 1500, true);
@@ -918,17 +969,12 @@ int main()
     //EdgeMatchingCrossValidation("oracles", Hitmap(), true);
     //printf("\n");
 
-	//LocalFeatureTest("oracles", Test(), 1500);
-	//printf("\n");
+    //LocalFeatureTest("sketches", Test(), 1500);
+    //printf("\n");
 
     //Batch("sketches", false);
     //Batch("oracles", true);
 
-    //Mat trans = getRotationMatrix2D(Point(image.rows / 2, image.cols / 2), -20, 1);
-    //warpAffine(image, image, trans, image.size());
-    //threshold(image, image, 0.1, 1, CV_THRESH_BINARY);
-    //thin(image, image);
-    //threshold(image, image, 0.1, 255, CV_THRESH_BINARY);
 
     /*ArrayList<Point> points = GetEdgels(image);
     ArrayList<int> xCount(image.cols);
