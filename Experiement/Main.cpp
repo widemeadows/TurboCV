@@ -777,6 +777,45 @@ void LocalFeatureTest(const TurboCV::System::String& imageSetPath, const LocalFe
     fclose(file);
 }
 
+template<typename T>
+void CrossValidation(const ArrayList<T>& samples, const ArrayList<int>& labels, int fold = 3)
+{
+	ArrayList<Tuple<ArrayList<T>, ArrayList<T>, ArrayList<size_t>>> pass = 
+		RandomSplit(samples, fold);
+    ArrayList<double> passResult;
+    
+	for (int i = 0; i < fold; i++)
+    {
+        printf("Begin Fold %d...\n", i + 1);
+        ArrayList<T>& evaluationSet = pass[i].Item1();
+        ArrayList<T>& trainingSet = pass[i].Item2();
+        ArrayList<size_t>& pickUpIndexes = pass[i].Item3();
+
+        ArrayList<int> trainingLabels, evaluationLabels;
+        int counter = 0;
+        for (int k = 0; k < samples.Count(); k++)
+        {
+            if (counter < pickUpIndexes.Count() && k == pickUpIndexes[counter])
+            {
+                evaluationLabels.Add(labels[k]);
+                counter++;
+            }
+            else
+                trainingLabels.Add(labels[k]);
+        }
+
+        KNN<T> knn;
+        auto precisions = knn.Evaluate(trainingSet, trainingLabels, evaluationSet, 
+			evaluationLabels, Math::NormOneDistance, KNN<T>::HARD_VOTING);
+
+        passResult.Add(precisions.first);
+        printf("Fold %d Accuracy: %f\n\n", i + 1, precisions.first);
+    }
+
+	printf("\nAverage: %f, Standard Deviation: %f\n", Math::Mean(passResult), 
+        Math::StandardDeviation(passResult));
+}
+
 void Batch(const TurboCV::System::String& imageSetPath, bool thinning = false)
 {
     LocalFeatureCrossValidation(imageSetPath, HOG(), 500, thinning);
@@ -827,16 +866,17 @@ void Batch(const TurboCV::System::String& imageSetPath, bool thinning = false)
 
 int main()
 {
-	FILE* file = fopen("features.txt", "r");
 	ArrayList<ArrayList<double>> samples;
+	ArrayList<int> labels;
 	double token;
 
+	FILE* file = fopen("Y.txt", "r");
 	while (fscanf(file, "%lf", &token) != EOF)
 	{
 		ArrayList<double> sample;
 
 		sample.Add(token);
-		for (int i = 1; i < 1500; i++)
+		for (int i = 1; i < 2; i++)
 		{
 			fscanf(file, "%lf", &token);
 			sample.Add(token);
@@ -844,21 +884,30 @@ int main()
 
 		samples.Add(sample);
 	}
-
 	fclose(file);
 
-	file = fopen("Y.txt", "w");
-	TSNE tsne;
-	cv::Mat Y = tsne.Compute(samples);
-
-	for (int i = 0; i < Y.rows; i++)
+	file = fopen("labels.txt", "r");
+	while (fscanf(file, "%lf", &token) != EOF)
 	{
-		for (int j = 0; j < Y.cols; j++)
-			fprintf(file, "%f ", Y.at<double>(i, j));
-		fprintf(file, "\n");
+		labels.Add(token);
 	}
-
 	fclose(file);
+
+	assert(samples.Count() == labels.Count());
+	CrossValidation(samples, labels);
+
+	//file = fopen("Y.txt", "w");
+	//TSNE tsne;
+	//cv::Mat Y = tsne.Compute(samples);
+
+	//for (int i = 0; i < Y.rows; i++)
+	//{
+	//	for (int j = 0; j < Y.cols; j++)
+	//		fprintf(file, "%f ", Y.at<double>(i, j));
+	//	fprintf(file, "\n");
+	//}
+
+	//fclose(file);
 
 	//LocalFeatureCrossValidation("oracles", Test(), 1500, true);
 	//printf("\n");

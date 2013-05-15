@@ -14,7 +14,10 @@ if __name__ == "__main__":
 
     x = []
     y = []
+    labels = []
     pFile = open(pointFileName)
+    lFile = open(labelFileName)
+    
     while True:
         line = pFile.readline()
         if not line:
@@ -24,14 +27,10 @@ if __name__ == "__main__":
         x.append(float(tokens[0]))
         y.append(float(tokens[1]))
 
+        line = lFile.readline()
+        labels.append(int(line))
+
     pFile.close()
-
-    labels = []
-    lFile = open(labelFileName)    
-    line = lFile.readline()
-    for token in line.strip().split(' '):
-        labels.append(float(token))
-
     lFile.close()
 
     plot.scatter(x, y, 20, labels)
