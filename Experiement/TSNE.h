@@ -115,6 +115,7 @@ namespace System
 				int n = mat.rows, d = mat.cols;
 				cv::Mat D = cv::Mat::zeros(n, n, CV_64F);
 
+				#pragma omp parallel for
 				for (int i = 0; i < n; i++)
 				{
 					for (int j = i + 1; j < n; j++)
