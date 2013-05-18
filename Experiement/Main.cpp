@@ -876,7 +876,7 @@ int main()
 		ArrayList<double> sample;
 
 		sample.Add(token);
-		for (int i = 1; i < 5; i++)
+		for (int i = 1; i < 2; i++)
 		{
 			fscanf(file, "%lf", &token);
 			sample.Add(token);
@@ -937,7 +937,7 @@ int main()
 
 	file = fopen("Y.txt", "w");
 	TSNE tsne;
-	cv::Mat Y = tsne.Compute(samples, 30, 5);
+	cv::Mat Y = tsne.Compute(samples);
 
 	for (int i = 0; i < Y.rows; i++)
 	{

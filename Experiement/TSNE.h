@@ -180,12 +180,12 @@ namespace System
 					{
 						cv::Mat gaussDi(Di.size(), CV_64F);
 						cv::exp(Di / -sigmaSqr[i], gaussDi);
-						double sumGD = cv::sum(gaussDi)[0];
+						double sumGDi = cv::sum(gaussDi)[0];
 
-						double H = Di.dot(gaussDi) / (sumGD * sigmaSqr[i]) + std::log(sumGD);
+						double H = Di.dot(gaussDi) / (sumGDi * sigmaSqr[i]) + std::log(sumGDi);
 						Hdiff = logU - H;
 
-						Pi = gaussDi / sumGD;
+						Pi = gaussDi / (sumGDi * 2 * n);
 
 						if (Hdiff > 0)
 						{
@@ -216,7 +216,7 @@ namespace System
                 }
 
                 P += P.t();
-                return P / cv::sum(P)[0];
+                return P;
             }
         };
     }
