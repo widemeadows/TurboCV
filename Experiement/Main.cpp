@@ -887,48 +887,16 @@ int main()
     }
     fclose(file);*/
     
-	FILE* file = fopen("features.txt", "r");
-	ArrayList<ArrayList<double>> samples;
-	double token;
-
-	while (fscanf(file, "%lf", &token) != EOF)
-	{
-		ArrayList<double> sample;
-
-		sample.Add(token);
-		for (int i = 1; i < 1500; i++)
-		{
-			fscanf(file, "%lf", &token);
-			sample.Add(token);
-		}
-
-		samples.Add(sample);
-	}
-
-	fclose(file);
-
-	file = fopen("Y.txt", "w");
-	SNE sne;
-	cv::Mat Y = sne.Compute(samples, 30, 5);
-
-	for (int i = 0; i < Y.rows; i++)
-	{
-		for (int j = 0; j < Y.cols; j++)
-			fprintf(file, "%f ", Y.at<double>(i, j));
-		fprintf(file, "\n");
-	}
-
+	//FILE* file = fopen("features.txt", "r");
 	//ArrayList<ArrayList<double>> samples;
-	//ArrayList<int> labels;
 	//double token;
 
-	//FILE* file = fopen("Y.txt", "r");
 	//while (fscanf(file, "%lf", &token) != EOF)
 	//{
 	//	ArrayList<double> sample;
 
 	//	sample.Add(token);
-	//	for (int i = 1; i < 2; i++)
+	//	for (int i = 1; i < 1500; i++)
 	//	{
 	//		fscanf(file, "%lf", &token);
 	//		sample.Add(token);
@@ -936,16 +904,48 @@ int main()
 
 	//	samples.Add(sample);
 	//}
+
 	//fclose(file);
 
-	//file = fopen("labels.txt", "r");
-	//while (fscanf(file, "%lf", &token) != EOF)
+	//file = fopen("Y.txt", "w");
+	//SNE sne;
+	//cv::Mat Y = sne.Compute(samples, 30, 5);
+
+	//for (int i = 0; i < Y.rows; i++)
 	//{
-	//	labels.Add(token);
+	//	for (int j = 0; j < Y.cols; j++)
+	//		fprintf(file, "%f ", Y.at<double>(i, j));
+	//	fprintf(file, "\n");
 	//}
-	//fclose(file);
 
-	//CrossValidation(samples, labels);
+	ArrayList<ArrayList<double>> samples;
+	ArrayList<int> labels;
+	double token;
+
+	FILE* file = fopen("Y.txt", "r");
+	while (fscanf(file, "%lf", &token) != EOF)
+	{
+		ArrayList<double> sample;
+
+		sample.Add(token);
+		for (int i = 1; i < 5; i++)
+		{
+			fscanf(file, "%lf", &token);
+			sample.Add(token);
+		}
+
+		samples.Add(sample);
+	}
+	fclose(file);
+
+	file = fopen("labels.txt", "r");
+	while (fscanf(file, "%lf", &token) != EOF)
+	{
+		labels.Add(token);
+	}
+	fclose(file);
+
+	CrossValidation(samples, labels);
 
     //TSNE tsne;
     //cv::Mat Y = tsne.Compute(samples, 30, 1);
