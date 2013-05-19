@@ -3,6 +3,7 @@
 #include "../System.ML/System.ML.h"
 #include "Util.h"
 #include "TSNE.h"
+#include "SNE.h"
 #include <cv.h>
 #include <highgui.h>
 using namespace TurboCV::System;
@@ -866,35 +867,6 @@ void Batch(const TurboCV::System::String& imageSetPath, bool thinning = false)
 
 int main()
 {
-	ArrayList<ArrayList<double>> samples;
-	ArrayList<int> labels;
-	double token;
-
-	FILE* file = fopen("Y.txt", "r");
-	while (fscanf(file, "%lf", &token) != EOF)
-	{
-		ArrayList<double> sample;
-
-		sample.Add(token);
-		for (int i = 1; i < 2; i++)
-		{
-			fscanf(file, "%lf", &token);
-			sample.Add(token);
-		}
-
-		samples.Add(sample);
-	}
-	fclose(file);
-
-	file = fopen("labels.txt", "r");
-	while (fscanf(file, "%lf", &token) != EOF)
-	{
-		labels.Add(token);
-	}
-	fclose(file);
-
-	CrossValidation(samples, labels);
-
     /*FILE* file = fopen("DNN.txt", "r");
     double tmp;
     ArrayList<ArrayList<double>> features;
@@ -915,7 +887,7 @@ int main()
     }
     fclose(file);*/
     
-	/*FILE* file = fopen("features.txt", "r");
+	FILE* file = fopen("features.txt", "r");
 	ArrayList<ArrayList<double>> samples;
 	double token;
 
@@ -936,15 +908,44 @@ int main()
 	fclose(file);
 
 	file = fopen("Y.txt", "w");
-	TSNE tsne;
-	cv::Mat Y = tsne.Compute(samples);
+	SNE sne;
+	cv::Mat Y = sne.Compute(samples, 30, 5);
 
 	for (int i = 0; i < Y.rows; i++)
 	{
 		for (int j = 0; j < Y.cols; j++)
 			fprintf(file, "%f ", Y.at<double>(i, j));
 		fprintf(file, "\n");
-	}*/
+	}
+
+	//ArrayList<ArrayList<double>> samples;
+	//ArrayList<int> labels;
+	//double token;
+
+	//FILE* file = fopen("Y.txt", "r");
+	//while (fscanf(file, "%lf", &token) != EOF)
+	//{
+	//	ArrayList<double> sample;
+
+	//	sample.Add(token);
+	//	for (int i = 1; i < 2; i++)
+	//	{
+	//		fscanf(file, "%lf", &token);
+	//		sample.Add(token);
+	//	}
+
+	//	samples.Add(sample);
+	//}
+	//fclose(file);
+
+	//file = fopen("labels.txt", "r");
+	//while (fscanf(file, "%lf", &token) != EOF)
+	//{
+	//	labels.Add(token);
+	//}
+	//fclose(file);
+
+	//CrossValidation(samples, labels);
 
     //TSNE tsne;
     //cv::Mat Y = tsne.Compute(samples, 30, 1);

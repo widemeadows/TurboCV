@@ -38,37 +38,36 @@ namespace TurboCV
 					const int MAX_ITER = 1000;
 					const double INIT_MOMENTUM = 0.5;
 					const double FINAL_MOMENTUM = 0.8;
-					const double eta = 500;
-					const double MIN_GAIN = 0.01;
+					const double eta = 0.05;
+					const double jitterDecay = 0.99;
+					double jitter = 0.3;
 
 					cv::Mat Y(n, yDims, CV_64F);
 					cv::randn(Y, 0, 1);
 
 					cv::Mat iY = cv::Mat::zeros(n, yDims, CV_64F);
-					cv::Mat gains = cv::Mat::ones(n, yDims, CV_64F);
 
 					printf("Compute P...\n");
 					cv::Mat P = getP(X, 1e-5, perplexity);
-					P *= 4;
 					P = cv::max(eps, P);
 
 					for (int i = 0; i < MAX_ITER; i++)
 					{
 						cv::Mat D = getDistanceMatrix(Y);
 						cv::Mat gaussD;
-						cv::exp(D, gaussD);
+						cv::exp(-D, gaussD);
 						for (int j = 0; j < n; j++)
-							D.at<double>(j, j) = 0;
+							gaussD.at<double>(j, j) = 0;
 
-						cv::Mat Q(D.size(), CV_64F);
-						for (int j = 0; j < D.rows; j++)
+						cv::Mat Q(gaussD.size(), CV_64F);
+						for (int j = 0; j < Q.rows; j++)
 						{
 							double sum = 0;
-							for (int k = 0; k < D.cols; k++)
-								sum += D.at<double>(j, k);
+							for (int k = 0; k < Q.cols; k++)
+								sum += gaussD.at<double>(j, k);
 
-							for (int k = 0; k < D.cols; k++)
-								Q.at<double>(j, k) = D.at<double>(j, k) / sum;
+							for (int k = 0; k < Q.cols; k++)
+								Q.at<double>(j, k) = gaussD.at<double>(j, k) / sum;
 						}
 						Q = cv::max(eps, Q);
 
@@ -86,21 +85,16 @@ namespace TurboCV
 							}
 						}
 
-						cv::Mat tmp1;
-						((cv::Mat)((dY > 0) != (iY > 0))).convertTo(tmp1, CV_64F);
-						tmp1 = cv::min(tmp1, 1.0);
+						double momentum = i < 750? INIT_MOMENTUM : FINAL_MOMENTUM;
+						iY = momentum * iY - eta * dY;
 
-						cv::Mat tmp2;
-						((cv::Mat)((dY > 0) == (iY > 0))).convertTo(tmp2, CV_64F);
-						tmp2 = cv::min(tmp2, 1.0);
+						Y += iY;
 
-						gains = (gains + 0.2).mul(tmp1) + (gains * 0.8).mul(tmp2);
-						gains = cv::max(MIN_GAIN, gains);
+						cv::Mat normalDistribution(Y.size(), CV_64F);
+						cv::randn(normalDistribution, 0, 1);
+						Y += jitter * normalDistribution;
+						jitter *= jitterDecay;
 
-						double momentum = i < 20 ? INIT_MOMENTUM : FINAL_MOMENTUM;
-						iY = momentum * iY - eta * gains.mul(dY);
-
-						Y = Y + iY;
 						normalizeVectors(Y);
 
 						if ((i + 1) % 10 == 0)
@@ -110,9 +104,6 @@ namespace TurboCV
 							double C = cv::sum(P.mul(tmp))[0];
 							printf("Iteration %d: error is %f\n", i + 1, C);
 						}
-
-						if (i == 100)
-							P /= 4;
 					}
 
 					return Y;

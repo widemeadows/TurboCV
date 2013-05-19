@@ -185,7 +185,7 @@ namespace System
 						double H = Di.dot(gaussDi) / (sumGDi * sigmaSqr[i]) + std::log(sumGDi);
 						Hdiff = logU - H;
 
-						Pi = gaussDi / (sumGDi * 2 * n);
+						Pi = gaussDi / sumGDi;
 
 						if (Hdiff > 0)
 						{
@@ -216,6 +216,7 @@ namespace System
                 }
 
                 P += P.t();
+				P /= cv::sum(P)[0];
                 return P;
             }
         };
