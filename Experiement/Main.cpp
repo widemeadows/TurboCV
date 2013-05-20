@@ -918,34 +918,34 @@ int main()
 	//	fprintf(file, "\n");
 	//}
 
-	ArrayList<ArrayList<double>> samples;
-	ArrayList<int> labels;
-	double token;
+	//ArrayList<ArrayList<double>> samples;
+	//ArrayList<int> labels;
+	//double token;
 
-	FILE* file = fopen("Y.txt", "r");
-	while (fscanf(file, "%lf", &token) != EOF)
-	{
-		ArrayList<double> sample;
+	//FILE* file = fopen("Y.txt", "r");
+	//while (fscanf(file, "%lf", &token) != EOF)
+	//{
+	//	ArrayList<double> sample;
 
-		sample.Add(token);
-		for (int i = 1; i < 5; i++)
-		{
-			fscanf(file, "%lf", &token);
-			sample.Add(token);
-		}
+	//	sample.Add(token);
+	//	for (int i = 1; i < 5; i++)
+	//	{
+	//		fscanf(file, "%lf", &token);
+	//		sample.Add(token);
+	//	}
 
-		samples.Add(sample);
-	}
-	fclose(file);
+	//	samples.Add(sample);
+	//}
+	//fclose(file);
 
-	file = fopen("labels.txt", "r");
-	while (fscanf(file, "%lf", &token) != EOF)
-	{
-		labels.Add(token);
-	}
-	fclose(file);
+	//file = fopen("labels.txt", "r");
+	//while (fscanf(file, "%lf", &token) != EOF)
+	//{
+	//	labels.Add(token);
+	//}
+	//fclose(file);
 
-	CrossValidation(samples, labels);
+	//CrossValidation(samples, labels);
 
     //TSNE tsne;
     //cv::Mat Y = tsne.Compute(samples, 30, 1);
