@@ -12,6 +12,9 @@ using namespace TurboCV::System::Image;
 using namespace TurboCV::System::ML;
 using namespace cv;
 
+#define SAVE_FEATURE
+#define SAVE_DISTANCE_MATRIX
+
 inline TurboCV::System::ArrayList<Tuple<Mat, int>> GetImages(
     const TurboCV::System::String& imageSetPath, 
     int imageLoadMode = CV_LOAD_IMAGE_GRAYSCALE)
@@ -867,56 +870,51 @@ void Batch(const TurboCV::System::String& imageSetPath, bool thinning = false)
 
 int main()
 {
-    /*FILE* file = fopen("DNN.txt", "r");
-    double tmp;
-    ArrayList<ArrayList<double>> features;
-    ArrayList<int> labels;
+    FILE* file = fopen("features.txt", "r");
+    ArrayList<ArrayList<double>> samples;
+    double token;
 
-    for (int i = 0; i < 20000; i++)
+    while (fscanf(file, "%lf", &token) != EOF)
     {
-    ArrayList<double> feature;
+        ArrayList<double> sample;
 
-    for (int j = 0; j < 4096; j++)
-    {
-    fscanf(file, "%lf", &tmp);
-    feature.Add(tmp);
+        sample.Add(token);
+        for (int i = 1; i < 4096; i++)
+        {
+            fscanf(file, "%lf", &token);
+            sample.Add(token);
+        }
+
+        samples.Add(sample);
     }
 
-    features.Add(feature);
-    labels.Add(i / 80);
+    fclose(file);
+
+    //double maxSum = -1e12;
+    //for (int i = 0; i < samples.Count(); i++)
+    //{
+    //    double sum = 0;
+    //    for (int j = 0; j < samples[i].Count(); j++)
+    //        sum += samples[i][j];
+
+    //    if (sum > maxSum)
+    //        maxSum = sum;
+    //}
+    //for (int i = 0; i < samples.Count(); i++)
+    //    for (int j = 0; j < samples[i].Count(); j++)
+    //        samples[i][j] /= maxSum;
+
+    file = fopen("Y.txt", "w");
+    TSNE tsne;
+    cv::Mat Y = tsne.Compute(samples, 30, 10);
+
+    for (int i = 0; i < Y.rows; i++)
+    {
+        for (int j = 0; j < Y.cols; j++)
+            fprintf(file, "%f ", Y.at<double>(i, j));
+        fprintf(file, "\n");
     }
-    fclose(file);*/
-    
-	FILE* file = fopen("features.txt", "r");
-	ArrayList<ArrayList<double>> samples;
-	double token;
 
-	while (fscanf(file, "%lf", &token) != EOF)
-	{
-		ArrayList<double> sample;
-
-		sample.Add(token);
-		for (int i = 1; i < 1500; i++)
-		{
-			fscanf(file, "%lf", &token);
-			sample.Add(token);
-		}
-
-		samples.Add(sample);
-	}
-
-	fclose(file);
-
-	file = fopen("Y.txt", "w");
-	TSNE tsne;
-	cv::Mat Y = tsne.Compute(samples, 30, 10);
-
-	for (int i = 0; i < Y.rows; i++)
-	{
-		for (int j = 0; j < Y.cols; j++)
-			fprintf(file, "%f ", Y.at<double>(i, j));
-		fprintf(file, "\n");
-	}
 
 	//ArrayList<ArrayList<double>> samples;
 	//ArrayList<int> labels;
@@ -947,16 +945,6 @@ int main()
 
 	//CrossValidation(samples, labels);
 
-    //TSNE tsne;
-    //cv::Mat Y = tsne.Compute(samples, 30, 1);
-
-    //for (int i = 0; i < Y.rows; i++)
-    //{
-    //    fprintf(file, "%f ", Y.at<double>(i, 0));
-    //    fprintf(file, "0\n");
-    //}
-
-	//fclose(file);
 
 	//LocalFeatureCrossValidation("oracles", Test(), 1500, true);
 	//printf("\n");
