@@ -56,7 +56,7 @@ namespace System
 
             do
             {
-                sum += *curr;     
+                sum += abs(*curr);     
             } while (++curr != end);
 
             if (sum != 0)

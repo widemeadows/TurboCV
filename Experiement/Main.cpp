@@ -236,7 +236,7 @@ void GlobalFeatureCrossValidation(const TurboCV::System::String& imageSetPath, c
     #pragma omp parallel for private(machine)
     for (int i = 0; i < imageNum; i++)
     {
-        Convert(machine.GetFeatureWithPreprocess(images[i].Item1(), thinning, Size(64, 64)), features[i]);
+        Convert(machine.GetFeatureWithPreprocess(images[i].Item1(), thinning), features[i]);
         images[i].Item1().release();
     }
 
@@ -887,36 +887,36 @@ int main()
     }
     fclose(file);*/
     
-	//FILE* file = fopen("features.txt", "r");
-	//ArrayList<ArrayList<double>> samples;
-	//double token;
+	FILE* file = fopen("features.txt", "r");
+	ArrayList<ArrayList<double>> samples;
+	double token;
 
-	//while (fscanf(file, "%lf", &token) != EOF)
-	//{
-	//	ArrayList<double> sample;
+	while (fscanf(file, "%lf", &token) != EOF)
+	{
+		ArrayList<double> sample;
 
-	//	sample.Add(token);
-	//	for (int i = 1; i < 1500; i++)
-	//	{
-	//		fscanf(file, "%lf", &token);
-	//		sample.Add(token);
-	//	}
+		sample.Add(token);
+		for (int i = 1; i < 1500; i++)
+		{
+			fscanf(file, "%lf", &token);
+			sample.Add(token);
+		}
 
-	//	samples.Add(sample);
-	//}
+		samples.Add(sample);
+	}
 
-	//fclose(file);
+	fclose(file);
 
-	//file = fopen("Y.txt", "w");
-	//SNE sne;
-	//cv::Mat Y = sne.Compute(samples, 30, 5);
+	file = fopen("Y.txt", "w");
+	TSNE tsne;
+	cv::Mat Y = tsne.Compute(samples, 30, 10);
 
-	//for (int i = 0; i < Y.rows; i++)
-	//{
-	//	for (int j = 0; j < Y.cols; j++)
-	//		fprintf(file, "%f ", Y.at<double>(i, j));
-	//	fprintf(file, "\n");
-	//}
+	for (int i = 0; i < Y.rows; i++)
+	{
+		for (int j = 0; j < Y.cols; j++)
+			fprintf(file, "%f ", Y.at<double>(i, j));
+		fprintf(file, "\n");
+	}
 
 	//ArrayList<ArrayList<double>> samples;
 	//ArrayList<int> labels;
@@ -967,7 +967,7 @@ int main()
     //EdgeMatchingCrossValidation("oracles", Hitmap(), true);
     //printf("\n");
 
-    //LocalFeatureTest("sketches", Test(), 1500);
+    //LocalFeatureTest("sketches", RHOG(), 500);
     //printf("\n");
 
     //Batch("sketches", false);
