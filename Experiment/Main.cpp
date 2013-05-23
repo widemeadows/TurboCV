@@ -870,25 +870,25 @@ void Batch(const TurboCV::System::String& imageSetPath, bool thinning = false)
 
 int main()
 {
-    FILE* file = fopen("features.txt", "r");
-    ArrayList<ArrayList<double>> samples;
-    double token;
+    //FILE* file = fopen("features.txt", "r");
+    //ArrayList<ArrayList<double>> samples;
+    //double token;
 
-    while (fscanf(file, "%lf", &token) != EOF)
-    {
-        ArrayList<double> sample;
+    //while (fscanf(file, "%lf", &token) != EOF)
+    //{
+    //    ArrayList<double> sample;
 
-        sample.Add(token);
-        for (int i = 1; i < 4096; i++)
-        {
-            fscanf(file, "%lf", &token);
-            sample.Add(token);
-        }
+    //    sample.Add(token);
+    //    for (int i = 1; i < 4096; i++)
+    //    {
+    //        fscanf(file, "%lf", &token);
+    //        sample.Add(token);
+    //    }
 
-        samples.Add(sample);
-    }
+    //    samples.Add(sample);
+    //}
 
-    fclose(file);
+    //fclose(file);
 
     //double maxSum = -1e12;
     //for (int i = 0; i < samples.Count(); i++)
@@ -904,46 +904,46 @@ int main()
     //    for (int j = 0; j < samples[i].Count(); j++)
     //        samples[i][j] /= maxSum;
 
-    file = fopen("Y.txt", "w");
-    TSNE tsne;
-    cv::Mat Y = tsne.Compute(samples, 30, 10);
+    //file = fopen("Y.txt", "w");
+    //TSNE tsne;
+    //cv::Mat Y = tsne.Compute(samples, 30, 10);
 
-    for (int i = 0; i < Y.rows; i++)
+    //for (int i = 0; i < Y.rows; i++)
+    //{
+    //    for (int j = 0; j < Y.cols; j++)
+    //        fprintf(file, "%f ", Y.at<double>(i, j));
+    //    fprintf(file, "\n");
+    //}
+
+
+    ArrayList<ArrayList<double>> samples;
+    ArrayList<int> labels;
+    double token;
+
+    FILE* file = fopen("Y.txt", "r");
+    while (fscanf(file, "%lf", &token) != EOF)
     {
-        for (int j = 0; j < Y.cols; j++)
-            fprintf(file, "%f ", Y.at<double>(i, j));
-        fprintf(file, "\n");
+        ArrayList<double> sample;
+
+        sample.Add(token);
+        for (int i = 1; i < 10; i++)
+        {
+            fscanf(file, "%lf", &token);
+            sample.Add(token);
+        }
+
+        samples.Add(sample);
     }
+    fclose(file);
 
+    file = fopen("labels.txt", "r");
+    while (fscanf(file, "%lf", &token) != EOF)
+    {
+        labels.Add(token);
+    }
+    fclose(file);
 
-	//ArrayList<ArrayList<double>> samples;
-	//ArrayList<int> labels;
-	//double token;
-
-	//FILE* file = fopen("Y.txt", "r");
-	//while (fscanf(file, "%lf", &token) != EOF)
-	//{
-	//	ArrayList<double> sample;
-
-	//	sample.Add(token);
-	//	for (int i = 1; i < 5; i++)
-	//	{
-	//		fscanf(file, "%lf", &token);
-	//		sample.Add(token);
-	//	}
-
-	//	samples.Add(sample);
-	//}
-	//fclose(file);
-
-	//file = fopen("labels.txt", "r");
-	//while (fscanf(file, "%lf", &token) != EOF)
-	//{
-	//	labels.Add(token);
-	//}
-	//fclose(file);
-
-	//CrossValidation(samples, labels);
+    CrossValidation(samples, labels);
 
 
 	//LocalFeatureCrossValidation("oracles", Test(), 1500, true);
