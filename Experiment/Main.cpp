@@ -916,38 +916,61 @@ int main()
     //}
 
 
+    //ArrayList<ArrayList<double>> samples;
+    //ArrayList<int> labels;
+    //double token;
+
+    //FILE* file = fopen("Y.txt", "r");
+    //while (fscanf(file, "%lf", &token) != EOF)
+    //{
+    //    ArrayList<double> sample;
+
+    //    sample.Add(token);
+    //    for (int i = 1; i < 10; i++)
+    //    {
+    //        fscanf(file, "%lf", &token);
+    //        sample.Add(token);
+    //    }
+
+    //    samples.Add(sample);
+    //}
+    //fclose(file);
+
+    //file = fopen("labels.txt", "r");
+    //while (fscanf(file, "%lf", &token) != EOF)
+    //{
+    //    labels.Add(token);
+    //}
+    //fclose(file);
+
+    //CrossValidation(samples, labels);
+
+
     ArrayList<ArrayList<double>> samples;
     ArrayList<int> labels;
+    int index;
     double token;
 
-    FILE* file = fopen("Y.txt", "r");
-    while (fscanf(file, "%lf", &token) != EOF)
+    FILE* file = fopen("rhog_sketches_old", "r");
+    while (fscanf(file, "%d", &index) != EOF)
     {
-        ArrayList<double> sample;
+        labels.Add(index);
 
-        sample.Add(token);
-        for (int i = 1; i < 10; i++)
+        ArrayList<double> sample;
+        for (int i = 0; i < 500; i++)
         {
-            fscanf(file, "%lf", &token);
+            fscanf(file, "%d:%lf", &index, &token);
             sample.Add(token);
         }
-
         samples.Add(sample);
-    }
-    fclose(file);
-
-    file = fopen("labels.txt", "r");
-    while (fscanf(file, "%lf", &token) != EOF)
-    {
-        labels.Add(token);
     }
     fclose(file);
 
     CrossValidation(samples, labels);
 
 
-	//LocalFeatureCrossValidation("oracles", Test(), 1500, true);
-	//printf("\n");
+    //LocalFeatureCrossValidation("sketches", RHOG(), 500, true);
+    //printf("\n");
 
     //GlobalFeatureCrossValidation("hccr", GHOG(), true);
     //printf("\n");
