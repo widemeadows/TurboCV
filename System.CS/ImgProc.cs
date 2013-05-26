@@ -8,7 +8,22 @@ namespace System.CS
 {
     public class ImgProc
     {
-        
+        public static Mat<T> CopyMakeBorder<T>(Mat<T> src, int paddingTop, int paddingBottom, 
+            int paddingLeft, int paddingRight, T paddingValue)
+        {
+            Mat<T> dst = new Mat<T>(src.Rows + paddingTop + paddingBottom, 
+                src.Cols + paddingLeft + paddingRight);
+
+            dst.Set(paddingValue);
+            
+            int top = paddingTop, bottom = paddingTop + src.Rows,
+                left = paddingLeft, right = paddingLeft + src.Cols;
+            for (int i = top; i < bottom; i++)
+                for (int j = left; j < right; j++)
+                    dst[i, j] = src[i - top, j - left];
+
+            return dst;
+        }
 
         public static Mat<double> Convolve(Mat<byte> src, Mat<double> kernel, byte paddingValue = 0)
         {
@@ -16,16 +31,11 @@ namespace System.CS
                 return new Mat<double>(src.Rows, src.Cols);
 
             int halfKernelHeight = kernel.Rows / 2, halfKernelWidth = kernel.Cols / 2;
-
-            Mat<byte> tmp = new Mat<byte>(src.Rows + kernel.Rows - 1, src.Cols + kernel.Cols - 1);
             int top = halfKernelHeight, bottom = top + src.Rows,
                 left = halfKernelWidth, right = left + src.Cols;
 
-            tmp.Set(paddingValue);
-            for (int i = top; i < bottom; i++)
-                for (int j = left; j < right; j++)
-                    tmp[i, j] = src[i - top, j - left];
-
+            Mat<byte> tmp = CopyMakeBorder(src, halfKernelHeight, halfKernelHeight,
+                halfKernelWidth, halfKernelWidth, paddingValue);
             Mat<double> dst = new Mat<double>(src.Rows, src.Cols);
 
             for (int i = top; i < bottom; i++)
@@ -49,7 +59,7 @@ namespace System.CS
     {
         public static Mat<byte> Thin(Mat<byte> src, int iterations = 100) 
         {
-            Mat<byte> dst = new Mat<byte>(src.Rows, src.Cols);
+            Mat<byte> dst = src.Clone();
 
             for (int n = 0; n < iterations; n++) 
             {
@@ -147,6 +157,70 @@ namespace System.CS
                     }
                 }
             }
+
+            return dst;
+        }
+
+        public static Mat<byte> Clean(Mat<byte> src, int points = 1)
+        {
+            Mat<byte> dst = src.Clone();
+            Mat<byte> cur = src.Clone();
+
+            int[] dy = { -1, -1, -1, 0, 0, 1, 1, 1 };
+            int[] dx = { -1, 0, 1, -1, 1, -1, 0, 1 };
+
+            for (int i = 0; i < cur.Rows; i++)
+            {
+                for (int j = 0; j < cur.Cols; j++)
+                {
+                    if (cur[i, j] == byte.MaxValue)
+                    {
+                        Queue<Point> q = new Queue<Point>();
+                        List<Point> component = new List<Point>();
+
+                        q.Enqueue(new Point(j, i));
+                        cur[i, j] = 0;
+
+                        while (q.Count != 0)
+                        {
+                            Point front = q.Dequeue();
+                            component.Add(front);
+
+                            for (int k = 0; k < 8; k++)
+                            {
+                                int newY = front.Y + dy[k], newX = front.X + dx[k];
+
+                                if (newY >= 0 && newY < cur.Rows && 
+                                    newX >= 0 && newX < cur.Cols &&
+                                    cur[newY, newX] == byte.MaxValue)
+                                {
+                                    q.Enqueue(new Point(newX, newY));
+                                    cur[newY, newX] = 0;
+                                }
+                            }
+                        }
+
+                        if (component.Count <= points)
+                        {
+                            foreach (Point point in component)
+                            {
+                                dst[point.Y, point.X] = 0;
+                            }
+                        }
+                    }
+                }
+            }
+
+            return dst;
+        }
+
+        public static Mat<byte> Reverse(Mat<byte> src)
+        {
+            Mat<byte> dst = new Mat<byte>(src.Rows, src.Cols);
+
+            for (int i = 0; i < src.Rows; i++)
+                for (int j = 0; j < src.Cols; j++)
+                    dst[i, j] = (byte)(byte.MaxValue - src[i, j]);
 
             return dst;
         }
