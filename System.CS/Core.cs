@@ -4,29 +4,62 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace System.CS
+namespace Turbo.System.CS
 {
-    internal class Mat<T>
+    public struct Size
     {
-        public Mat(int rows, int cols)
+        public Size(int h, int w)
         {
-            _mat = new T[rows, cols];
-            _rows = rows;
-            _cols = cols;
+            _height = h;
+            _width = w;
+        }
+
+        public int Height
+        {
+            get
+            {
+                return _height;
+            }
+            set
+            {
+                _height = value;
+            }
+        }
+
+        public int Width
+        {
+            get
+            {
+                return _width;
+            }
+            set
+            {
+                _width = value;
+            }
+        }
+
+        private int _height, _width;
+    }
+
+    public class Mat<T> where T: IComparable<T>
+    {
+        public Mat(Size size)
+        {
+            _mat = new T[size.Height, size.Width];
+            _size = size;
         }
 
         public Mat(T[,] data)
         {
             _mat = (T[,])data.Clone();
-            _rows = _mat.GetLength(1);
-            _cols = _mat.GetLength(0);
+            _size = new Size(_mat.GetLength(1), _mat.GetLength(0));
         }
 
         public int Rows
         {
             get
             {
-                return _rows;
+                return _size.Height;
             }
         }
 
@@ -34,7 +67,15 @@ namespace System.CS
         {
             get
             {
-                return _cols;
+                return _size.Width;
+            }
+        }
+
+        public Size Size
+        {
+            get
+            {
+                return _size;
             }
         }
 
@@ -51,10 +92,21 @@ namespace System.CS
             }
         }
 
+        public Mat<T> Max(T value)
+        {
+            Mat<T> dst = Clone();
+
+            for (int i = _size.Height - 1; i >= 0; i--)
+                for (int j = _size.Width - 1; j >= 0; j--)
+                    dst[i, j] = dst[i, j].CompareTo(value) > 0 ? dst[i, j] : value;
+
+            return dst;
+        }
+
         public void Set(T value)
         {
-            for (int i = _rows - 1; i >= 0; i--)
-                for (int j = _cols - 1; j >= 0; j--)
+            for (int i = _size.Height - 1; i >= 0; i--)
+                for (int j = _size.Width - 1; j >= 0; j--)
                     _mat[i, j] = value;
         }
 
@@ -64,18 +116,41 @@ namespace System.CS
         }
 
         private T[,] _mat = null;
-        private int _rows = 0, _cols = 0;
+        private Size _size;
     }
 
     public struct Point
     {
         public Point(int x, int y)
         {
-            X = x;
-            Y = y;
+            _x = x;
+            _y = y;
         }
 
-        public int X { get; set; }
-        public int Y { get; set; }
+        public int X
+        {
+            get
+            {
+                return _x;
+            }
+            set
+            {
+                _x = value;
+            }
+        }
+
+        public int Y
+        {
+            get
+            {
+                return _y;
+            }
+            set
+            {
+                _y = value;
+            }
+        }
+
+        private int _x, _y;
     }
 }

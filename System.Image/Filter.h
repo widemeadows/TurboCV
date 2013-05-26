@@ -40,14 +40,17 @@ namespace System
             }
 
             root = sqrt(sum);
-            for (int i = 0; i < size; i++)
-            {
-                for (int j = 0; j < size; j++)
-                {
-                    dx.at<double>(i, j) /= root;
-                    dy.at<double>(i, j) /= root;
-                }
-            }
+			if (root > 0)
+			{
+				for (int i = 0; i < size; i++)
+				{
+					for (int j = 0; j < size; j++)
+					{
+						dx.at<double>(i, j) /= root;
+						dy.at<double>(i, j) /= root;
+					}
+				}
+			}
 
             return CreateTuple(dx, dy);
         }

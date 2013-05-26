@@ -103,7 +103,7 @@ namespace System
 
     inline double Math::Gauss(double x, double sigma)
     {
-        return std::exp(-pow(x, 2.0) / (2 * std::pow(sigma, 2.0))) / (sigma * std::sqrt(2 * PI));
+        return std::exp(-std::pow(x, 2.0) / (2 * std::pow(sigma, 2.0))) / (sigma * std::sqrt(2 * PI));
     }
 
     inline double Math::GaussDeriv(double x, double sigma)
