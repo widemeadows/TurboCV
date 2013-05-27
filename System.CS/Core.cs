@@ -43,6 +43,12 @@ namespace Turbo.System.CS
 
     public class Mat<T> where T: IComparable<T>
     {
+        public Mat(int rows, int cols)
+        {
+            _mat = new T[rows, cols];
+            _size = new Size(rows, cols);
+        }
+        
         public Mat(Size size)
         {
             _mat = new T[size.Height, size.Width];

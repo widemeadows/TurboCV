@@ -22,8 +22,8 @@ namespace Turbo.System.CS
         public static Mat<byte> CopyMakeBorder(Mat<byte> src, int paddingTop, int paddingBottom, 
             int paddingLeft, int paddingRight, byte paddingValue)
         {
-            Mat<byte> dst = new Mat<byte>(new Size(src.Rows + paddingTop + paddingBottom, 
-                src.Cols + paddingLeft + paddingRight));
+            Mat<byte> dst = new Mat<byte>(src.Rows + paddingTop + paddingBottom, 
+                src.Cols + paddingLeft + paddingRight);
 
             dst.Set(paddingValue);
             
@@ -315,7 +315,7 @@ namespace Turbo.System.CS
     {
         public static double Gauss(double x, double sigma)
         {
-            return Math.Exp(-Math.Pow(x, 2.0) / (2 * Math.Pow(sigma, 2.0))) / (sigma * Math.sqrt(2 * Math.PI));
+            return Math.Exp(-Math.Pow(x, 2.0) / (2 * Math.Pow(sigma, 2.0))) / (sigma * Math.Sqrt(2 * Math.PI));
         }
 
         public static double GaussDeriv(double x, double sigma)
@@ -328,7 +328,7 @@ namespace Turbo.System.CS
             int halfSize = (int)Math.Ceiling(sigma * Math.Sqrt(-2 * Math.Log(Math.Sqrt(2 * Math.PI) * sigma * epsilon)));
             int size = halfSize * 2 + 1;
             double sum = 0, root;
-            Mat<double> dx = new Mat<double>(new Size(size, size)), dy = new Mat<double>(new Size(size, size));
+            Mat<double> dx = new Mat<double>(size, size), dy = new Mat<double>(size, size);
 
             for (int i = 0; i < size; i++)
             {

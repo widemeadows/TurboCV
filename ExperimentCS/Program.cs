@@ -21,7 +21,7 @@ namespace ExperimentCS
             Mat<byte> mat = BitmapSourceToMat(bmp);
             mat = GHOG.Preprocess(mat, new Size(256, 256));
 
-            Mat<double> kernel = new Mat<double>(new Size(3, 3));
+            Mat<double> kernel = new Mat<double>(3, 3);
             for (int i = 0; i < 3; i++)
                 for (int j = 0; j < 3; j++)
                     kernel[i, j] = 1.0 / 9;
@@ -40,7 +40,7 @@ namespace ExperimentCS
             byte[] rawData = new byte[writeableBmp.PixelWidth * writeableBmp.PixelHeight];
             writeableBmp.CopyPixels(rawData, writeableBmp.PixelWidth, 0);
 
-            Mat<byte> image = new Mat<byte>(new Size(writeableBmp.PixelHeight, writeableBmp.PixelWidth));
+            Mat<byte> image = new Mat<byte>(writeableBmp.PixelHeight, writeableBmp.PixelWidth);
             for (int i = 0; i < writeableBmp.PixelHeight; i++)
                 for (int j = 0; j < writeableBmp.PixelWidth; j++)
                     image[i, j] = rawData[i * writeableBmp.PixelWidth + j];

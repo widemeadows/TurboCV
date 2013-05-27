@@ -69,7 +69,7 @@ namespace Turbo.System.CS
                 }
             }
 
-            Mat<byte> dst = new Mat<byte>(new Size(maxY - minY + 1, maxX - minX + 1));
+            Mat<byte> dst = new Mat<byte>(maxY - minY + 1, maxX - minX + 1);
             for (int i = minY; i <= maxY; i++)
                 for (int j = minX; j <= maxX; j++)
                     dst[i - minY, j - minX] = src[i, j];
