@@ -116,7 +116,7 @@ namespace Turbo.System.CS
             return finalImage;
         }
 
-        public GlobalFeatureVec ExtractFeature(Mat<byte> src)
+        public static GlobalFeatureVec ExtractFeature(Mat<byte> src)
         {
             int orientNum = 8, blockSize = 48 * src.Rows / 256;
 
