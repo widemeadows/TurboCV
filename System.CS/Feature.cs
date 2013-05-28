@@ -104,11 +104,15 @@ namespace Turbo.System.CS
 
             Mat<byte> finalImage = paddedImage.Clone();
             for (int i = 0; i < finalImage.Rows; i++)
+            {
                 for (int j = 0; j < finalImage.Cols; j++)
+                {
                     if (finalImage[i, j] > 54)
                         finalImage[i, j] = byte.MaxValue;
                     else
                         finalImage[i, j] = 0;
+                }
+            }
 
             if (thinning)
                 finalImage = BinaryImgProc.Thin(finalImage);
@@ -118,6 +122,7 @@ namespace Turbo.System.CS
 
         public static GlobalFeatureVec ExtractFeature(Mat<byte> src)
         {
+            src = Preprocess(src, new Size(256, 256));
             int orientNum = 8, blockSize = 48 * src.Rows / 256;
 
             List<Mat<double>> orientChannels = Gradient.GetOrientChannels(src, orientNum);
@@ -135,11 +140,14 @@ namespace Turbo.System.CS
                         {
                             for (int n = j - blockSize; n <= j + blockSize; n++)
                             {
+                                if (m < 0 || m >= src.Rows || n < 0 || n >= src.Cols)
+                                    continue;
+
                                 double weight = 1 - Math.Sqrt((m - i) * (m - i) + (n - j) * (n - j)) / blockSize;
                                 if (weight < 0)
                                     weight = 0;
 
-                                value += orientChannels[k][i, j] * weight;
+                                value += orientChannels[k][m, n] * weight;
                             }
                         }
 

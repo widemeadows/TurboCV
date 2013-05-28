@@ -58,7 +58,7 @@ namespace Turbo.System.CS
         public Mat(T[,] data)
         {
             _mat = (T[,])data.Clone();
-            _size = new Size(_mat.GetLength(1), _mat.GetLength(0));
+            _size = new Size(_mat.GetLength(0), _mat.GetLength(1));
         }
 
         public int Rows
