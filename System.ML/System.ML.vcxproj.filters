@@ -27,5 +27,16 @@
     <ClInclude Include="MQDF.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="SNE.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="TSNE.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="DimensionReduction.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>

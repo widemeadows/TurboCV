@@ -1,4 +1,5 @@
 #pragma once
+#pragma warning(disable:4996) // disable _CRT_SECURE_NO_WARNINGS
 
 #include <cstring>
 #include <string>
