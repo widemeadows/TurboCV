@@ -120,12 +120,13 @@ namespace Turbo.System.CS
             return finalImage;
         }
 
-        public static GlobalFeatureVec ExtractFeature(Mat<byte> src)
+        public static GlobalFeatureVec ExtractFeature(Mat<byte> src, bool normalize = true, 
+            int orientNum = 8, double blockRatio = 48.0 / 256.0)
         {
             src = Preprocess(src, new Size(256, 256));
-            int orientNum = 8, blockSize = 48 * src.Rows / 256;
+            int blockSize = (int)(blockRatio * 256);
 
-            List<Mat<double>> orientChannels = Gradient.GetOrientChannels(src, orientNum);
+            List<Mat<double>> orientChannels = Filter.GetOrientChannels(src, orientNum);
             
             GlobalFeatureVec feature = new GlobalFeatureVec();
             for (int i = blockSize / 2 - 1; i < src.Rows; i += blockSize / 2)
@@ -156,18 +157,21 @@ namespace Turbo.System.CS
                 }
             }
 
-            double sum = 0;
-            for (int i = 0; i < feature.Count; i++)
+            if (normalize)
             {
-                sum += feature[i] * feature[i];
-            }
-
-            double root = Math.Sqrt(sum);
-            if (root > 0)
-            {
+                double sum = 0;
                 for (int i = 0; i < feature.Count; i++)
                 {
-                    feature[i] /= root;
+                    sum += feature[i] * feature[i];
+                }
+
+                double root = Math.Sqrt(sum);
+                if (root > 0)
+                {
+                    for (int i = 0; i < feature.Count; i++)
+                    {
+                        feature[i] /= root;
+                    }
                 }
             }
 

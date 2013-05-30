@@ -311,7 +311,7 @@ namespace Turbo.System.CS
         }
     }
 
-    public class Gradient
+    public class Filter
     {
         public static double Gauss(double x, double sigma)
         {
@@ -323,7 +323,7 @@ namespace Turbo.System.CS
             return -x * Gauss(x, sigma) / Math.Pow(sigma, 2);
         }
 
-        public static Tuple<Mat<double>, Mat<double>> GetGradientKernel(double sigma, double epsilon)
+        public static Tuple<Mat<double>, Mat<double>> GetGradientKernel(double sigma, double epsilon = 1e-2)
         {
             int halfSize = (int)Math.Ceiling(sigma * Math.Sqrt(-2 * Math.Log(Math.Sqrt(2 * Math.PI) * sigma * epsilon)));
             int size = halfSize * 2 + 1;
@@ -355,9 +355,29 @@ namespace Turbo.System.CS
             return Tuple.Create(dx, dy);
         }
 
+        public static Mat<double> GetGaussianKernel(double sigma, double epsilon = 1e-2)
+        {
+            int halfSize = (int)Math.Ceiling(sigma * Math.Sqrt(-2 * Math.Log(Math.Sqrt(2 * Math.PI) * sigma * epsilon)));
+            int size = halfSize * 2 + 1;
+            double sum = 0, root;
+            Mat<double> kernel = new Mat<double>(size, size);
+
+            for (int i = 0; i < size; i++)
+                for (int j = 0; j < size; j++)
+                    kernel[i, j] = Gauss(i - halfSize, sigma) * Gauss(j - halfSize, sigma);
+
+            root = Math.Sqrt(sum);
+            if (root > 0)
+                for (int i = 0; i < size; i++)
+                    for (int j = 0; j < size; j++)
+                        kernel[i, j] /= root;
+
+            return kernel;
+        }
+
         public static Tuple<Mat<double>, Mat<double>> GetGradient(Mat<byte> image, double sigma = 1.0)
         {
-            Tuple<Mat<double>, Mat<double>> kernel = GetGradientKernel(sigma, 1e-2);
+            Tuple<Mat<double>, Mat<double>> kernel = GetGradientKernel(sigma);
             Mat<double> dxImage = ImgProc.Convolve(image, kernel.Item1);
             Mat<double> dyImage = ImgProc.Convolve(image, kernel.Item2);
 
@@ -426,6 +446,18 @@ namespace Turbo.System.CS
             }
 
             return orientChannels;
+        }
+
+        public static Mat<byte> Blur(Mat<byte> image, double sigma = 1.0)
+        {
+            Mat<double> tmp = ImgProc.Convolve(image, GetGaussianKernel(sigma));
+
+            Mat<byte> result = new Mat<byte>(tmp.Size);
+            for (int i = 0; i < result.Rows; i++)
+                for (int j = 0; j < result.Cols; j++)
+                    result[i, j] = (byte)tmp[i, j];
+
+            return result;
         }
     }
 }

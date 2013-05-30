@@ -907,8 +907,8 @@ int main()
     //EdgeMatchingCrossValidation("oracles", Hitmap(), true);
     //printf("\n");
 
-    LocalFeatureTest("sketches", Test(), 1500);
-    printf("\n");
+    //LocalFeatureTest("sketches", Test(), 1500);
+    //printf("\n");
 
     //Batch("sketches", false);
     //Batch("oracles", true);
@@ -977,13 +977,20 @@ int main()
         for (int j = 0; j < ySep.cols; j++)
             line(image, Point(xSep[j], ySep.at<int>(i, j)), Point(xSep[j + 1], ySep.at<int>(i, j)), Scalar(0, 255, 0));*/
 
-    //for (auto point : points)
-    //{
-    //    circle(tmp, point, 1, Scalar(0, 255, 0));
-    //}
+    Mat img = imread("00002.png", CV_LOAD_IMAGE_GRAYSCALE);
+    vector<Point> points;
+    goodFeaturesToTrack(img, points, 10, 0.01, 10, noArray(), 3, true, 0.04);
 
-    //imshow("win", image);
-    //waitKey(0);
+    Mat tmp;
+    cvtColor(img, tmp, CV_GRAY2BGR);
+
+    for (auto point : points)
+    {
+        circle(tmp, point, 1, Scalar(0, 255, 0));
+    }
+
+    imshow("win", tmp);
+    waitKey(0);
 
     //system("pause");
 }
