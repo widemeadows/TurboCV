@@ -50,40 +50,13 @@ namespace Turbo.System.CS
 
     public class GHOG
     {
-        private static Mat<byte> GetBoundingBox(Mat<byte> src)
-        {
-            int minX = src.Cols - 1, maxX = 0,
-                minY = src.Rows - 1, maxY = 0;
-
-            for (int i = 0; i < src.Rows; i++)
-            {
-                for (int j = 0; j < src.Cols; j++)
-                {
-                    if (src[i, j] != byte.MinValue)
-                    {
-                        minX = Math.Min(minX, j);
-                        maxX = Math.Max(maxX, j);
-                        minY = Math.Min(minY, i);
-                        maxY = Math.Max(maxY, i);
-                    }
-                }
-            }
-
-            Mat<byte> dst = new Mat<byte>(maxY - minY + 1, maxX - minX + 1);
-            for (int i = minY; i <= maxY; i++)
-                for (int j = minX; j <= maxX; j++)
-                    dst[i - minY, j - minX] = src[i, j];
-
-            return dst;
-        }
-
         public static Mat<byte> Preprocess(Mat<byte> src, Size size, bool thinning = true)
         {
             Mat<byte> revImage = ImgProc.Reverse(src);
 
             Mat<byte> cleanedImage = BinaryImgProc.Clean(revImage, 3);
 
-            Mat<byte> boundingBox = GetBoundingBox(revImage);
+            Mat<byte> boundingBox = BinaryImgProc.GetBoundingBox(revImage);
 
             int widthPadding = 0, heightPadding = 0;
             if (boundingBox.Rows < boundingBox.Cols)
@@ -120,12 +93,18 @@ namespace Turbo.System.CS
             return finalImage;
         }
 
-        public static GlobalFeatureVec ExtractFeature(Mat<byte> src, bool normalize = true, 
-            int orientNum = 8, double blockRatio = 48.0 / 256.0)
+        public static GlobalFeatureVec GetFeatureWithPreprocess(Mat<byte> src,
+            bool normalize = true, int orientNum = 8, double blockRatio = 48.0 / 256.0)
         {
             src = Preprocess(src, new Size(256, 256));
-            int blockSize = (int)(blockRatio * 256);
 
+            return GetFeatureWithoutPreprocess(src, normalize, orientNum, blockRatio);
+        }
+
+        public static GlobalFeatureVec GetFeatureWithoutPreprocess(Mat<byte> src, 
+            bool normalize = true, int orientNum = 8, double blockRatio = 48.0 / 256.0)
+        {    
+            int blockSize = (int)(blockRatio * 256);
             List<Mat<double>> orientChannels = Filter.GetOrientChannels(src, orientNum);
             
             GlobalFeatureVec feature = new GlobalFeatureVec();

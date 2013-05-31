@@ -63,11 +63,11 @@ namespace ExperimentCS
 
             Parallel.For(0, train_images.Count, (i) =>
             {
-                train_features[i] = GHOG.ExtractFeature(train_images[i]);
+                train_features[i] = GHOG.GetFeatureWithoutPreprocess(train_images[i]);
             });
             Parallel.For(0, test_images.Count, (i) =>
             {
-                test_features[i] = GHOG.ExtractFeature(test_images[i]);
+                test_features[i] = GHOG.GetFeatureWithoutPreprocess(test_images[i]);
             });
 
             Console.WriteLine(KNN(train_features, train_labels, test_features, test_labels));

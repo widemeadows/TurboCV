@@ -309,6 +309,33 @@ namespace Turbo.System.CS
 
             return dst;
         }
+
+        public static Mat<byte> GetBoundingBox(Mat<byte> src, byte backgroundGrayLevel = byte.MinValue)
+        {
+            int minX = src.Cols - 1, maxX = 0,
+                minY = src.Rows - 1, maxY = 0;
+
+            for (int i = 0; i < src.Rows; i++)
+            {
+                for (int j = 0; j < src.Cols; j++)
+                {
+                    if (src[i, j] != backgroundGrayLevel)
+                    {
+                        minX = Math.Min(minX, j);
+                        maxX = Math.Max(maxX, j);
+                        minY = Math.Min(minY, i);
+                        maxY = Math.Max(maxY, i);
+                    }
+                }
+            }
+
+            Mat<byte> dst = new Mat<byte>(maxY - minY + 1, maxX - minX + 1);
+            for (int i = minY; i <= maxY; i++)
+                for (int j = minX; j <= maxX; j++)
+                    dst[i - minY, j - minX] = src[i, j];
+
+            return dst;
+        }
     }
 
     public class Filter
