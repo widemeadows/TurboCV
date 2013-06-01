@@ -350,6 +350,26 @@ namespace Turbo.System.CS
             return -x * Gauss(x, sigma) / Math.Pow(sigma, 2);
         }
 
+        public static Mat<double> GetGaussianKernel(double sigma, double epsilon = 1e-2)
+        {
+            int halfSize = (int)Math.Ceiling(sigma * Math.Sqrt(-2 * Math.Log(Math.Sqrt(2 * Math.PI) * sigma * epsilon)));
+            int size = halfSize * 2 + 1;
+            double sum = 0, root;
+            Mat<double> kernel = new Mat<double>(size, size);
+
+            for (int i = 0; i < size; i++)
+                for (int j = 0; j < size; j++)
+                    kernel[i, j] = Gauss(i - halfSize, sigma) * Gauss(j - halfSize, sigma);
+
+            root = Math.Sqrt(sum);
+            if (root > 0)
+                for (int i = 0; i < size; i++)
+                    for (int j = 0; j < size; j++)
+                        kernel[i, j] /= root;
+
+            return kernel;
+        }
+
         public static Tuple<Mat<double>, Mat<double>> GetGradientKernel(double sigma, double epsilon = 1e-2)
         {
             int halfSize = (int)Math.Ceiling(sigma * Math.Sqrt(-2 * Math.Log(Math.Sqrt(2 * Math.PI) * sigma * epsilon)));
@@ -382,24 +402,26 @@ namespace Turbo.System.CS
             return Tuple.Create(dx, dy);
         }
 
-        public static Mat<double> GetGaussianKernel(double sigma, double epsilon = 1e-2)
+        public static List<Mat<double>> GetHaarKernel(int size = 4)
         {
-            int halfSize = (int)Math.Ceiling(sigma * Math.Sqrt(-2 * Math.Log(Math.Sqrt(2 * Math.PI) * sigma * epsilon)));
-            int size = halfSize * 2 + 1;
-            double sum = 0, root;
-            Mat<double> kernel = new Mat<double>(size, size);
+            Mat<double> k1 = new Mat<double>(size, size), k2 = new Mat<double>(size, size);
 
             for (int i = 0; i < size; i++)
+            {
                 for (int j = 0; j < size; j++)
-                    kernel[i, j] = Gauss(i - halfSize, sigma) * Gauss(j - halfSize, sigma);
+                {
+                    if (i < size / 2)
+                        k2[j, i] = k1[i, j] = -1;
+                    else
+                        k2[j, i] = k1[i, j] = 1;
+                }
+            }
 
-            root = Math.Sqrt(sum);
-            if (root > 0)
-                for (int i = 0; i < size; i++)
-                    for (int j = 0; j < size; j++)
-                        kernel[i, j] /= root;
+            List<Mat<double>> result = new List<Mat<double>>();
+            result.Add(k1);
+            result.Add(k2);
 
-            return kernel;
+            return result;
         }
 
         public static Tuple<Mat<double>, Mat<double>> GetGradient(Mat<byte> image, double sigma = 1.0)
