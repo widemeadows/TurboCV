@@ -15,76 +15,102 @@ namespace ExperimentCS
         [STAThread]
         static void Main(string[] args)
         {
-            DirectoryInfo rootDir = new DirectoryInfo("oracles");
-            List<int> train_labels = new List<int>(),
-                      test_labels = new List<int>();
-            List<Mat<byte>> train_images = new List<Mat<byte>>(),
-                            test_images = new List<Mat<byte>>();
+            //DirectoryInfo rootDir = new DirectoryInfo("oracles");
+            //List<int> train_labels = new List<int>(),
+            //          test_labels = new List<int>();
+            //List<Mat<byte>> train_images = new List<Mat<byte>>(),
+            //                test_images = new List<Mat<byte>>();
 
-            int index = 1;
-            foreach (var dir in rootDir.GetDirectories())
+            //int index = 1;
+            //foreach (var dir in rootDir.GetDirectories())
+            //{
+            //    int counter = 0;
+            //    foreach (var file in dir.GetFiles())
+            //    {
+            //        BitmapSource bmp = new PngBitmapDecoder(new Uri(file.FullName),
+            //            BitmapCreateOptions.None, BitmapCacheOption.Default).Frames[0];
+
+            //        FormatConvertedBitmap formatedBmp = new FormatConvertedBitmap();
+            //        formatedBmp.BeginInit();
+            //        formatedBmp.Source = bmp;
+            //        formatedBmp.DestinationFormat = PixelFormats.Gray8;
+            //        formatedBmp.EndInit();
+
+            //        if (counter % 3 < 2)
+            //        {
+            //            train_images.Add(BitmapSourceToMat(formatedBmp));
+            //            train_labels.Add(index);
+            //        }
+            //        else
+            //        {
+            //            test_images.Add(BitmapSourceToMat(formatedBmp));
+            //            test_labels.Add(index);
+            //        }
+
+            //        counter++;
+            //    }
+
+            //    index++;
+            //}
+
+            //List<GlobalFeatureVec> train_features = new List<GlobalFeatureVec>(),
+            //                       test_features = new List<GlobalFeatureVec>();
+
+            //for (int i = 0; i < train_images.Count; i++)
+            //    train_features.Add(new GlobalFeatureVec());
+            //for (int i = 0; i < test_images.Count; i++)
+            //    test_features.Add(new GlobalFeatureVec());
+
+            //Parallel.For(0, train_images.Count, (i) =>
+            //{
+            //    train_features[i] = GHOG.GetFeatureWithoutPreprocess(train_images[i]);
+            //});
+            //Parallel.For(0, test_images.Count, (i) =>
+            //{
+            //    test_features[i] = GHOG.GetFeatureWithoutPreprocess(test_images[i]);
+            //});
+
+            //Console.WriteLine(KNN(train_features, train_labels, test_features, test_labels));
+
+            Uri uri = new Uri("00002.png", UriKind.Relative);
+            BitmapSource bmp = new PngBitmapDecoder(uri, BitmapCreateOptions.None,
+                BitmapCacheOption.Default).Frames[0];
+
+            FormatConvertedBitmap formatedBmp = new FormatConvertedBitmap();
+            formatedBmp.BeginInit();
+            formatedBmp.Source = bmp;
+            formatedBmp.DestinationFormat = PixelFormats.Gray8;
+            formatedBmp.EndInit();
+
+            Mat<byte> preprocessed = Feature.Preprocess(BitmapSourceToMat(formatedBmp), new Size(256, 256));
+            var channels = BinaryImgProc.SplitViaOrientation(preprocessed);
+            foreach (var channel in channels)
             {
-                int counter = 0;
-                foreach (var file in dir.GetFiles())
-                {
-                    BitmapSource bmp = new PngBitmapDecoder(new Uri(file.FullName),
-                        BitmapCreateOptions.None, BitmapCacheOption.Default).Frames[0];
-
-                    FormatConvertedBitmap formatedBmp = new FormatConvertedBitmap();
-                    formatedBmp.BeginInit();
-                    formatedBmp.Source = bmp;
-                    formatedBmp.DestinationFormat = PixelFormats.Gray8;
-                    formatedBmp.EndInit();
-
-                    if (counter % 3 < 2)
-                    {
-                        train_images.Add(BitmapSourceToMat(formatedBmp));
-                        train_labels.Add(index);
-                    }
-                    else
-                    {
-                        test_images.Add(BitmapSourceToMat(formatedBmp));
-                        test_labels.Add(index);
-                    }
-
-                    counter++;
-                }
-
-                index++;
+                ImageBox box = new ImageBox(MatToBitmapSource(channel));
+                box.ShowDialog();
             }
 
-            List<GlobalFeatureVec> train_features = new List<GlobalFeatureVec>(),
-                                   test_features = new List<GlobalFeatureVec>();
+            //int sigma = 9, lambda = 24, ksize = sigma * 6 + 1;
+            //Mat<double> filter = Filter.GetGaborKernel(new Size(ksize, ksize), sigma,
+            //        0, lambda, 1, 0);
 
-            for (int i = 0; i < train_images.Count; i++)
-                train_features.Add(new GlobalFeatureVec());
-            for (int i = 0; i < test_images.Count; i++)
-                test_features.Add(new GlobalFeatureVec());
+            //Mat<double> tmp = ImgProc.Filter2D(preprocessed, filter);
+            //Mat<byte> result = new Mat<byte>(tmp.Size);
+            //double max = double.MinValue, min = double.MaxValue;
+            //for (int i = 0; i < tmp.Rows; i++)
+            //    for (int j = 0; j < tmp.Cols; j++)
+            //    {
+            //        if (tmp[i, j] > max)
+            //            max = tmp[i, j];
+            //        if (tmp[i, j] < min)
+            //            min = tmp[i, j];
+            //    }
 
-            Parallel.For(0, train_images.Count, (i) =>
-            {
-                train_features[i] = GHOG.GetFeatureWithoutPreprocess(train_images[i]);
-            });
-            Parallel.For(0, test_images.Count, (i) =>
-            {
-                test_features[i] = GHOG.GetFeatureWithoutPreprocess(test_images[i]);
-            });
+            //for (int i = 0; i < tmp.Rows; i++)
+            //    for (int j = 0; j < tmp.Cols; j++)
+            //        result[i, j] = (byte)((tmp[i, j] - min) / (max - min) * 256);
 
-            Console.WriteLine(KNN(train_features, train_labels, test_features, test_labels));
-
-            //Uri uri = new Uri("00001.png", UriKind.Relative);
-            //BitmapSource bmp = new PngBitmapDecoder(uri, BitmapCreateOptions.None,
-            //    BitmapCacheOption.Default).Frames[0];
-
-            //FormatConvertedBitmap formatedBmp = new FormatConvertedBitmap();
-            //formatedBmp.BeginInit();
-            //formatedBmp.Source = bmp;
-            //formatedBmp.DestinationFormat = PixelFormats.Gray8;
-            //formatedBmp.EndInit();
-
-            //Mat<byte> mat = GHOG.Preprocess(BitmapSourceToMat(formatedBmp), new Size(256, 256));
-
-            //ImageBox box = new ImageBox(MatToBitmapSource(mat));
+            //ImageBox box = new ImageBox(MatToBitmapSource(result));
             //box.ShowDialog();
         }
 

@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Exocortex.DSP;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -19,10 +20,10 @@ namespace Turbo.System.CS
             return dst;
         }
 
-        public static Mat<byte> CopyMakeBorder(Mat<byte> src, int paddingTop, int paddingBottom, 
-            int paddingLeft, int paddingRight, byte paddingValue)
+        public static Mat<T> CopyMakeBorder<T>(Mat<T> src, int paddingTop, int paddingBottom, 
+            int paddingLeft, int paddingRight, T paddingValue) where T : IComparable<T>
         {
-            Mat<byte> dst = new Mat<byte>(src.Rows + paddingTop + paddingBottom, 
+            Mat<T> dst = new Mat<T>(src.Rows + paddingTop + paddingBottom, 
                 src.Cols + paddingLeft + paddingRight);
 
             dst.Set(paddingValue);
@@ -121,7 +122,7 @@ namespace Turbo.System.CS
             return dst;
         }
 
-        public static Mat<double> Convolve(Mat<byte> src, Mat<double> kernel, byte paddingValue = 0)
+        public static Mat<double> Convolve2D(Mat<byte> src, Mat<double> kernel, byte paddingValue = 0)
         {
             if (kernel.Rows % 2 != 1 || kernel.Cols % 2 != 1)
                 return new Mat<double>(src.Size);
@@ -148,6 +149,88 @@ namespace Turbo.System.CS
             }
 
             return dst;
+        }
+
+        public static Complex[] FFT2D(Mat<double> src)
+        {
+            Complex[] data = new Complex[src.Rows * src.Cols];
+
+            for (int i = 0; i < src.Rows; i++)
+                for (int j = 0; j < src.Cols; j++)
+                    data[i * src.Cols + j] = new Complex(src[i, j], 0);
+
+            Fourier.FFT2(data, src.Cols, src.Rows, FourierDirection.Forward);
+
+            return data;
+        }
+
+        public static Complex[] FFT2D(Mat<byte> src)
+        {
+            Complex[] data = new Complex[src.Rows * src.Cols];
+
+            for (int i = 0; i < src.Rows; i++)
+                for (int j = 0; j < src.Cols; j++)
+                    data[i * src.Cols + j] = new Complex(src[i, j], 0);
+
+            Fourier.FFT2(data, src.Cols, src.Rows, FourierDirection.Forward);
+
+            return data;
+        }
+
+        public static Mat<double> IFFT2D(Complex[] data, int rows, int cols)
+        {
+            Fourier.FFT2(data, cols, rows, FourierDirection.Backward);
+
+            Mat<double> result = new Mat<double>(rows, cols);
+            for (int i = 0; i < rows; i++)
+                for (int j = 0; j < cols; j++)
+                    result[i, j] = data[i * cols + j].Re / (rows * cols);
+
+            return result;
+        }
+
+        public static int AlignToPow2(int num)
+        {
+            int len = 0;
+
+            while ((1 << len) < num)
+                len++;
+
+            return 1 << len;
+        }
+
+        public static Mat<double> Filter2D(Mat<byte> src, Mat<double> kernel, byte paddingValue = 0)
+        {
+            if (src.Rows % 2 == 1 || src.Cols % 2 == 1 || 
+                kernel.Rows % 2 != 1 || kernel.Cols % 2 != 1)
+                return new Mat<double>(src.Size);
+
+            Size extSize = new Size(src.Rows + kernel.Rows - 1, src.Cols + kernel.Cols - 1);
+            extSize.Width = AlignToPow2(extSize.Width);
+            extSize.Height = AlignToPow2(extSize.Height);
+
+            Mat<byte> srcExt = CopyMakeBorder(src,
+                0, extSize.Height - src.Rows,
+                0, extSize.Width - src.Cols,
+                paddingValue);
+
+            Mat<double> kernelExt = CopyMakeBorder(kernel,
+                0, extSize.Height - kernel.Rows,
+                0, extSize.Width - kernel.Cols,
+                0);
+
+            Complex[] srcFFT = FFT2D(srcExt);
+            Complex[] kernelFFT = FFT2D(kernelExt);
+            for (int i = 0; i < srcFFT.Length; i++)
+                srcFFT[i] *= kernelFFT[i];
+
+            Mat<double> tmp = IFFT2D(srcFFT, srcExt.Rows, srcExt.Cols);
+            Mat<double> result = new Mat<double>(src.Size);
+            for (int i = 0; i < src.Rows; i++)
+                for (int j = 0; j < src.Cols; j++)
+                    result[i, j] = tmp[i + kernel.Rows / 2, j + kernel.Cols / 2];
+
+            return result;
         }
     }
 
@@ -310,7 +393,7 @@ namespace Turbo.System.CS
             return dst;
         }
 
-        public static Mat<byte> GetBoundingBox(Mat<byte> src, byte backgroundGrayLevel = byte.MinValue)
+        public static Mat<byte> GetBoundingBox(Mat<byte> src)
         {
             int minX = src.Cols - 1, maxX = 0,
                 minY = src.Rows - 1, maxY = 0;
@@ -319,7 +402,7 @@ namespace Turbo.System.CS
             {
                 for (int j = 0; j < src.Cols; j++)
                 {
-                    if (src[i, j] != backgroundGrayLevel)
+                    if (src[i, j] != byte.MinValue)
                     {
                         minX = Math.Min(minX, j);
                         maxX = Math.Max(maxX, j);
@@ -335,6 +418,72 @@ namespace Turbo.System.CS
                     dst[i - minY, j - minX] = src[i, j];
 
             return dst;
+        }
+
+        public static List<Point> GetEdgels(Mat<byte> src)
+        {
+            List<Point> edgels = new List<Point>();
+
+            for (int i = 0; i < src.Rows; i++)
+            {
+                for (int j = 0; j < src.Cols; j++)
+                {
+                    if (src[i, j] != byte.MinValue)
+                        edgels.Add(new Point(j, i));
+                }
+            }
+
+            return edgels;
+        }
+
+        public static List<Mat<byte>> SplitViaOrientation(Mat<byte> src, int orientNum = 4)
+        {
+            int sigma = 9, lambda = 24, ksize = sigma * 6 + 1;
+            List<Mat<double>> tmp = new List<Mat<double>>(orientNum);
+
+            for (int i = 0; i < orientNum; i++)
+            {
+                Mat<double> kernel = Filter.GetGaborKernel(new Size(ksize, ksize), sigma, 
+                    Math.PI / orientNum * i, lambda, 1, 0);
+
+                tmp.Add(ImgProc.Filter2D(src, kernel));
+            }
+
+            List<Mat<byte>> channels = new List<Mat<byte>>(orientNum);
+            for (int i = 0; i < orientNum; i++)
+            {
+                Mat<byte> channel = new Mat<byte>(src.Size);
+                channel.Set(byte.MinValue);
+
+                channels.Add(channel);
+            }
+
+            for (int i = 0; i < src.Rows; i++)
+            {
+                for (int j = 0; j < src.Cols; j++)
+                {
+                    if (src[i, j] != byte.MinValue)
+                    {
+                        double maxResponse = double.MinValue;
+                        int o = -1;
+
+                        for (int k = 0; k < orientNum; k++)
+                        {
+                            tmp[k][i, j] = Math.Abs(tmp[k][i, j]);
+
+                            if (tmp[k][i, j] > maxResponse)
+                            {
+                                maxResponse = tmp[k][i, j];
+                                o = k;
+                            }
+                        }
+
+                        channels[o][i, j] = src[i, j];
+                    }
+                }
+            }
+
+            return channels;
         }
     }
 
@@ -366,6 +515,50 @@ namespace Turbo.System.CS
                 for (int i = 0; i < size; i++)
                     for (int j = 0; j < size; j++)
                         kernel[i, j] /= root;
+
+            return kernel;
+        }
+
+        public static Mat<double> GetGaborKernel(Size ksize, double sigma, double theta, 
+            double lambd, double gamma, double psi)
+        {
+            double sigma_x = sigma, sigma_y = sigma / gamma;
+            int nstds = 3;
+            int xmin, xmax, ymin, ymax;
+            double c = Math.Cos(theta), s = Math.Sin(theta);
+            
+            if (ksize.Width > 0)
+                xmax = ksize.Width / 2;
+            else
+                xmax = (int)Math.Max(Math.Abs(nstds * sigma_x * c), Math.Abs(nstds * sigma_y * s));
+            
+            if (ksize.Height > 0)
+                ymax = ksize.Height / 2;
+            else
+                ymax = (int)Math.Max(Math.Abs(nstds * sigma_x * s), Math.Abs(nstds * sigma_y * c));
+               
+            xmin = -xmax;
+            ymin = -ymax;
+            
+            Mat<double> kernel = new Mat<double>(ymax - ymin + 1, xmax - xmin + 1);
+            double scale = 1 / (2 * Math.PI * sigma_x * sigma_y);
+            double ex = -0.5 / (sigma_x * sigma_x);
+            double ey = -0.5 / (sigma_y * sigma_y);
+            double cscale = Math.PI * 2 / lambd;
+
+            for (int y = ymin; y <= ymax; y++)
+            {
+                for (int x = xmin; x <= xmax; x++)
+                {
+                    double xr = x * c + y * s;
+                    double yr = -x * s + y * c;
+
+                    double v = scale * Math.Exp(ex * xr * xr + ey * yr * yr) *
+                        Math.Cos(cscale * xr + psi);
+
+                    kernel[ymax - y, xmax - x] = v;
+                }
+            }
 
             return kernel;
         }
@@ -402,33 +595,11 @@ namespace Turbo.System.CS
             return Tuple.Create(dx, dy);
         }
 
-        public static List<Mat<double>> GetHaarKernel(int size = 4)
-        {
-            Mat<double> k1 = new Mat<double>(size, size), k2 = new Mat<double>(size, size);
-
-            for (int i = 0; i < size; i++)
-            {
-                for (int j = 0; j < size; j++)
-                {
-                    if (i < size / 2)
-                        k2[j, i] = k1[i, j] = -1;
-                    else
-                        k2[j, i] = k1[i, j] = 1;
-                }
-            }
-
-            List<Mat<double>> result = new List<Mat<double>>();
-            result.Add(k1);
-            result.Add(k2);
-
-            return result;
-        }
-
         public static Tuple<Mat<double>, Mat<double>> GetGradient(Mat<byte> image, double sigma = 1.0)
         {
             Tuple<Mat<double>, Mat<double>> kernel = GetGradientKernel(sigma);
-            Mat<double> dxImage = ImgProc.Convolve(image, kernel.Item1);
-            Mat<double> dyImage = ImgProc.Convolve(image, kernel.Item2);
+            Mat<double> dxImage = ImgProc.Convolve2D(image, kernel.Item1);
+            Mat<double> dyImage = ImgProc.Convolve2D(image, kernel.Item2);
 
             Mat<double> orientImage = new Mat<double>(image.Size);
             for (int i = 0; i < image.Rows; i++)
@@ -499,7 +670,7 @@ namespace Turbo.System.CS
 
         public static Mat<byte> Blur(Mat<byte> image, double sigma = 1.0)
         {
-            Mat<double> tmp = ImgProc.Convolve(image, GetGaussianKernel(sigma));
+            Mat<double> tmp = ImgProc.Convolve2D(image, GetGaussianKernel(sigma));
 
             Mat<byte> result = new Mat<byte>(tmp.Size);
             for (int i = 0; i < result.Rows; i++)
