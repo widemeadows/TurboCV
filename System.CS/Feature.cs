@@ -203,20 +203,18 @@ namespace Turbo.System.CS
             return finalImage;
         }
 
-        public static GlobalFeatureVec GetFeatureWithPreprocess(Mat<byte> src,
-            bool normalize = true, int orientNum = 8, double blockRatio = 48.0 / 256.0)
+        public static GlobalFeatureVec GetFeatureWithPreprocess(Mat<byte> src)
         {
             src = Preprocess(src, new Size(256, 256));
 
-            return GetFeatureWithoutPreprocess(src, normalize, orientNum, blockRatio);
+            return GetFeatureWithoutPreprocess(src);
         }
 
-        public static GlobalFeatureVec GetFeatureWithoutPreprocess(Mat<byte> src,
-            bool normalize = true, int orientNum = 8, double blockRatio = 48.0 / 256.0)
+        public static GlobalFeatureVec GetFeatureWithoutPreprocess(Mat<byte> src)
         {
-            int blockSize = (int)(blockRatio * 256);
+            int blockSize = 32;
             int blockHalfSize = blockSize / 2;
-            Mat<byte> hasVisited = new Mat<byte>(blockSize, blockSize);
+            Mat<bool> hasVisited = new Mat<bool>(blockSize, blockSize);
 
             GlobalFeatureVec feature = new GlobalFeatureVec();
             for (int i = blockHalfSize - 1; i < src.Rows; i += blockSize)
@@ -228,7 +226,49 @@ namespace Turbo.System.CS
                         left = j - (blockHalfSize - 1),
                         right = j + blockHalfSize;
 
+                    int componentNum = 0, thred = 1;
+                    hasVisited.Set(false);
 
+                    for (int m = top; m <= bottom; m++)
+                    {
+                        for (int n = left; n <= right; n++)
+                        {
+                            if (!hasVisited[m, n] && src[m, n] != byte.MinValue)
+                            {
+                                Queue<Point> queue = new Queue<Point>();
+                                int count = 1;
+                                hasVisited[m, n] = true;
+                                queue.Enqueue(new Point(n, m));
+
+                                while (queue.Count != 0)
+                                {
+                                    Point cur = queue.Dequeue();
+
+                                    for (int p = -thred; p <= thred; p++)
+                                    {
+                                        for (int q = -thred; q <= thred; q++)
+                                        {
+                                            int newR = cur.Y + p, newC = cur.X + q;
+
+                                            if (newR >= top && newR <= bottom &&
+                                                newC >= left && newC <= right &&
+                                                !hasVisited[newR, newC])
+                                            {
+                                                hasVisited[newR, newC] = true;
+                                                queue.Enqueue(new Point(newC, newR));
+                                                count++;
+                                            }
+                                        }
+                                    }
+                                }
+
+                                if (count > 3)
+                                    componentNum++;
+                            }
+                        }
+                    }
+
+                    feature.Append(componentNum);
                 }
             }
 
