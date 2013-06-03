@@ -157,4 +157,82 @@ namespace Turbo.System.CS
             return feature;
         }
     }
+
+    public class CONN
+    {
+        public static Mat<byte> Preprocess(Mat<byte> src, Size size, bool thinning = true)
+        {
+            Mat<byte> revImage = ImgProc.Reverse(src);
+
+            Mat<byte> cleanedImage = BinaryImgProc.Clean(revImage, 3);
+
+            Mat<byte> boundingBox = BinaryImgProc.GetBoundingBox(revImage);
+
+            int widthPadding = 0, heightPadding = 0;
+            if (boundingBox.Rows < boundingBox.Cols)
+                heightPadding = (boundingBox.Cols - boundingBox.Rows) / 2;
+            else
+                widthPadding = (boundingBox.Rows - boundingBox.Cols) / 2;
+            Mat<byte> squareImage = ImgProc.CopyMakeBorder(boundingBox,
+                heightPadding, heightPadding, widthPadding, widthPadding, 0);
+
+            Size scaledSize = new Size((int)(size.Height - 2 * size.Height / 16.0),
+                (int)(size.Width - 2 * size.Width / 16.0));
+            Mat<byte> scaledImage = ImgProc.Resize(squareImage, scaledSize);
+
+            heightPadding = (size.Height - scaledSize.Height) / 2;
+            widthPadding = (size.Width - scaledSize.Width) / 2;
+            Mat<byte> paddedImage = ImgProc.CopyMakeBorder(scaledImage,
+                heightPadding, heightPadding, widthPadding, widthPadding, 0);
+
+            Mat<byte> finalImage = paddedImage.Clone();
+            for (int i = 0; i < finalImage.Rows; i++)
+            {
+                for (int j = 0; j < finalImage.Cols; j++)
+                {
+                    if (finalImage[i, j] > 54)
+                        finalImage[i, j] = byte.MaxValue;
+                    else
+                        finalImage[i, j] = 0;
+                }
+            }
+
+            if (thinning)
+                finalImage = BinaryImgProc.Thin(finalImage);
+
+            return finalImage;
+        }
+
+        public static GlobalFeatureVec GetFeatureWithPreprocess(Mat<byte> src,
+            bool normalize = true, int orientNum = 8, double blockRatio = 48.0 / 256.0)
+        {
+            src = Preprocess(src, new Size(256, 256));
+
+            return GetFeatureWithoutPreprocess(src, normalize, orientNum, blockRatio);
+        }
+
+        public static GlobalFeatureVec GetFeatureWithoutPreprocess(Mat<byte> src,
+            bool normalize = true, int orientNum = 8, double blockRatio = 48.0 / 256.0)
+        {
+            int blockSize = (int)(blockRatio * 256);
+            int blockHalfSize = blockSize / 2;
+            Mat<byte> hasVisited = new Mat<byte>(blockSize, blockSize);
+
+            GlobalFeatureVec feature = new GlobalFeatureVec();
+            for (int i = blockHalfSize - 1; i < src.Rows; i += blockSize)
+            {
+                for (int j = blockHalfSize - 1; j < src.Cols; j += blockSize)
+                {
+                    int top = i - (blockHalfSize - 1),
+                        bottom = i + blockHalfSize,
+                        left = j - (blockHalfSize - 1),
+                        right = j + blockHalfSize;
+
+
+                }
+            }
+
+            return feature;
+        }
+    }
 }
