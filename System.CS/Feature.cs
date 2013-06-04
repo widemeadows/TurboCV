@@ -165,70 +165,137 @@ namespace Turbo.System.CS
     {
         public static GlobalFeatureVec GetFeatureWithPreprocess(Mat<byte> src)
         {
-            src = Preprocess(src, new Size(128, 128), true);
+            src = Preprocess(src, new Size(256, 256), true);
 
             return GetFeatureWithoutPreprocess(src);
         }
 
         public static GlobalFeatureVec GetFeatureWithoutPreprocess(Mat<byte> src)
         {
-            int blockSize = 16;
-            int blockHalfSize = blockSize / 2;
-            Mat<bool> hasVisited = new Mat<bool>(src.Size);
-            hasVisited.Set(false);
-
             GlobalFeatureVec feature = new GlobalFeatureVec();
-            for (int i = blockHalfSize - 1; i < src.Rows; i += blockSize)
+            List<Mat<byte>> channels = BinaryImgProc.SplitViaOrientation(src, 4);
+            int blockSize = 128;
+            int blockHalfSize = blockSize / 2;
+            int radius = 5, minComponent = 20;
+
+            for (int i = 0; i < channels.Count; i++)
             {
-                for (int j = blockHalfSize - 1; j < src.Cols; j += blockSize)
+                Mat<bool> hasVisited = new Mat<bool>(channels[i].Size);
+
+                for (int j = blockHalfSize - 1; j < src.Rows; j += blockSize)
                 {
-                    int top = i - (blockHalfSize - 1),
-                        bottom = i + blockHalfSize,
-                        left = j - (blockHalfSize - 1),
-                        right = j + blockHalfSize;
-                    int componentNum = 0, thred = 4;
-
-                    for (int m = top; m <= bottom; m++)
+                    for (int k = blockHalfSize - 1; k < src.Cols; k += blockSize)
                     {
-                        for (int n = left; n <= right; n++)
+                        int top = j - (blockHalfSize - 1),
+                            bottom = j + blockHalfSize,
+                            left = k - (blockHalfSize - 1),
+                            right = k + blockHalfSize;
+                        int nComponent = 0;
+
+                        for (int m = top; m <= bottom; m++)
                         {
-                            if (!hasVisited[m, n] && src[m, n] != byte.MinValue)
+                            for (int n = left; n <= right; n++)
                             {
-                                Queue<Point> queue = new Queue<Point>();
-                                int count = 1;
-                                hasVisited[m, n] = true;
-                                queue.Enqueue(new Point(n, m));
-
-                                while (queue.Count != 0)
+                                if (!hasVisited[m, n] && src[m, n] != byte.MinValue)
                                 {
-                                    Point cur = queue.Dequeue();
+                                    Queue<Point> queue = new Queue<Point>();
+                                    int nPoint = 0;
 
-                                    for (int p = -thred; p <= thred; p++)
+                                    hasVisited[m, n] = true;
+                                    queue.Enqueue(new Point(n, m));
+                                    nPoint++;
+
+                                    while (queue.Count != 0)
                                     {
-                                        for (int q = -thred; q <= thred; q++)
-                                        {
-                                            int newR = cur.Y + p, newC = cur.X + q;
+                                        Point cur = queue.Dequeue();
 
-                                            if (newR >= top && newR <= bottom &&
-                                                newC >= left && newC <= right &&
-                                                !hasVisited[newR, newC])
+                                        for (int p = -radius; p <= radius; p++)
+                                        {
+                                            for (int q = -radius; q <= radius; q++)
                                             {
-                                                hasVisited[newR, newC] = true;
-                                                queue.Enqueue(new Point(newC, newR));
-                                                count++;
+                                                int newR = cur.Y + p, newC = cur.X + q;
+
+                                                if (newR >= top && newR <= bottom &&
+                                                    newC >= left && newC <= right &&
+                                                    !hasVisited[newR, newC] &&
+                                                    channels[i][newR, newC] != byte.MinValue)
+                                                {
+                                                    hasVisited[newR, newC] = true;
+                                                    queue.Enqueue(new Point(newC, newR));
+                                                    nPoint++;
+                                                }
                                             }
                                         }
                                     }
-                                }
 
-                                if (count > 3)
-                                    componentNum++;
+                                    if (nPoint > minComponent)
+                                        nComponent++;
+                                }
                             }
                         }
-                    }
 
-                    feature.Append(componentNum);
+                        feature.Append(nComponent);
+                    }
                 }
+            }
+
+            return feature;
+        }
+
+        public static GlobalFeatureVec GetFeatureWithoutPreprocess1(Mat<byte> src)
+        {
+            GlobalFeatureVec feature = new GlobalFeatureVec();
+            List<Mat<byte>> channels = BinaryImgProc.SplitViaOrientation(src, 4);
+            int radius = 5, minComponent = 20;
+
+            for (int i = 0; i < channels.Count; i++)
+            {
+                Mat<bool> hasVisited = new Mat<bool>(channels[i].Size);
+                int nComponent = 0;
+
+                for (int j = 0; j < channels[i].Rows; j++)
+                {
+                    for (int k = 0; k < channels[i].Cols; k++)
+                    {
+                        if (!hasVisited[j, k] && channels[i][j, k] != byte.MinValue)
+                        {
+                            Queue<Point> queue = new Queue<Point>();
+                            int nPoint = 0;
+
+                            hasVisited[j, k] = true;
+                            queue.Enqueue(new Point(k, j));
+                            nPoint++;
+
+                            while (queue.Count != 0)
+                            {
+                                Point cur = queue.Dequeue();
+
+                                for (int m = -radius; m <= radius; m++)
+                                {
+                                    for (int n = -radius; n <= radius; n++)
+                                    {
+                                        int newR = cur.Y + m, newC = cur.X + n;
+
+                                        if (newR >= 0 && newR < channels[i].Rows &&
+                                            newC >= 0 && newC < channels[i].Cols &&
+                                            !hasVisited[newR, newC] &&
+                                            channels[i][newR, newC] != byte.MinValue)
+                                        {
+                                            hasVisited[newR, newC] = true;
+                                            queue.Enqueue(new Point(newC, newR));
+                                            nPoint++;
+                                        }
+                                    }
+                                }
+                            }
+
+                            if (nPoint >= minComponent)
+                                nComponent++;
+                        }
+                    }
+                }
+
+                feature.Append(nComponent);
             }
 
             return feature;

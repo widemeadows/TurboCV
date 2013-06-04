@@ -625,17 +625,17 @@ namespace Turbo.System.CS
             return Tuple.Create(powerImage, orientImage);
         }
 
-        public static List<Mat<double>> GetOrientChannels(Mat<byte> sketchImage, int orientNum)
+        public static List<Mat<double>> GetOrientChannels(Mat<byte> src, int orientNum)
         {
-            Tuple<Mat<double>, Mat<double>> gradient = GetGradient(sketchImage);
+            Tuple<Mat<double>, Mat<double>> gradient = GetGradient(src);
             Mat<double> powerImage = gradient.Item1;
             Mat<double> orientImage = gradient.Item2;
-            int height = sketchImage.Rows, width = sketchImage.Cols;
+            int height = src.Rows, width = src.Cols;
             double orientBinSize = Math.PI / orientNum;
 
             List<Mat<double>> orientChannels = new List<Mat<double>>();
             for (int i = 0; i < orientNum; i++)
-                orientChannels.Add(new Mat<double>(sketchImage.Size));
+                orientChannels.Add(new Mat<double>(src.Size));
 
             for (int i = 0; i < height; i++)
             {

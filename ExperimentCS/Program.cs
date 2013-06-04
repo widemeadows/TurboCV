@@ -56,18 +56,18 @@ namespace ExperimentCS
             //List<GlobalFeatureVec> train_features = new List<GlobalFeatureVec>(),
             //                       test_features = new List<GlobalFeatureVec>();
 
-            //for (int i = 0; i < train_images.Count; i++)
+            //for (int j = 0; j < train_images.Count; j++)
             //    train_features.Add(new GlobalFeatureVec());
-            //for (int i = 0; i < test_images.Count; i++)
+            //for (int j = 0; j < test_images.Count; j++)
             //    test_features.Add(new GlobalFeatureVec());
 
-            //Parallel.For(0, train_images.Count, (i) =>
+            //Parallel.For(0, train_images.Count, (j) =>
             //{
-            //    train_features[i] = GHOG.GetFeatureWithoutPreprocess(train_images[i]);
+            //    train_features[j] = GHOG.GetFeatureWithoutPreprocess(train_images[j]);
             //});
-            //Parallel.For(0, test_images.Count, (i) =>
+            //Parallel.For(0, test_images.Count, (j) =>
             //{
-            //    test_features[i] = GHOG.GetFeatureWithoutPreprocess(test_images[i]);
+            //    test_features[j] = GHOG.GetFeatureWithoutPreprocess(test_images[j]);
             //});
 
             //Console.WriteLine(KNN(train_features, train_labels, test_features, test_labels));
@@ -97,18 +97,18 @@ namespace ExperimentCS
             //Mat<double> tmp = ImgProc.Filter2D(preprocessed, filter);
             //Mat<byte> result = new Mat<byte>(tmp.Size);
             //double max = double.MinValue, min = double.MaxValue;
-            //for (int i = 0; i < tmp.Rows; i++)
-            //    for (int j = 0; j < tmp.Cols; j++)
+            //for (int j = 0; j < tmp.Rows; j++)
+            //    for (int k = 0; k < tmp.Cols; k++)
             //    {
-            //        if (tmp[i, j] > max)
-            //            max = tmp[i, j];
-            //        if (tmp[i, j] < min)
-            //            min = tmp[i, j];
+            //        if (tmp[j, k] > max)
+            //            max = tmp[j, k];
+            //        if (tmp[j, k] < min)
+            //            min = tmp[j, k];
             //    }
 
-            //for (int i = 0; i < tmp.Rows; i++)
-            //    for (int j = 0; j < tmp.Cols; j++)
-            //        result[i, j] = (byte)((tmp[i, j] - min) / (max - min) * 256);
+            //for (int j = 0; j < tmp.Rows; j++)
+            //    for (int k = 0; k < tmp.Cols; k++)
+            //        result[j, k] = (byte)((tmp[j, k] - min) / (max - min) * 256);
 
             //ImageBox box = new ImageBox(MatToBitmapSource(result));
             //box.ShowDialog();
