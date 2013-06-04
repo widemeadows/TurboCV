@@ -30,9 +30,6 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="Exocortex.DSP">
-      <HintPath>.\Exocortex.DSP.dll</HintPath>
-    </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
     <Reference Include="System.Xml.Linq" />
@@ -44,6 +41,7 @@
   <ItemGroup>
     <Compile Include="Core.cs" />
     <Compile Include="Feature.cs" />
+    <Compile Include="FFT.cs" />
     <Compile Include="ImgProc.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>

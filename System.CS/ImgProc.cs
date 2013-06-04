@@ -1,5 +1,4 @@
-﻿using Exocortex.DSP;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -151,40 +150,36 @@ namespace Turbo.System.CS
             return dst;
         }
 
-        public static Complex[] FFT2D(Mat<double> src)
+        public static Complex[,] FFT2D(Mat<double> src)
         {
-            Complex[] data = new Complex[src.Rows * src.Cols];
+            Complex[,] data = new Complex[src.Rows, src.Cols];
 
             for (int i = 0; i < src.Rows; i++)
                 for (int j = 0; j < src.Cols; j++)
-                    data[i * src.Cols + j] = new Complex(src[i, j], 0);
+                    data[i, j] = new Complex(src[i, j], 0);
 
-            Fourier.FFT2(data, src.Cols, src.Rows, FourierDirection.Forward);
-
-            return data;
+            return Fourier.FFT2D(data, FourierDirection.Forward);
         }
 
-        public static Complex[] FFT2D(Mat<byte> src)
+        public static Complex[,] FFT2D(Mat<byte> src)
         {
-            Complex[] data = new Complex[src.Rows * src.Cols];
+            Complex[,] data = new Complex[src.Rows, src.Cols];
 
             for (int i = 0; i < src.Rows; i++)
                 for (int j = 0; j < src.Cols; j++)
-                    data[i * src.Cols + j] = new Complex(src[i, j], 0);
+                    data[i, j] = new Complex(src[i, j], 0);
 
-            Fourier.FFT2(data, src.Cols, src.Rows, FourierDirection.Forward);
-
-            return data;
+            return Fourier.FFT2D(data, FourierDirection.Forward);
         }
 
-        public static Mat<double> IFFT2D(Complex[] data, int rows, int cols)
+        public static Mat<double> IFFT2D(Complex[,] data, int rows, int cols)
         {
-            Fourier.FFT2(data, cols, rows, FourierDirection.Backward);
+            data = Fourier.FFT2D(data, FourierDirection.Backward);
 
             Mat<double> result = new Mat<double>(rows, cols);
             for (int i = 0; i < rows; i++)
                 for (int j = 0; j < cols; j++)
-                    result[i, j] = data[i * cols + j].Re / (rows * cols);
+                    result[i, j] = data[i, j].real;
 
             return result;
         }
@@ -219,10 +214,11 @@ namespace Turbo.System.CS
                 0, extSize.Width - kernel.Cols,
                 0);
 
-            Complex[] srcFFT = FFT2D(srcExt);
-            Complex[] kernelFFT = FFT2D(kernelExt);
-            for (int i = 0; i < srcFFT.Length; i++)
-                srcFFT[i] *= kernelFFT[i];
+            Complex[,] srcFFT = FFT2D(srcExt);
+            Complex[,] kernelFFT = FFT2D(kernelExt);
+            for (int i = 0; i < srcExt.Rows; i++)
+                for (int j = 0; j < srcExt.Cols; j++)
+                    srcFFT[i, j] *= kernelFFT[i, j];
 
             Mat<double> tmp = IFFT2D(srcFFT, srcExt.Rows, srcExt.Cols);
             Mat<double> result = new Mat<double>(src.Size);

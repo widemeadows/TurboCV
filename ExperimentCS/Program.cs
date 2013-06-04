@@ -93,6 +93,10 @@ namespace ExperimentCS
             //int sigma = 9, lambda = 24, ksize = sigma * 6 + 1;
             //Mat<double> filter = Filter.GetGaborKernel(new Size(ksize, ksize), sigma,
             //        0, lambda, 1, 0);
+            //Mat<double> filter = new Mat<double>(5, 5);
+            //for (int i = 0; i < filter.Rows; i++)
+            //    for (int j = 0; j < filter.Cols; j++)
+            //        filter[i, j] = 1.0 / (filter.Rows * filter.Cols);
 
             //Mat<double> tmp = ImgProc.Filter2D(preprocessed, filter);
             //Mat<byte> result = new Mat<byte>(tmp.Size);
