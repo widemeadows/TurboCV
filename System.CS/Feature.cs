@@ -97,17 +97,16 @@ namespace Turbo.System.CS
     public class GHOG : Feature
     {
         public static GlobalFeatureVec GetFeatureWithPreprocess(Mat<byte> src,
-            bool normalize = true, int orientNum = 8, double blockRatio = 48.0 / 256.0)
+            int orientNum = 8, bool normalize = true, int blockSize = 48, int preSize = 256)
         {
-            src = Preprocess(src, new Size(256, 256), true);
+            src = Preprocess(src, new Size(preSize, preSize), true);
 
-            return GetFeatureWithoutPreprocess(src, normalize, orientNum, blockRatio);
+            return GetFeatureWithoutPreprocess(src, orientNum, normalize, blockSize);
         }
 
-        public static GlobalFeatureVec GetFeatureWithoutPreprocess(Mat<byte> src, 
-            bool normalize = true, int orientNum = 8, double blockRatio = 48.0 / 256.0)
+        public static GlobalFeatureVec GetFeatureWithoutPreprocess(Mat<byte> src,
+            int orientNum = 8, bool normalize = true, int blockSize = 48)
         {    
-            int blockSize = (int)(blockRatio * 256);
             List<Mat<double>> orientChannels = Filter.GetOrientChannels(src, orientNum);
             
             GlobalFeatureVec feature = new GlobalFeatureVec();
@@ -163,20 +162,20 @@ namespace Turbo.System.CS
 
     public class CONN : Feature
     {
-        public static GlobalFeatureVec GetFeatureWithPreprocess(Mat<byte> src)
+        public static GlobalFeatureVec GetFeatureWithPreprocess(Mat<byte> src,
+            int minComponent = 20, int radius = 5, int blockSize = 128, int preSize = 256)
         {
-            src = Preprocess(src, new Size(256, 256), true);
+            src = Preprocess(src, new Size(preSize, preSize), true);
 
-            return GetFeatureWithoutPreprocess(src);
+            return GetFeatureWithoutPreprocess(src, minComponent, radius, blockSize);
         }
 
-        public static GlobalFeatureVec GetFeatureWithoutPreprocess(Mat<byte> src)
+        public static GlobalFeatureVec GetFeatureWithoutPreprocess(Mat<byte> src,
+            int minComponent = 20, int radius = 5, int blockSize = 128)
         {
             GlobalFeatureVec feature = new GlobalFeatureVec();
             List<Mat<byte>> channels = BinaryImgProc.SplitViaOrientation(src, 4);
-            int blockSize = 128;
             int blockHalfSize = blockSize / 2;
-            int radius = 5, minComponent = 20;
 
             for (int i = 0; i < channels.Count; i++)
             {
@@ -237,65 +236,6 @@ namespace Turbo.System.CS
                         feature.Append(nComponent);
                     }
                 }
-            }
-
-            return feature;
-        }
-
-        public static GlobalFeatureVec GetFeatureWithoutPreprocess1(Mat<byte> src)
-        {
-            GlobalFeatureVec feature = new GlobalFeatureVec();
-            List<Mat<byte>> channels = BinaryImgProc.SplitViaOrientation(src, 4);
-            int radius = 5, minComponent = 20;
-
-            for (int i = 0; i < channels.Count; i++)
-            {
-                Mat<bool> hasVisited = new Mat<bool>(channels[i].Size);
-                int nComponent = 0;
-
-                for (int j = 0; j < channels[i].Rows; j++)
-                {
-                    for (int k = 0; k < channels[i].Cols; k++)
-                    {
-                        if (!hasVisited[j, k] && channels[i][j, k] != byte.MinValue)
-                        {
-                            Queue<Point> queue = new Queue<Point>();
-                            int nPoint = 0;
-
-                            hasVisited[j, k] = true;
-                            queue.Enqueue(new Point(k, j));
-                            nPoint++;
-
-                            while (queue.Count != 0)
-                            {
-                                Point cur = queue.Dequeue();
-
-                                for (int m = -radius; m <= radius; m++)
-                                {
-                                    for (int n = -radius; n <= radius; n++)
-                                    {
-                                        int newR = cur.Y + m, newC = cur.X + n;
-
-                                        if (newR >= 0 && newR < channels[i].Rows &&
-                                            newC >= 0 && newC < channels[i].Cols &&
-                                            !hasVisited[newR, newC] &&
-                                            channels[i][newR, newC] != byte.MinValue)
-                                        {
-                                            hasVisited[newR, newC] = true;
-                                            queue.Enqueue(new Point(newC, newR));
-                                            nPoint++;
-                                        }
-                                    }
-                                }
-                            }
-
-                            if (nPoint >= minComponent)
-                                nComponent++;
-                        }
-                    }
-                }
-
-                feature.Append(nComponent);
             }
 
             return feature;
