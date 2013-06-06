@@ -435,15 +435,18 @@ namespace Turbo.System.CS
         public static List<Mat<byte>> SplitViaOrientation(Mat<byte> src, int orientNum = 4)
         {
             int sigma = 9, lambda = 24, ksize = sigma * 6 + 1;
-            List<Mat<double>> tmp = new List<Mat<double>>(orientNum);
 
+            List<Mat<double>> tmp = new List<Mat<double>>(orientNum);
             for (int i = 0; i < orientNum; i++)
+                tmp.Add(null);
+
+            Parallel.For(0, orientNum, (i) =>
             {
-                Mat<double> kernel = Filter.GetGaborKernel(new Size(ksize, ksize), sigma, 
+                Mat<double> kernel = Filter.GetGaborKernel(new Size(ksize, ksize), sigma,
                     Math.PI / orientNum * i, lambda, 1, 0);
 
-                tmp.Add(ImgProc.Filter2D(src, kernel));
-            }
+                tmp[i] = ImgProc.Filter2D(src, kernel);
+            });
 
             List<Mat<byte>> channels = new List<Mat<byte>>(orientNum);
             for (int i = 0; i < orientNum; i++)

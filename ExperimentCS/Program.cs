@@ -72,7 +72,7 @@ namespace ExperimentCS
 
             //Console.WriteLine(KNN(train_features, train_labels, test_features, test_labels));
 
-            Uri uri = new Uri("00002.png", UriKind.Relative);
+            Uri uri = new Uri("00006.png", UriKind.Relative);
             BitmapSource bmp = new PngBitmapDecoder(uri, BitmapCreateOptions.None,
                 BitmapCacheOption.Default).Frames[0];
 
@@ -83,7 +83,7 @@ namespace ExperimentCS
             formatedBmp.EndInit();
 
             Mat<byte> preprocessed = Feature.Preprocess(BitmapSourceToMat(formatedBmp), new Size(256, 256));
-            var channels = BinaryImgProc.SplitViaOrientation(preprocessed);
+            var channels = BinaryImgProc.SplitViaOrientation(preprocessed, 8);
             foreach (var channel in channels)
             {
                 ImageBox box = new ImageBox(MatToBitmapSource(channel));

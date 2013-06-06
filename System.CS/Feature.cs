@@ -163,7 +163,7 @@ namespace Turbo.System.CS
     public class CONN : Feature
     {
         public static GlobalFeatureVec GetFeatureWithPreprocess(Mat<byte> src,
-            int minComponent = 20, int radius = 5, int blockSize = 128, int preSize = 256)
+            int minComponent = 10, int radius = 7, int blockSize = 128, int preSize = 256)
         {
             src = Preprocess(src, new Size(preSize, preSize), true);
 
@@ -171,70 +171,83 @@ namespace Turbo.System.CS
         }
 
         public static GlobalFeatureVec GetFeatureWithoutPreprocess(Mat<byte> src,
-            int minComponent = 20, int radius = 5, int blockSize = 128)
+            int minComponent = 10, int radius = 7, int blockSize = 128)
         {
             GlobalFeatureVec feature = new GlobalFeatureVec();
-            List<Mat<byte>> channels = BinaryImgProc.SplitViaOrientation(src, 4);
-            int blockHalfSize = blockSize / 2;
+            List<Mat<byte>> channels = BinaryImgProc.SplitViaOrientation(src, 8);
 
             for (int i = 0; i < channels.Count; i++)
             {
-                Mat<bool> hasVisited = new Mat<bool>(channels[i].Size);
+                int curBlockSize = blockSize;
 
-                for (int j = blockHalfSize - 1; j < src.Rows; j += blockSize)
+                // Use '||' instead of '&&' is on purpose
+                while (curBlockSize <= src.Rows || curBlockSize <= src.Cols)
                 {
-                    for (int k = blockHalfSize - 1; k < src.Cols; k += blockSize)
+                    int curBlockHalfSize = curBlockSize / 2;
+                    Mat<bool> hasVisited = new Mat<bool>(channels[i].Size);
+
+                    for (int j = curBlockHalfSize - 1; j < src.Rows - 1; j += curBlockSize)
                     {
-                        int top = j - (blockHalfSize - 1),
-                            bottom = j + blockHalfSize,
-                            left = k - (blockHalfSize - 1),
-                            right = k + blockHalfSize;
-                        int nComponent = 0;
-
-                        for (int m = top; m <= bottom; m++)
+                        for (int k = curBlockHalfSize - 1; k < src.Cols - 1; k += curBlockSize)
                         {
-                            for (int n = left; n <= right; n++)
+                            int top = j - (curBlockHalfSize - 1),
+                                bottom = j + curBlockHalfSize,
+                                left = k - (curBlockHalfSize - 1),
+                                right = k + curBlockHalfSize;
+                            top = top < 0 ? 0 : top;
+                            bottom = bottom >= src.Rows ? src.Rows - 1 : bottom;
+                            left = left < 0 ? 0 : left;
+                            right = right >= src.Cols ? src.Cols - 1 : right;
+
+                            int nComponent = 0;
+
+                            for (int m = top; m <= bottom; m++)
                             {
-                                if (!hasVisited[m, n] && src[m, n] != byte.MinValue)
+                                for (int n = left; n <= right; n++)
                                 {
-                                    Queue<Point> queue = new Queue<Point>();
-                                    int nPoint = 0;
-
-                                    hasVisited[m, n] = true;
-                                    queue.Enqueue(new Point(n, m));
-                                    nPoint++;
-
-                                    while (queue.Count != 0)
+                                    if (!hasVisited[m, n] && channels[i][m, n] != byte.MinValue)
                                     {
-                                        Point cur = queue.Dequeue();
+                                        Queue<Point> queue = new Queue<Point>();
+                                        int nPoint = 0;
 
-                                        for (int p = -radius; p <= radius; p++)
+                                        hasVisited[m, n] = true;
+                                        queue.Enqueue(new Point(n, m));
+                                        nPoint++;
+
+                                        while (queue.Count != 0)
                                         {
-                                            for (int q = -radius; q <= radius; q++)
-                                            {
-                                                int newR = cur.Y + p, newC = cur.X + q;
+                                            Point cur = queue.Dequeue();
 
-                                                if (newR >= top && newR <= bottom &&
-                                                    newC >= left && newC <= right &&
-                                                    !hasVisited[newR, newC] &&
-                                                    channels[i][newR, newC] != byte.MinValue)
+                                            for (int p = -radius; p <= radius; p++)
+                                            {
+                                                for (int q = -radius; q <= radius; q++)
                                                 {
-                                                    hasVisited[newR, newC] = true;
-                                                    queue.Enqueue(new Point(newC, newR));
-                                                    nPoint++;
+                                                    int newR = cur.Y + p, newC = cur.X + q;
+
+                                                    if (newR >= top && newR <= bottom &&
+                                                        newC >= left && newC <= right &&
+                                                        !hasVisited[newR, newC] &&
+                                                        channels[i][newR, newC] != byte.MinValue)
+                                                    {
+                                                        hasVisited[newR, newC] = true;
+                                                        queue.Enqueue(new Point(newC, newR));
+                                                        nPoint++;
+                                                    }
                                                 }
                                             }
                                         }
-                                    }
 
-                                    if (nPoint > minComponent)
-                                        nComponent++;
+                                        if (nPoint > minComponent)
+                                            nComponent++;
+                                    }
                                 }
                             }
-                        }
 
-                        feature.Append(nComponent);
+                            feature.Append(nComponent);
+                        }
                     }
+
+                    curBlockSize *= 2;
                 }
             }
 
