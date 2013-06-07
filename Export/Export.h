@@ -92,3 +92,18 @@ EXPORT_API ArrayList<NativeHistogram> LocalFeaturePredict(
     const ArrayList<NativeMat>& images, 
     const ArrayList<NativeWord>& words, 
     bool thinning);
+
+
+enum GlobalFeatureType { EPT_GHOG, EPT_GIST };
+
+typedef ArrayList<double> NativeVec;
+
+EXPORT_API NativeVec GlobalFeaturePredict(
+	GlobalFeatureType type, 
+	const NativeMat& image, 
+	bool thinning);
+
+EXPORT_API ArrayList<NativeVec> GlobalFeaturePredict(
+	GlobalFeatureType type, 
+	const ArrayList<NativeMat>& images, 
+	bool thinning);

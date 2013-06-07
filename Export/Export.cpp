@@ -179,3 +179,40 @@ EXPORT_API ArrayList<NativeHistogram> LocalFeaturePredict(
 
     return histograms;
 }
+
+EXPORT_API NativeVec GlobalFeaturePredict(
+	GlobalFeatureType type, 
+	const NativeMat& image, 
+	bool thinning)
+{
+	GlobalFeatureVec feature;
+	cv::Mat cvImage = ConvertNativeMatToCvMat(image, uchar());
+
+	switch (type)
+	{
+	case EPT_GHOG:
+		feature = GHOG().GetFeatureWithPreprocess(cvImage, thinning);
+		break;
+	case EPT_GIST:
+		feature = GIST().GetFeatureWithPreprocess(cvImage, thinning);
+		break;
+	default:
+		break;
+	}
+
+	return feature;
+}
+
+EXPORT_API ArrayList<NativeVec> GlobalFeaturePredict(
+	GlobalFeatureType type, 
+	const ArrayList<NativeMat>& images, 
+	bool thinning)
+{
+	ArrayList<NativeVec> vecs(images.Count());
+
+	#pragma omp parallel for
+	for (int i = 0; i < images.Count(); i++)
+		vecs[i] = GlobalFeaturePredict(type, images[i], thinning);
+
+	return vecs;
+}

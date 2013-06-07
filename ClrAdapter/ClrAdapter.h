@@ -362,4 +362,78 @@ namespace ClrAdapter {
             return histogram;
         }
     };
+
+	public ref class GlobalFeature
+	{
+	public:
+		enum class Type
+		{
+			GHOG,
+			GIST
+		};
+
+		typedef List<double> Vec; 
+
+		static List<Vec^>^ Train(Type type, List<Mat<uchar>^>^ images, bool thinning)
+		{
+			GlobalFeatureType nativeType;
+
+			switch (type)
+			{
+			case Type::GHOG:
+				nativeType = EPT_GHOG;
+				break;
+			case Type::GIST:
+				nativeType = EPT_GIST;
+				break;
+			default:
+				break;
+			}
+
+			ArrayList<NativeMat> nativeMats;
+			for (int i = 0; i < images->Count; i++)
+				nativeMats.Add(Convertor::ToNativeMat(images[i]));
+
+			ArrayList<NativeVec> nativeVecs = 
+				GlobalFeaturePredict(nativeType, nativeMats, thinning);
+
+			List<Vec^>^ vecs = gcnew List<Vec^>();
+			for (int i = 0; i < nativeVecs.Count(); i++)
+			{
+				Vec^ vec = gcnew Vec();
+				for (int j = 0; j < nativeVecs[i].Count(); j++)
+					vec->Add(nativeVecs[i][j]);
+
+				vecs->Add(vec);
+			}
+
+			return vecs;
+		}
+
+		static Vec^ GetGlobalFeature(Type type, Mat<uchar>^ image, bool thinning)
+		{
+			GlobalFeatureType nativeType;
+
+			switch (type)
+			{
+			case Type::GHOG:
+				nativeType = EPT_GHOG;
+				break;
+			case Type::GIST:
+				nativeType = EPT_GIST;
+				break;
+			default:
+				break;
+			}
+
+			NativeVec nativeVec = 
+				GlobalFeaturePredict(nativeType, Convertor::ToNativeMat(image), thinning);
+
+			Vec^ vec = gcnew Vec();
+			for (int i = 0; i < nativeVec.Count(); i++)
+				vec->Add(nativeVec[i]);
+
+			return vec;
+		}
+	};
 }
