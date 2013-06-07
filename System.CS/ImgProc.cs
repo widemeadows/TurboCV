@@ -562,7 +562,7 @@ namespace Turbo.System.CS
             return kernel;
         }
 
-        public static Tuple<Mat<double>, Mat<double>> GetGradientKernel(double sigma, double epsilon = 1e-2)
+        public static Group<Mat<double>, Mat<double>> GetGradientKernel(double sigma, double epsilon = 1e-2)
         {
             int halfSize = (int)Math.Ceiling(sigma * Math.Sqrt(-2 * Math.Log(Math.Sqrt(2 * Math.PI) * sigma * epsilon)));
             int size = halfSize * 2 + 1;
@@ -591,12 +591,12 @@ namespace Turbo.System.CS
                 }
             }
             
-            return Tuple.Create(dx, dy);
+            return Group.Create(dx, dy);
         }
 
-        public static Tuple<Mat<double>, Mat<double>> GetGradient(Mat<byte> image, double sigma = 1.0)
+        public static Group<Mat<double>, Mat<double>> GetGradient(Mat<byte> image, double sigma = 1.0)
         {
-            Tuple<Mat<double>, Mat<double>> kernel = GetGradientKernel(sigma);
+            Group<Mat<double>, Mat<double>> kernel = GetGradientKernel(sigma);
             Mat<double> dxImage = ImgProc.Convolve2D(image, kernel.Item1);
             Mat<double> dyImage = ImgProc.Convolve2D(image, kernel.Item2);
 
@@ -621,12 +621,12 @@ namespace Turbo.System.CS
                     powerImage[i, j] = Math.Sqrt(
                         dyImage[i, j] * dyImage[i, j] + dxImage[i, j] * dxImage[i, j]);
 
-            return Tuple.Create(powerImage, orientImage);
+            return Group.Create(powerImage, orientImage);
         }
 
         public static List<Mat<double>> GetOrientChannels(Mat<byte> src, int orientNum)
         {
-            Tuple<Mat<double>, Mat<double>> gradient = GetGradient(src);
+            Group<Mat<double>, Mat<double>> gradient = GetGradient(src);
             Mat<double> powerImage = gradient.Item1;
             Mat<double> orientImage = gradient.Item2;
             int height = src.Rows, width = src.Cols;

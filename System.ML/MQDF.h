@@ -141,7 +141,7 @@ namespace TurboCV
                     for (int i = 0; i < sample.Count(); i++)
                         x.at<double>(0, i) = sample[i];
 
-                    ArrayList<Tuple<double, int>> distanceAndLabels;
+                    ArrayList<Group<double, int>> distanceAndLabels;
 
                     for (auto item : _mapping)
                     {
@@ -153,7 +153,7 @@ namespace TurboCV
                         double distance = ((cv::Mat)(dif * _invCovariance[index] * dif.t())).
                             at<float>(0, 0) - 2 * _weights[index] /*+ _detCovariance[index]*/;
 
-                        distanceAndLabels.Add(CreateTuple(distance, item.first));
+                        distanceAndLabels.Add(CreateGroup(distance, item.first));
                     }
 
                     return Math::Min(distanceAndLabels).Item2();

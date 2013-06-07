@@ -14,14 +14,14 @@ namespace System
         class Gradient
         {
         public:
-            static Tuple<Mat, Mat> GetGradientKernel(double sigma, double epsilon);
+            static Group<Mat, Mat> GetGradientKernel(double sigma, double epsilon);
 
-            static Tuple<Mat, Mat> Gradient::GetGradient(const Mat& image, double sigma = 1.0);
+            static Group<Mat, Mat> Gradient::GetGradient(const Mat& image, double sigma = 1.0);
 
             static ArrayList<Mat> Gradient::GetOrientChannels(const Mat& sketchImage, int orientNum);
         };
 
-        inline Tuple<Mat, Mat> Gradient::GetGradientKernel(double sigma, double epsilon)
+        inline Group<Mat, Mat> Gradient::GetGradientKernel(double sigma, double epsilon)
         {
             int halfSize = (int)ceil(sigma * sqrt(-2 * log(sqrt(2 * CV_PI) * sigma * epsilon)));
             int size = halfSize * 2 + 1;
@@ -52,12 +52,12 @@ namespace System
 				}
 			}
 
-            return CreateTuple(dx, dy);
+            return CreateGroup(dx, dy);
         }
 
-        inline Tuple<Mat, Mat> Gradient::GetGradient(const Mat& image, double sigma)
+        inline Group<Mat, Mat> Gradient::GetGradient(const Mat& image, double sigma)
         {
-            Tuple<Mat, Mat> kernel = GetGradientKernel(sigma, 1e-2);
+            Group<Mat, Mat> kernel = GetGradientKernel(sigma, 1e-2);
             Mat dxImage, dyImage;
             filter2D(image, dxImage, CV_64F, kernel.Item1());
             filter2D(image, dyImage, CV_64F, kernel.Item2());
@@ -84,12 +84,12 @@ namespace System
                         dyImage.at<double>(i, j) * dyImage.at<double>(i, j) +
                         dxImage.at<double>(i, j) * dxImage.at<double>(i, j));
 
-            return CreateTuple(powerImage, orientImage);
+            return CreateGroup(powerImage, orientImage);
         }
 
         inline ArrayList<Mat> Gradient::GetOrientChannels(const Mat& sketchImage, int orientNum)
         {
-            Tuple<Mat, Mat> gradient = GetGradient(sketchImage);
+            Group<Mat, Mat> gradient = GetGradient(sketchImage);
             Mat& powerImage = gradient.Item1();
             Mat& orientImage = gradient.Item2();
             int height = sketchImage.rows, width = sketchImage.cols;

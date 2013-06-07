@@ -117,9 +117,9 @@ private:
         #pragma omp parallel for
         for (int i = 0; i < samples.Count(); i++)
         {
-            ArrayList<Tuple<double, int>> distanceAndIndexes(samples.Count());
+            ArrayList<Group<double, int>> distanceAndIndexes(samples.Count());
             for (int j = 0; j < samples.Count(); j++)
-                distanceAndIndexes[j] = CreateTuple(distanceMatrix.at<double>(i, j), j);
+                distanceAndIndexes[j] = CreateGroup(distanceMatrix.at<double>(i, j), j);
 
             std::sort(distanceAndIndexes.begin(), distanceAndIndexes.end());
 

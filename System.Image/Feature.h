@@ -789,7 +789,7 @@ namespace System
             ArrayList<Point> points = GetEdgels(sketchImage);
             ArrayList<Point> pivots = SampleFromPoints(points, (size_t)(points.Count() * 0.33));
 
-            Tuple<Mat, Mat> gradient = Gradient::GetGradient(sketchImage);
+            Group<Mat, Mat> gradient = Gradient::GetGradient(sketchImage);
             Mat& powerImage = gradient.Item1();
             Mat& orientImage = gradient.Item2();
 
@@ -1215,7 +1215,7 @@ namespace System
         ///////////////////////////////////////////////////////////////////////
 
         // Points Based Regularly Sampling Shape Context
-        class PRSC : public LocalFeature
+        class RPSC : public LocalFeature
         {
         public:
             virtual LocalFeatureVec GetFeature(const Mat& sketchImage);
@@ -1227,7 +1227,7 @@ namespace System
                 const ArrayList<Point>& points, const ArrayList<double>& logDistances, int angleNum);
         };
 
-        inline LocalFeatureVec PRSC::GetFeature(const Mat& sketchImage)
+        inline LocalFeatureVec RPSC::GetFeature(const Mat& sketchImage)
         {
             double tmp[] = { 0, 0.125, 0.25, 0.5, 1, 2 };
             ArrayList<double> logDistances(tmp, tmp + sizeof(tmp) / sizeof(double));
@@ -1247,7 +1247,7 @@ namespace System
             return feature;
         }
 
-        inline Descriptor PRSC::GetDescriptor(const Point& center, 
+        inline Descriptor RPSC::GetDescriptor(const Point& center, 
             const ArrayList<Point>& points, const ArrayList<double>& logDistances, int angleNum)
         {
             int pointNum = points.Count();

@@ -89,7 +89,7 @@ namespace System
             size_t pointNum = points.Count();
             assert(pointNum >= samplingNum);
 
-            ArrayList<Tuple<double, Tuple<Point, Point>>> distances(pointNum * (pointNum - 1) / 2);
+            ArrayList<Group<double, Group<Point, Point>>> distances(pointNum * (pointNum - 1) / 2);
             std::unordered_set<Point, PointHash> pivots;
 
             int counter = 0;
@@ -98,8 +98,8 @@ namespace System
                 for (size_t j = i + 1; j < pointNum; j++)
                 {
                     double distance = Geometry::EulerDistance(points[i], points[j]);
-                    distances[counter++] = CreateTuple(distance, 
-                        CreateTuple(points[i], points[j]));
+                    distances[counter++] = CreateGroup(distance, 
+                        CreateGroup(points[i], points[j]));
                 }
                 pivots.insert(points[i]);
             }
@@ -108,7 +108,7 @@ namespace System
             int ptr = 0;
             while (pivots.size() > samplingNum)
             {
-                Tuple<Point, Point> pointPair = distances[ptr++].Item2();
+                Group<Point, Point> pointPair = distances[ptr++].Item2();
                 if (pivots.find(pointPair.Item1()) != pivots.end() &&
                     pivots.find(pointPair.Item2()) != pivots.end())
                     pivots.erase(pointPair.Item2());

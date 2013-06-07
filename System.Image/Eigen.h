@@ -71,9 +71,9 @@ namespace System
             eigen2cv(Eigen::MatrixXd(eigenSolver.eigenvalues().real()), eigenVectors);
             eigen2cv(Eigen::MatrixXd(eigenSolver.eigenvalues().real()), eigenValues);
 
-            ArrayList<Tuple<double, int>> valueAndIndexes;
+            ArrayList<Group<double, int>> valueAndIndexes;
             for (int i = 0; i < eigenValues.rows; i++)
-                valueAndIndexes.Add(CreateTuple(eigenValues.at<double>(i, 0), i));
+                valueAndIndexes.Add(CreateGroup(eigenValues.at<double>(i, 0), i));
 
             std::sort(valueAndIndexes.begin(), valueAndIndexes.end());
 

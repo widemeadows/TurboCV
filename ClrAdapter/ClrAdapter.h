@@ -2,9 +2,11 @@
 
 #pragma once
 
+#include "../System/System.h"
 #include "../Export/Export.h"
 #using <System.Runtime.Serialization.dll>
 
+using namespace TurboCV::System;
 using namespace System;
 using namespace System::Collections::Generic;
 using namespace System::Runtime::Serialization;
@@ -158,11 +160,11 @@ namespace ClrAdapter {
 
         static array<Info^>^ Train(Type type, List<Mat<uchar>^>^ images, bool thinning)
         {
-            vector<NativeMat> nativeMats;
+            ArrayList<NativeMat> nativeMats;
             for (int i = 0; i < images->Count; i++)
-                nativeMats.push_back(Convertor::ToNativeMat(images[i]));
+                nativeMats.Add(Convertor::ToNativeMat(images[i]));
 
-            vector<NativeInfo> tmp;
+            ArrayList<NativeInfo> tmp;
             if (type == Type::OCM)
                 tmp = EdgeMatchingPredict(EPT_OCM, nativeMats, thinning);
             else
@@ -173,13 +175,13 @@ namespace ClrAdapter {
             {
                 result[i] = gcnew Info();
 
-                for (int j = 0; j < tmp[i].size(); j++)
+                for (int j = 0; j < tmp[i].Count(); j++)
                 {
-                    const vector<NativePoint>& item1 = tmp[i][j].first;
-                    const NativeMat& item2 = tmp[i][j].second;
+                    const ArrayList<NativePoint>& item1 = tmp[i][j].Item1();
+                    const NativeMat& item2 = tmp[i][j].Item2();
 
                     List<Point>^ points = gcnew List<Point>();
-                    for (int k = 0; k < item1.size(); k++)
+                    for (int k = 0; k < item1.Count(); k++)
                         points->Add(Point(item1[k]));
 
                     if (type == Type::OCM)
@@ -207,13 +209,13 @@ namespace ClrAdapter {
                 tmp = EdgeMatchingPredict(EPT_HIT, Convertor::ToNativeMat(image), thinning);
 
             Info^ result = gcnew Info();
-            for (int i = 0; i < tmp.size(); i++)
+            for (int i = 0; i < tmp.Count(); i++)
             {
-                const vector<NativePoint>& item1 = tmp[i].first;
-                const NativeMat& item2 = tmp[i].second;
+                const ArrayList<NativePoint>& item1 = tmp[i].Item1();
+                const NativeMat& item2 = tmp[i].Item2();
 
                 List<Point>^ points = gcnew List<Point>();
-                for (int j = 0; j < item1.size(); j++)
+                for (int j = 0; j < item1.Count(); j++)
                     points->Add(Point(item1[j]));
 
                 if (type == Type::OCM)
@@ -237,14 +239,20 @@ namespace ClrAdapter {
     public:
         enum class Type
         {
-            RHOG
+            RHOG,
+            SC,
+            RSC,
+            PSC,
+            RPSC,
+            HOOSC,
+            RHOOSC
         };
 
         typedef List<float> Word;
         typedef List<double> Histogram; 
 
-        static Tuple<List<Word^>^, List<Histogram^>^>^ Train(Type type, List<Mat<uchar>^>^ images, 
-            int wordNum, bool thinning)
+        static Tuple<List<Word^>^, List<Histogram^>^>^ Train(
+            Type type, List<Mat<uchar>^>^ images, int wordNum, bool thinning)
         {
             LocalFeatureType nativeType;
 
@@ -253,34 +261,52 @@ namespace ClrAdapter {
             case Type::RHOG:
                 nativeType = EPT_RHOG;
                 break;
+            case Type::SC:
+                nativeType = EPT_SC;
+                break;
+            case Type::RSC:
+                nativeType = EPT_RSC;
+                break;
+            case Type::PSC:
+                nativeType = EPT_PSC;
+                break;
+            case Type::RPSC:
+                nativeType = EPT_RPSC;
+                break;
+            case Type::HOOSC:
+                nativeType = EPT_HOOSC;
+                break;
+            case Type::RHOOSC:
+                nativeType = EPT_RHOOSC;
+                break;
             default:
                 break;
             }
 
-            vector<NativeMat> nativeMats;
+            ArrayList<NativeMat> nativeMats;
             for (int i = 0; i < images->Count; i++)
-                nativeMats.push_back(Convertor::ToNativeMat(images[i]));
+                nativeMats.Add(Convertor::ToNativeMat(images[i]));
 
-            pair<vector<NativeWord>, vector<NativeHistogram>> result = 
+            Group<ArrayList<NativeWord>, ArrayList<NativeHistogram>> result = 
                 LocalFeatureTrain(nativeType, nativeMats, wordNum, thinning);
-            vector<NativeWord>& nativeWords = result.first;
-            vector<NativeHistogram>& nativeHistograms = result.second;
+            ArrayList<NativeWord>& nativeWords = result.Item1();
+            ArrayList<NativeHistogram>& nativeHistograms = result.Item2();
 
             List<Word^>^ words = gcnew List<Word^>();
-            for (int i = 0; i < nativeWords.size(); i++)
+            for (int i = 0; i < nativeWords.Count(); i++)
             {
                 Word^ word = gcnew Word();
-                for (int j = 0; j < nativeWords[i].size(); j++)
+                for (int j = 0; j < nativeWords[i].Count(); j++)
                     word->Add(nativeWords[i][j]);
 
                 words->Add(word);
             }
 
             List<Histogram^>^ histograms = gcnew List<Histogram^>();
-            for (int i = 0; i < nativeHistograms.size(); i++)
+            for (int i = 0; i < nativeHistograms.Count(); i++)
             {
                 Histogram^ histogram = gcnew Histogram();
-                for (int j = 0; j < nativeHistograms[i].size(); j++)
+                for (int j = 0; j < nativeHistograms[i].Count(); j++)
                     histogram->Add(nativeHistograms[i][j]);
 
                 histograms->Add(histogram);
@@ -289,7 +315,8 @@ namespace ClrAdapter {
             return Tuple::Create(words, histograms);
         }
 
-        static Histogram^ GetLocalFeature(Type type, Mat<uchar>^ image, List<Word^>^ words, bool thinning)
+        static Histogram^ GetLocalFeature(
+            Type type, Mat<uchar>^ image, List<Word^>^ words, bool thinning)
         {
             LocalFeatureType nativeType;
 
@@ -298,19 +325,38 @@ namespace ClrAdapter {
             case Type::RHOG:
                 nativeType = EPT_RHOG;
                 break;
+            case Type::SC:
+                nativeType = EPT_SC;
+                break;
+            case Type::RSC:
+                nativeType = EPT_RSC;
+                break;
+            case Type::PSC:
+                nativeType = EPT_PSC;
+                break;
+            case Type::RPSC:
+                nativeType = EPT_RPSC;
+                break;
+            case Type::HOOSC:
+                nativeType = EPT_HOOSC;
+                break;
+            case Type::RHOOSC:
+                nativeType = EPT_RHOOSC;
+                break;
             default:
                 break;
             }
 
-            vector<NativeWord> nativeWords(words->Count);
+            ArrayList<NativeWord> nativeWords(words->Count);
             for (int i = 0; i < words->Count; i++)
                 for (int j = 0; j < words[i]->Count; j++)
-                    nativeWords[i].push_back(words[i][j]);
+                    nativeWords[i].Add(words[i][j]);
 
-            NativeHistogram nativeHistogram = LocalFeaturePredict(nativeType, Convertor::ToNativeMat(image), 
-                nativeWords, thinning);
+            NativeHistogram nativeHistogram = LocalFeaturePredict(nativeType, 
+                Convertor::ToNativeMat(image), nativeWords, thinning);
+
             Histogram^ histogram = gcnew Histogram();
-            for (int i = 0; i < nativeHistogram.size(); i++)
+            for (int i = 0; i < nativeHistogram.Count(); i++)
                 histogram->Add(nativeHistogram[i]);
 
             return histogram;

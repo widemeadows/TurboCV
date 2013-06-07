@@ -559,24 +559,24 @@ namespace System
 
     template<typename T1 = NullType, typename T2 = NullType, 
              typename T3 = NullType, typename T4 = NullType>
-    class Tuple
+    class Group
     {
 
     };
 
     template<typename T1, typename T2>
-    class Tuple<T1, T2, NullType, NullType>
+    class Group<T1, T2, NullType, NullType>
     {
     public:
-        Tuple() {}
-        Tuple(const T1& i1, const T2& i2) : item1(i1), item2(i2) {}
+        Group() {}
+        Group(const T1& i1, const T2& i2) : item1(i1), item2(i2) {}
 
         T1& Item1() { return item1; }
         T2& Item2() { return item2; }
         const T1& Item1() const { return item1; }
         const T2& Item2() const { return item2; }
 
-        bool operator<(const Tuple<T1, T2>& v) const
+        bool operator<(const Group<T1, T2>& v) const
         {
             if (item1 < v.item1)
                 return true;
@@ -592,17 +592,17 @@ namespace System
     };
 
     template<typename T1, typename T2>
-    Tuple<T1, T2> CreateTuple(const T1& i1, const T2& i2) 
+    Group<T1, T2> CreateGroup(const T1& i1, const T2& i2) 
     { 
-        return Tuple<T1, T2>(i1, i2); 
+        return Group<T1, T2>(i1, i2); 
     }
 
     template<typename T1, typename T2, typename T3>
-    class Tuple<T1, T2, T3, NullType>
+    class Group<T1, T2, T3, NullType>
     {
     public:
-        Tuple() {}
-        Tuple(const T1& i1, const T2& i2, const T3& i3) : item1(i1), item2(i2), item3(i3) {}
+        Group() {}
+        Group(const T1& i1, const T2& i2, const T3& i3) : item1(i1), item2(i2), item3(i3) {}
 
         T1& Item1() { return item1; }
         T2& Item2() { return item2; }
@@ -611,7 +611,7 @@ namespace System
         const T2& Item2() const { return item2; }
         const T3& Item3() const { return item3; }
 
-        bool operator<(const Tuple<T1, T2, T3>& v) const
+        bool operator<(const Group<T1, T2, T3>& v) const
         {
             if (item1 < v.item1)
                 return true;
@@ -635,9 +635,9 @@ namespace System
     };
 
     template<typename T1, typename T2, typename T3>
-    Tuple<T1, T2, T3> CreateTuple(const T1& i1, const T2& i2, const T3& i3) 
+    Group<T1, T2, T3> CreateGroup(const T1& i1, const T2& i2, const T3& i3) 
     { 
-        return Tuple<T1, T2, T3>(i1, i2, i3); 
+        return Group<T1, T2, T3>(i1, i2, i3); 
     }
 }
 }

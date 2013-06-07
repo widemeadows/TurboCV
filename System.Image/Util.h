@@ -182,7 +182,7 @@ namespace System
         // 2. relevants -- If image[i] and the query belong to the same category, 
         //                 then relevants[i] is true;
         // 3. numOfCP -- Number of Control Points.
-        Tuple<ArrayList<double>, ArrayList<double>> ROC(
+        Group<ArrayList<double>, ArrayList<double>> ROC(
             const ArrayList<double>& distances, 
             const ArrayList<bool>& relevants,
             int numOfCP = 20)
@@ -230,7 +230,7 @@ namespace System
                 FPR.Add(FP[i] / (FP[i] + TN[i]));
             }
 
-            return CreateTuple(DR, FPR);
+            return CreateGroup(DR, FPR);
         }
 
         inline cv::Mat imshow(const Mat& image, bool scale = true)

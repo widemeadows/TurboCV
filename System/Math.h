@@ -42,8 +42,6 @@ namespace System
         static double GaussianDistance(const ArrayList<T>& u, const ArrayList<T>& v, double sigma);
     };
 
-    const double Math::PI = 3.1415926535897932384626433832795;
-
     template<typename T>
     inline T Math::Min(const ArrayList<T>& vec)
     {

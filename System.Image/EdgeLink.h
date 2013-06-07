@@ -46,7 +46,7 @@ namespace System
         }
 
         // Assume: Edgels are 1 and Background is 0.
-        inline Tuple<ArrayList<Point>, ArrayList<Point>> FindJunctionsOrEndpoints(
+        inline Group<ArrayList<Point>, ArrayList<Point>> FindJunctionsOrEndpoints(
             const Mat& binaryImage)
         {
             ArrayList<Point> junctions, endPoints;
@@ -73,12 +73,12 @@ namespace System
                 }
             }
 
-            return CreateTuple(junctions, endPoints);
+            return CreateGroup(junctions, endPoints);
         }
 
         // Find next connected edge point.
         // Assume: Edgels are 1 and Background is 0.
-        Tuple<Status, Point> NextPoint(const Mat& edgeFlags, int edgeNo, 
+        Group<Status, Point> NextPoint(const Mat& edgeFlags, int edgeNo, 
             const unordered_set<Point, PointHash>& junctions,
             const unordered_set<Point, PointHash>& endpoints, 
             const Point& centre)
@@ -97,7 +97,7 @@ namespace System
                     if ((junctions.find(Point(newX, newY)) != junctions.end() ||
                         endpoints.find(Point(newX, newY)) != endpoints.end()) &&
                         edgeFlags.at<int>(newY, newX) != -edgeNo)
-                        return CreateTuple(LastPoint, Point(newX, newY));
+                        return CreateGroup(LastPoint, Point(newX, newY));
                 }
             }
 
@@ -125,7 +125,7 @@ namespace System
                                 counter++;
 
                         if (counter < 2)
-                            return CreateTuple(NormalPoint, Point(newX, newY));
+                            return CreateGroup(NormalPoint, Point(newX, newY));
                         else
                         {
                             flag = true;
@@ -140,10 +140,10 @@ namespace System
             // that had less than two connections to our current edge, but there was
             // one with more. Use the point we recorded above.
             if (flag)
-                return CreateTuple(NormalPoint, record);
+                return CreateGroup(NormalPoint, record);
             
             // If we get here there was no connecting next point at all.
-            return CreateTuple(NoPoint, record);
+            return CreateGroup(NoPoint, record);
         }
 
         Edge TrackEdge(Mat& edgeFlags, int edgeNo, 
@@ -155,7 +155,7 @@ namespace System
             edge.Add(start);
             edgeFlags.at<int>(start.y, start.x) = -edgeNo;
 
-            Tuple<Status, Point> next = NextPoint(edgeFlags, edgeNo, junctions, endpoints, start);
+            Group<Status, Point> next = NextPoint(edgeFlags, edgeNo, junctions, endpoints, start);
             Status status = next.Item1();
             Point nextPoint = next.Item2();
 
@@ -221,7 +221,7 @@ namespace System
         // We strongly recommend removing any isolated pixel before applying EdgeLink.
         ArrayList<Edge> EdgeLink(const Mat& binaryImage, int minLength = 10)
         {
-            Tuple<ArrayList<Point>, ArrayList<Point>> juncOrEnd = 
+            Group<ArrayList<Point>, ArrayList<Point>> juncOrEnd = 
                 FindJunctionsOrEndpoints(binaryImage);
 
             unordered_set<Point, PointHash> junctions, endpoints;

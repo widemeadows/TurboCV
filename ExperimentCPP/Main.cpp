@@ -13,7 +13,7 @@ using namespace cv;
 #define SAVE_FEATURE
 #define SAVE_DISTANCE_MATRIX
 
-inline TurboCV::System::ArrayList<Tuple<Mat, int>> GetImages(
+inline TurboCV::System::ArrayList<Group<Mat, int>> GetImages(
     const TurboCV::System::String& imageSetPath, 
     int imageLoadMode = CV_LOAD_IMAGE_GRAYSCALE)
 {
@@ -22,14 +22,14 @@ inline TurboCV::System::ArrayList<Tuple<Mat, int>> GetImages(
     ArrayList<TurboCV::System::String> classInfos = imageSetInfo.GetDirectories();
     sort(classInfos.begin(), classInfos.end());
 
-    ArrayList<Tuple<Mat, int>> images;
+    ArrayList<Group<Mat, int>> images;
     for (int i = 0; i < classInfos.Count(); i++)
     {
         ArrayList<TurboCV::System::String> fileInfos = DirectoryInfo(classInfos[i]).GetFiles();
         sort(fileInfos.begin(), fileInfos.end());
 
         for (int j = 0; j < fileInfos.Count(); j++)
-            images.Add(CreateTuple(imread(fileInfos[j], imageLoadMode), i + 1));
+            images.Add(CreateGroup(imread(fileInfos[j], imageLoadMode), i + 1));
     }
 
     return images;
@@ -63,7 +63,7 @@ void LocalFeatureCrossValidation(const TurboCV::System::String& imageSetPath, co
                                  int wordNum, bool thinning = false, int sampleNum = 1000000, int fold = 3)
 {
     srand(1);
-    ArrayList<Tuple<Mat, int>> images = GetImages(imageSetPath, CV_LOAD_IMAGE_GRAYSCALE);
+    ArrayList<Group<Mat, int>> images = GetImages(imageSetPath, CV_LOAD_IMAGE_GRAYSCALE);
     int imageNum = (int)images.Count();
 
     TurboCV::System::ArrayList<LocalFeature_f> features(imageNum);
@@ -137,7 +137,7 @@ void LocalFeatureCrossValidation(const TurboCV::System::String& imageSetPath, co
     }
 #endif
 
-    ArrayList<Tuple<ArrayList<LocalFeature_f>, ArrayList<LocalFeature_f>, ArrayList<size_t>>> pass = 
+    ArrayList<Group<ArrayList<LocalFeature_f>, ArrayList<LocalFeature_f>, ArrayList<size_t>>> pass = 
         RandomSplit(features, fold);
 
 #ifdef SAVE_ROC
@@ -228,7 +228,7 @@ void GlobalFeatureCrossValidation(const TurboCV::System::String& imageSetPath, c
                                   bool thinning = false, int fold = 3)
 {
     srand(1);
-    ArrayList<Tuple<Mat, int>> images = GetImages(imageSetPath, CV_LOAD_IMAGE_GRAYSCALE);
+    ArrayList<Group<Mat, int>> images = GetImages(imageSetPath, CV_LOAD_IMAGE_GRAYSCALE);
     int imageNum = (int)images.Count();
 
     ArrayList<GlobalFeature_f> features(imageNum);
@@ -292,7 +292,7 @@ void GlobalFeatureCrossValidation(const TurboCV::System::String& imageSetPath, c
     }
 #endif
 
-    ArrayList<Tuple<ArrayList<GlobalFeature_f>, ArrayList<GlobalFeature_f>, ArrayList<size_t>>> pass = 
+    ArrayList<Group<ArrayList<GlobalFeature_f>, ArrayList<GlobalFeature_f>, ArrayList<size_t>>> pass = 
         RandomSplit(features, fold);
 
 #ifdef SAVE_ROC
@@ -390,7 +390,7 @@ void EdgeMatchingCrossValidation(const TurboCV::System::String& imageSetPath, co
                                  bool thinning = false, int fold = 3)
 {
     srand(1);
-    ArrayList<Tuple<Mat, int>> images = GetImages(imageSetPath, CV_LOAD_IMAGE_GRAYSCALE);
+    ArrayList<Group<Mat, int>> images = GetImages(imageSetPath, CV_LOAD_IMAGE_GRAYSCALE);
     int imageNum = (int)images.Count();
 
     ArrayList<EdgeMatching::Info> transforms(imageNum);
@@ -437,7 +437,7 @@ void EdgeMatchingCrossValidation(const TurboCV::System::String& imageSetPath, co
     }
 #endif
 
-    ArrayList<Tuple<ArrayList<EdgeMatching::Info>, ArrayList<EdgeMatching::Info>, ArrayList<size_t>>> pass = 
+    ArrayList<Group<ArrayList<EdgeMatching::Info>, ArrayList<EdgeMatching::Info>, ArrayList<size_t>>> pass = 
         RandomSplit(transforms, fold);
 
 #ifdef SAVE_ROC
@@ -605,7 +605,7 @@ void LocalFeatureTest(const TurboCV::System::String& imageSetPath, const LocalFe
                         int wordNum, int sampleNum = 1000000, int fold = 3)
 {
     srand(1);
-    ArrayList<Tuple<Mat, int>> images = GetImages(imageSetPath, CV_LOAD_IMAGE_GRAYSCALE);
+    ArrayList<Group<Mat, int>> images = GetImages(imageSetPath, CV_LOAD_IMAGE_GRAYSCALE);
     int imageNum = (int)images.Count();
 
     ArrayList<LocalFeature_f> features(imageNum);
@@ -640,7 +640,7 @@ void LocalFeatureTest(const TurboCV::System::String& imageSetPath, const LocalFe
         fclose(file);
     }
 
-    ArrayList<Tuple<ArrayList<LocalFeature_f>, ArrayList<LocalFeature_f>, ArrayList<size_t>>> pass = 
+    ArrayList<Group<ArrayList<LocalFeature_f>, ArrayList<LocalFeature_f>, ArrayList<size_t>>> pass = 
         RandomSplit(features, fold);
     ArrayList<double> passResult;
     for (int i = 0; i < fold; i++)
@@ -782,7 +782,7 @@ void LocalFeatureTest(const TurboCV::System::String& imageSetPath, const LocalFe
 template<typename T>
 void CrossValidation(const ArrayList<T>& samples, const ArrayList<int>& labels, int fold = 3)
 {
-	ArrayList<Tuple<ArrayList<T>, ArrayList<T>, ArrayList<size_t>>> pass = 
+	ArrayList<Group<ArrayList<T>, ArrayList<T>, ArrayList<size_t>>> pass = 
 		RandomSplit(samples, fold);
     ArrayList<double> passResult;
     
@@ -850,7 +850,7 @@ void Batch(const TurboCV::System::String& imageSetPath, bool thinning = false)
     LocalFeatureCrossValidation(imageSetPath, RSC(), 1000, thinning);
     printf("\n");
 
-    LocalFeatureCrossValidation(imageSetPath, PRSC(), 1000, thinning);
+    LocalFeatureCrossValidation(imageSetPath, RPSC(), 1000, thinning);
     printf("\n");
 
     GlobalFeatureCrossValidation(imageSetPath, GIST(), thinning);

@@ -53,7 +53,7 @@ namespace System
     }
 
     template<typename T>
-    inline Tuple<ArrayList<T>, ArrayList<T>, ArrayList<size_t>> Divide(
+    inline Group<ArrayList<T>, ArrayList<T>, ArrayList<size_t>> Divide(
         const ArrayList<T>& vec, const ArrayList<size_t>& pickUpIndexes)
     {
         ArrayList<size_t> indexes = pickUpIndexes;
@@ -73,7 +73,7 @@ namespace System
                 others.Add(vec[i]);
         }
 
-        return CreateTuple(pickUps, others, indexes);
+        return CreateGroup(pickUps, others, indexes);
     }
 
     template<typename T>
@@ -86,7 +86,7 @@ namespace System
     }
 
     template<typename T>
-    inline ArrayList<Tuple<ArrayList<T>, ArrayList<T>, ArrayList<size_t>>> RandomSplit(
+    inline ArrayList<Group<ArrayList<T>, ArrayList<T>, ArrayList<size_t>>> RandomSplit(
         const ArrayList<T>& vec, size_t fold)
     {
         size_t cardNum = vec.Count();
@@ -94,7 +94,7 @@ namespace System
 
         ArrayList<size_t> permutation = RandomPermutate(cardNum, cardNum);
 
-        ArrayList<Tuple<ArrayList<T>, ArrayList<T>, ArrayList<size_t>>> result;
+        ArrayList<Group<ArrayList<T>, ArrayList<T>, ArrayList<size_t>>> result;
         for (size_t i = 0; i < fold; i++)
         {
             ArrayList<size_t> subsetIndexes;

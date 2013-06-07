@@ -1,3 +1,5 @@
+#pragma once
+
 // The following ifdef block is the standard way of creating macros which make exporting 
 // from a DLL simpler. All files within this DLL are compiled with the EXPORT_EXPORTS
 // symbol defined on the command line. This symbol should not be defined on any project
@@ -10,9 +12,8 @@
 #define EXPORT_API __declspec(dllimport)
 #endif
 
-#include <vector>
-#include <map>
-using namespace std;
+#include "../System/System.h"
+using namespace TurboCV::System;
 
 enum BasicType { EPT_UCHAR, EPT_FLOAT };
 
@@ -60,25 +61,34 @@ struct EXPORT_API NativePoint
 
 enum EdgeMatchingType { EPT_OCM, EPT_HIT };
 
-typedef vector<pair<vector<NativePoint>, NativeMat>> NativeInfo;
+typedef ArrayList<Group<ArrayList<NativePoint>, NativeMat>> NativeInfo;
 
 EXPORT_API NativeInfo EdgeMatchingPredict(EdgeMatchingType type, 
     const NativeMat& image, bool thinning);
 
-EXPORT_API vector<NativeInfo> EdgeMatchingPredict(EdgeMatchingType type, 
-    const vector<NativeMat>& images, bool thinning);
+EXPORT_API ArrayList<NativeInfo> EdgeMatchingPredict(EdgeMatchingType type, 
+    const ArrayList<NativeMat>& images, bool thinning);
 
 
-enum LocalFeatureType { EPT_RHOG };
+enum LocalFeatureType { EPT_RHOG, EPT_SC, EPT_RSC, EPT_PSC, EPT_RPSC, EPT_HOOSC, EPT_RHOOSC };
 
-typedef vector<float> NativeWord;
-typedef vector<double> NativeHistogram;
+typedef ArrayList<float> NativeWord;
+typedef ArrayList<double> NativeHistogram;
 
-EXPORT_API pair<vector<NativeWord>, vector<NativeHistogram>> LocalFeatureTrain(LocalFeatureType type,
-    const vector<NativeMat>& images, int wordNum, bool thinning);
+EXPORT_API Group<ArrayList<NativeWord>, ArrayList<NativeHistogram>> LocalFeatureTrain(
+    LocalFeatureType type,
+    const ArrayList<NativeMat>& images, 
+    int wordNum, 
+    bool thinning);
 
-EXPORT_API NativeHistogram LocalFeaturePredict(LocalFeatureType type, 
-    const NativeMat& image, const vector<NativeWord>& words, bool thinning);
+EXPORT_API NativeHistogram LocalFeaturePredict(
+    LocalFeatureType type, 
+    const NativeMat& image, 
+    const ArrayList<NativeWord>& words, 
+    bool thinning);
 
-EXPORT_API vector<NativeHistogram> LocalFeaturePredict(LocalFeatureType type, 
-    const vector<NativeMat>& images, const vector<NativeWord>& words, bool thinning);
+EXPORT_API ArrayList<NativeHistogram> LocalFeaturePredict(
+    LocalFeatureType type, 
+    const ArrayList<NativeMat>& images, 
+    const ArrayList<NativeWord>& words, 
+    bool thinning);

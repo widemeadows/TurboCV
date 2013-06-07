@@ -16,7 +16,7 @@ namespace System
         class CM : public Feature
         {
         public:
-            typedef Tuple<ArrayList<Point>, Mat> Info;
+            typedef Group<ArrayList<Point>, Mat> Info;
 
             Info GetFeatureWithPreprocess(const Mat& sketchImage, bool thinning = false,
                 Size size = Size(256, 256));
@@ -96,7 +96,7 @@ namespace System
                 }
             }
 
-            return CreateTuple(points, dt);
+            return CreateGroup(points, dt);
         }
 
         ///////////////////////////////////////////////////////////////////////
@@ -105,7 +105,7 @@ namespace System
         class OCM : public Feature
         {
         public:
-            typedef ArrayList<Tuple<ArrayList<Point>, Mat>> Info;
+            typedef ArrayList<Group<ArrayList<Point>, Mat>> Info;
 
             Info GetFeatureWithPreprocess(const Mat& sketchImage, bool thinning = false,
                 Size size = Size(256, 256));
@@ -236,7 +236,7 @@ namespace System
                     }
                 }
 
-                result[i] = CreateTuple(channels[i], dt);
+                result[i] = CreateGroup(channels[i], dt);
             }
 
             return result;
@@ -248,7 +248,7 @@ namespace System
         class Hitmap : public Feature
         {
         public:
-            typedef ArrayList<Tuple<ArrayList<Point>, Mat>> Info;
+            typedef ArrayList<Group<ArrayList<Point>, Mat>> Info;
 
             Info GetFeatureWithPreprocess(const Mat& sketchImage, bool thinning = false,
                 Size size = Size(256, 256));
@@ -377,7 +377,7 @@ namespace System
                     }
                 }
 
-                result[i] = CreateTuple(channels[i], dt);
+                result[i] = CreateGroup(channels[i], dt);
             }
 
             return result;

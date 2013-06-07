@@ -131,10 +131,10 @@ namespace ExperimentCS
 
             Parallel.For(0, test_labels.Count, (i) =>
             {
-                List<Tuple<double, int>> distAndIndexes = new List<Tuple<double, int>>();
+                List<Group<double, int>> distAndIndexes = new List<Group<double, int>>();
                 for (int j = 0; j < train_labels.Count; j++)
                 {
-                    distAndIndexes.Add(Tuple.Create(
+                    distAndIndexes.Add(Group.Create(
                         train_features[j].GetDistance(test_features[i]), j));
                 }
 
