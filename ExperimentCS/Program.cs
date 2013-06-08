@@ -6,7 +6,7 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
-using Turbo.System.CS;
+using TurboCV.System.CS;
 
 namespace ExperimentCS
 {
@@ -56,18 +56,18 @@ namespace ExperimentCS
             //List<GlobalFeatureVec> train_features = new List<GlobalFeatureVec>(),
             //                       test_features = new List<GlobalFeatureVec>();
 
-            //for (int j = 0; j < train_images.Count; j++)
+            //for (int i = 0; i < train_images.Count; i++)
             //    train_features.Add(new GlobalFeatureVec());
-            //for (int j = 0; j < test_images.Count; j++)
+            //for (int i = 0; i < test_images.Count; i++)
             //    test_features.Add(new GlobalFeatureVec());
 
-            //Parallel.For(0, train_images.Count, (j) =>
+            //Parallel.For(0, train_images.Count, (i) =>
             //{
-            //    train_features[j] = GHOG.GetFeatureWithoutPreprocess(train_images[j]);
+            //    train_features[i] = GHOG.GetFeatureWithoutPreprocess(train_images[i]);
             //});
-            //Parallel.For(0, test_images.Count, (j) =>
+            //Parallel.For(0, test_images.Count, (i) =>
             //{
-            //    test_features[j] = GHOG.GetFeatureWithoutPreprocess(test_images[j]);
+            //    test_features[i] = GHOG.GetFeatureWithoutPreprocess(test_images[i]);
             //});
 
             //Console.WriteLine(KNN(train_features, train_labels, test_features, test_labels));
@@ -95,79 +95,27 @@ namespace ExperimentCS
             //        0, lambda, 1, 0);
             //Mat<double> filter = new Mat<double>(5, 5);
             //for (int i = 0; i < filter.Rows; i++)
-            //    for (int j = 0; j < filter.Cols; j++)
-            //        filter[i, j] = 1.0 / (filter.Rows * filter.Cols);
+            //    for (int i = 0; i < filter.Cols; i++)
+            //        filter[i, i] = 1.0 / (filter.Rows * filter.Cols);
 
             //Mat<double> tmp = ImgProc.Filter2D(preprocessed, filter);
             //Mat<byte> result = new Mat<byte>(tmp.Size);
             //double max = double.MinValue, min = double.MaxValue;
-            //for (int j = 0; j < tmp.Rows; j++)
+            //for (int i = 0; i < tmp.Rows; i++)
             //    for (int k = 0; k < tmp.Cols; k++)
             //    {
-            //        if (tmp[j, k] > max)
-            //            max = tmp[j, k];
-            //        if (tmp[j, k] < min)
-            //            min = tmp[j, k];
+            //        if (tmp[i, k] > max)
+            //            max = tmp[i, k];
+            //        if (tmp[i, k] < min)
+            //            min = tmp[i, k];
             //    }
 
-            //for (int j = 0; j < tmp.Rows; j++)
+            //for (int i = 0; i < tmp.Rows; i++)
             //    for (int k = 0; k < tmp.Cols; k++)
-            //        result[j, k] = (byte)((tmp[j, k] - min) / (max - min) * 256);
+            //        result[i, k] = (byte)((tmp[i, k] - min) / (max - min) * 256);
 
             //ImageBox box = new ImageBox(MatToBitmapSource(result));
             //box.ShowDialog();
-        }
-
-        public static double KNN(
-            List<GlobalFeatureVec> train_features, 
-            List<int> train_labels,
-            List<GlobalFeatureVec> test_features,
-            List<int> test_labels,
-            int K = 4)
-        {
-            List<int> predict_labels = new List<int>();
-            for (int i = 0; i < test_labels.Count; i++)
-                predict_labels.Add(0);
-
-            Parallel.For(0, test_labels.Count, (i) =>
-            {
-                List<Group<double, int>> distAndIndexes = new List<Group<double, int>>();
-                for (int j = 0; j < train_labels.Count; j++)
-                {
-                    distAndIndexes.Add(Group.Create(
-                        train_features[j].GetDistance(test_features[i]), j));
-                }
-
-                distAndIndexes.Sort();
-
-                Dictionary<int, int> dict = new Dictionary<int, int>();
-                for (int j = 0; j < K; j++)
-                {
-                    int label = train_labels[distAndIndexes[j].Item2];
-
-                    if (dict.ContainsKey(label))
-                        dict[label]++;
-                    else
-                        dict[label] = 1;
-                }
-
-                int max = -1;
-                foreach (var item in dict)
-                {
-                    if (item.Value > max)
-                    {
-                        predict_labels[i] = item.Key;
-                        max = item.Value;
-                    }
-                }
-            });
-
-            double precision = 0;
-            for (int i = 0; i < predict_labels.Count; i++)
-                if (predict_labels[i] == test_labels[i])
-                    precision++;
-
-            return precision / predict_labels.Count;
         }
 
         public static Mat<byte> BitmapSourceToMat(BitmapSource source)

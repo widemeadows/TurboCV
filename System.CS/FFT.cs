@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Turbo.System.CS
+namespace TurboCV.System.CS
 {
     public struct Complex
     {
@@ -121,7 +121,7 @@ namespace Turbo.System.CS
             Formula: forward
                       N-1
                       ---
-                    1 \         - j k 2 pi n / N
+                    1 \         - i k 2 pi n / N
             X(K) = --- > re(n) e                  = Forward transform
                     N /                            n=0..N-1
                       ---
@@ -130,7 +130,7 @@ namespace Turbo.System.CS
             Formula: reverse
                      N-1
                      ---
-                     \         j k 2 pi n / N
+                     \         i k 2 pi n / N
             X(n) =    > re(k) e                  = Inverse transform
                      /                            k=0..N-1
                      ---

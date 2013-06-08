@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Turbo.System.CS
+namespace TurboCV.System.CS
 {
     public struct Size
     {
