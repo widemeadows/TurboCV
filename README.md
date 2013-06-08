@@ -5,6 +5,7 @@ This is a project providing a toolkit for convenient image feature extraction.
 However, it is not limited to image processing. In fact, it contains some supplementary APIs to simplify C++ development, such as I/O related APIs.  
 
 Currently TurboCV has modules as follow.  
+
 1. System  
     The core module of TurboCV.  
     (a) Collection.h and Type.h define the data structures used in other modules, including Int, Double, Float, String, Group and ArrayList. Int, Double, Float and String provide some string related routines that are missing in std::string. For example, split and type conversion (int to string, string to int, etc). Group is also named as Tuple in other languages (in fact, it's same with std::tuple but we provide it here for non-C++11-supported complier). ArrayList is similar to std::vector except that the copy constructor and assigment operation in ArrayList is O(1), i.e. only the header is copied and the data are shared.  
