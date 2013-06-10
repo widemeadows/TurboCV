@@ -320,22 +320,22 @@ void GlobalFeatureCrossValidation(const TurboCV::System::String& imageSetPath, c
                 trainingLabels.Add(images[j].Item2());
         }
 
-        ArrayList<size_t> actualIndexes = RandomPermutate(evaluationSet.Count(), 10000);
-        ArrayList<GlobalFeature_f> actualEvaSet;
-        ArrayList<int> actualEvaLabels;
-        for (int i = 0; i < actualIndexes.Count(); i++)
-        {
-            actualEvaSet.Add(evaluationSet[actualIndexes[i]]);
-            actualEvaLabels.Add(evaluationLabels[actualIndexes[i]]);
-        }
+        //ArrayList<size_t> actualIndexes = RandomPermutate(evaluationSet.Count(), 10000);
+        //ArrayList<GlobalFeature_f> actualEvaSet;
+        //ArrayList<int> actualEvaLabels;
+        //for (int i = 0; i < actualIndexes.Count(); i++)
+        //{
+        //    actualEvaSet.Add(evaluationSet[actualIndexes[i]]);
+        //    actualEvaLabels.Add(evaluationLabels[actualIndexes[i]]);
+        //}
 
-        MQDF<GlobalFeature_f> mqdf;
-        pair<double, map<pair<int, int>, double>> precisions = 
-            mqdf.Evaluate(trainingSet, trainingLabels, actualEvaSet, actualEvaLabels);
-        //KNN<GlobalFeature_f> knn;
+        //MQDF<GlobalFeature_f> mqdf;
         //pair<double, map<pair<int, int>, double>> precisions = 
-        //    knn.Evaluate(trainingSet, trainingLabels, actualEvaSet, actualEvaLabels,
-        //    Math::NormOneDistance, 4.0, 4);
+        //    mqdf.Evaluate(trainingSet, trainingLabels, actualEvaSet, actualEvaLabels);
+
+		KNN<GlobalFeature_f> knn;
+		pair<double, map<pair<int, int>, double>> precisions = 
+			knn.Evaluate(trainingSet, trainingLabels, evaluationSet, evaluationLabels);
 
         passResult.Add(precisions.first);
         printf("Fold %d Accuracy: %f\n", i + 1, precisions.first);
