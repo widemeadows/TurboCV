@@ -27,16 +27,10 @@
     <ClInclude Include="Util.h">
       <Filter>头文件</Filter>
     </ClInclude>
-    <ClInclude Include="EdgeLink.h">
-      <Filter>头文件</Filter>
-    </ClInclude>
     <ClInclude Include="Geometry.h">
       <Filter>头文件</Filter>
     </ClInclude>
     <ClInclude Include="Feature.h">
-      <Filter>头文件</Filter>
-    </ClInclude>
-    <ClInclude Include="BinaryImage.h">
       <Filter>头文件</Filter>
     </ClInclude>
     <ClInclude Include="Typedef.h">
@@ -48,5 +42,10 @@
     <ClInclude Include="Eigen.h">
       <Filter>头文件</Filter>
     </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="BinaryImage.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>
