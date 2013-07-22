@@ -1,5 +1,5 @@
 #include "../System/System.h"
-#include "System.Image.h"
+#include "Util.h"
 #include <cv.h>
 #include <highgui.h>
 #include <cassert>
@@ -109,7 +109,7 @@ namespace System
             tempA(Rect(0, 0, C.cols, C.rows)).copyTo(C);
         }
 
-        Mat imshow(const Mat& image, bool scale = true)
+        Mat imshow(const Mat& image, bool scale)
         {
             double maximum = 1e-14, minimum = 1e14;
             int type = image.type();
@@ -270,7 +270,7 @@ namespace System
         //////////////////////////////////////////////////////////////////////////
 
         // http://homepages.inf.ed.ac.uk/rbf/HIPR2/log.htm
-        Mat GetLoGKernel(int ksize, double sigma, int ktype = CV_64F)
+        Mat GetLoGKernel(int ksize, double sigma, int ktype)
         {
             CV_Assert(ksize > 0 && ksize % 2 != 0);
             CV_Assert(ktype == CV_64F || ktype == CV_32F);
@@ -372,7 +372,7 @@ namespace System
             size_t pointNum = points.Count();
             assert(pointNum >= samplingNum);
 
-            ArrayList<Group<double, Group<Point, Point>>> distances(pointNum * (pointNum - 1) / 2);
+            ArrayList<Group<double, Group<size_t, size_t>>> distances(pointNum * (pointNum - 1) / 2);
             unordered_set<Point, PointHash> pivots;
 
             int counter = 0;
@@ -381,7 +381,7 @@ namespace System
                 for (size_t j = i + 1; j < pointNum; j++)
                 {
                     double distance = EulerDistance(points[i], points[j]);
-                    distances[counter++] = CreateGroup(distance, CreateGroup(points[i], points[j]));
+                    distances[counter++] = CreateGroup(distance, CreateGroup(i, j));
                 }
                 pivots.insert(points[i]);
             }
@@ -390,7 +390,9 @@ namespace System
             int ptr = 0;
             while (pivots.size() > samplingNum)
             {
-                Group<Point, Point> pointPair = distances[ptr++].Item2();
+                Group<size_t, size_t> idxPair = distances[ptr++].Item2();
+                Group<Point, Point> pointPair = CreateGroup(points[idxPair.Item1()], points[idxPair.Item2()]);
+
                 if (pivots.find(pointPair.Item1()) != pivots.end() &&
                     pivots.find(pointPair.Item2()) != pivots.end())
                     pivots.erase(pointPair.Item2());

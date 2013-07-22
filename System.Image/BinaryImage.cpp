@@ -1,5 +1,5 @@
 #include "../System/System.h"
-#include "System.Image.h"
+#include "Util.h"
 #include <cv.h>
 #include <queue>
 #include <unordered_set>
@@ -16,7 +16,7 @@ namespace System
 		// APIs for Morphological Operations
 		//////////////////////////////////////////////////////////////////////////
 
-		void thin(InputArray input, OutputArray output, int iterations = 100) 
+		void thin(InputArray input, OutputArray output, int iterations) 
 		{
 			assert(input.type() == CV_8U);
 
@@ -120,7 +120,7 @@ namespace System
 			}
 		}
 
-		void clean(InputArray input, OutputArray output, int points = 1)
+		void clean(InputArray input, OutputArray output, int nPoint)
 		{
 			assert(input.type() == CV_8U);
 
@@ -165,7 +165,7 @@ namespace System
 							}
 						}
 
-						if (component.size() <= points)
+						if (component.size() <= nPoint)
 						{
 							for (size_t k = 0; k < component.size(); k++)
 								dst.at<uchar>(component[k].y, component[k].x) = 0;
@@ -379,7 +379,7 @@ namespace System
 		}
 
 		// We strongly recommend removing any isolated pixel before applying EdgeLink.
-		ArrayList<Edge> EdgeLink(const Mat& binaryImage, int minLength = 10)
+		ArrayList<Edge> EdgeLink(const Mat& binaryImage, int minLength)
 		{
 			Group<ArrayList<Point>, ArrayList<Point>> juncOrEnd = 
 				FindJunctionsOrEndpoints(binaryImage);
@@ -428,6 +428,26 @@ namespace System
 
 			return points;
 		}
+
+        Mat GetBoundingBox(const Mat& binaryImage)
+        {
+            int minX = binaryImage.cols - 1, maxX = 0,
+                minY = binaryImage.rows - 1, maxY = 0;
+
+            for (int i = 0; i < binaryImage.rows; i++)
+                for (int j = 0; j < binaryImage.cols; j++)
+                {
+                    if (binaryImage.at<uchar>(i, j))
+                    {
+                        minX = min(minX, j);
+                        maxX = max(maxX, j);
+                        minY = min(minY, i);
+                        maxY = max(maxY, i);
+                    }
+                }
+
+                return Mat(binaryImage, Range(minY, maxY + 1), Range(minX, maxX + 1));
+        }
 
         ArrayList<Point> SampleOnShape(const Mat& binaryImage, size_t samplingNum)
         {

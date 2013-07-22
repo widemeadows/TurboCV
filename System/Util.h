@@ -35,7 +35,7 @@ namespace System
     inline ArrayList<T> PickUp(const ArrayList<T>& vec, const ArrayList<size_t>& pickUpIndexes)
     {
         ArrayList<size_t> indexes = pickUpIndexes;
-        std::sort(indexes.Begin(), indexes.End());
+        std::sort(indexes.begin(), indexes.end());
 
         ArrayList<T> pickUps;
         size_t cardNum = vec.Count(), counter = 0;

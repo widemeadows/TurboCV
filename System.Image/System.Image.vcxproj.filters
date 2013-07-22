@@ -15,36 +15,39 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="Filter.h">
-      <Filter>头文件</Filter>
-    </ClInclude>
-    <ClInclude Include="System.Image.h">
-      <Filter>头文件</Filter>
-    </ClInclude>
-    <ClInclude Include="BOV.h">
-      <Filter>头文件</Filter>
-    </ClInclude>
-    <ClInclude Include="Util.h">
-      <Filter>头文件</Filter>
-    </ClInclude>
-    <ClInclude Include="Geometry.h">
-      <Filter>头文件</Filter>
-    </ClInclude>
-    <ClInclude Include="Feature.h">
-      <Filter>头文件</Filter>
-    </ClInclude>
-    <ClInclude Include="Typedef.h">
-      <Filter>头文件</Filter>
-    </ClInclude>
     <ClInclude Include="EdgeMatching.h">
       <Filter>头文件</Filter>
     </ClInclude>
     <ClInclude Include="Eigen.h">
       <Filter>头文件</Filter>
     </ClInclude>
+    <ClInclude Include="Util.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="System.Image.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="Feature1.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="Feature.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="BinaryImage.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="GrayImage.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="Geometry.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="Feature.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="BOV.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
   </ItemGroup>
