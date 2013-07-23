@@ -26,7 +26,8 @@
 *.out
 ipch/
 [Oo]bj/
-[Bb]in
+[Bb]in/
+[Ll]ib/
 [Dd]ebug*/
 [Rr]elease*/
 TestResults*/
