@@ -99,12 +99,34 @@ namespace System
         {
             ArrayList<size_t> subsetIndexes;
             size_t begin = cardNum / fold * i,
-                end = (i != fold - 1) ? cardNum / fold * (i + 1) : cardNum;
+                   end = (i != fold - 1) ? cardNum / fold * (i + 1) : cardNum;
 
             for (size_t j = begin; j < end; j++)
                 subsetIndexes.Add(permutation[j]);
                 
             result.Add(Divide(vec, subsetIndexes));
+        }
+
+        return result;
+    }
+
+    inline ArrayList<ArrayList<size_t>> RandomSplit(size_t cardNum, size_t fold)
+    {
+        assert(cardNum >= fold);
+
+        ArrayList<size_t> permutation = RandomPermutate(cardNum, cardNum);
+        
+        ArrayList<ArrayList<size_t>> result;
+        for (size_t i = 0; i < fold; i++)
+        {
+            ArrayList<size_t> subsetIndexes;
+            size_t begin = cardNum / fold * i,
+                   end = (i != fold - 1) ? cardNum / fold * (i + 1) : cardNum;
+
+            for (size_t j = begin; j < end; j++)
+                subsetIndexes.Add(permutation[j]);
+
+            result.Add(subsetIndexes);
         }
 
         return result;

@@ -1,8 +1,9 @@
 #include "../System/System.h"
 #include "Feature.h"
 #include <cv.h>
-#include <highgui.h>
+#include <cstdio>
 using namespace cv;
+using namespace std;
 
 namespace TurboCV
 {
@@ -14,7 +15,7 @@ namespace System
         // Preprocess
         //////////////////////////////////////////////////////////////////////////
 
-        /*Mat Preprocess(const Mat& sketchImage, bool thinning, Size size)
+        Mat Preprocess(const Mat& sketchImage, bool thinning, Size size)
         {
             assert(size.width == size.height);
 
@@ -36,7 +37,6 @@ namespace System
             Size scaledSize = Size((int)(size.width - 2 * size.width / 16.0),
                 (int)(size.height - 2 * size.height / 16.0));
             resize(squareImage, scaledImage, scaledSize);
-            threshold(scaledImage, scaledImage, 0, 1, CV_THRESH_BINARY);
 
             Mat paddedImage;
             heightPadding = (size.height - scaledSize.height) / 2,
@@ -52,41 +52,73 @@ namespace System
                 thin(finalImage, finalImage);
 
             return finalImage;
-        }*/
+        }
 
-        Mat Preprocess(const Mat& sketchImage, bool thinning, Size size)
+
+        //////////////////////////////////////////////////////////////////////////
+        // Save Features
+        //////////////////////////////////////////////////////////////////////////
+
+        void SaveLocalFeatures(
+            const String& fileName, 
+            const ArrayList<Word_f>& words,
+            const ArrayList<Histogram>& freqHists, 
+            const ArrayList<int>& labels)
         {
-            assert(size.width == size.height);
+            if (words.Count() == 0)
+                return;
 
-            Mat tmpImage = reverse(sketchImage);
-            
-            Mat boundingBox = GetBoundingBox(tmpImage);
-            boundingBox = reverse(boundingBox);
+            int nWord = words.Count();
+            int nHist = freqHists.Count();
+            int nDim = words[0].Count();
+            FILE* file = fopen(fileName, "w");
 
-            Mat squareImage;
-            int widthPadding = 0, heightPadding = 0;
-            if (boundingBox.rows < boundingBox.cols)
-                heightPadding = (boundingBox.cols - boundingBox.rows) / 2;
-            else
-                widthPadding = (boundingBox.rows - boundingBox.cols) / 2;
-            copyMakeBorder(boundingBox, squareImage, heightPadding, heightPadding, 
-                widthPadding, widthPadding, BORDER_CONSTANT, Scalar(255, 255, 255, 255));
+            fprintf(file, "%d\n", nDim);
 
-            Mat scaledImage;
-            Size scaledSize = Size((int)(size.width - 2 * size.width / 16.0),
-                (int)(size.height - 2 * size.height / 16.0));
-            resize(squareImage, scaledImage, scaledSize);
+            fprintf(file, "%d\n", nWord);
+            for (int i = 0; i < nWord; i++)
+            {
+                for (int j = 0; j < nDim; j++)
+                    fprintf(file, "%f ", words[i][j]);
+                fprintf(file, "\n");
+            }
 
-            Mat paddedImage;
-            heightPadding = (size.height - scaledSize.height) / 2,
-                widthPadding = (size.width - scaledSize.width) / 2; 
-            copyMakeBorder(scaledImage, paddedImage, heightPadding, heightPadding, 
-                widthPadding, widthPadding, BORDER_CONSTANT, Scalar(255, 255, 255, 255));
-            assert(paddedImage.rows == size.height && paddedImage.cols == size.width);
+            fprintf(file, "%d\n", nHist);
+            for (int i = 0; i < nHist; i++)
+            {
+                fprintf(file, "%d ", labels[i]);
+                for (int j = 0; j < nDim; j++)
+                    fprintf(file, "%f ", freqHists[i][j]);
+                fprintf(file, "\n");
+            }
 
-            Mat finalImage = paddedImage;
+            fclose(file);
+        }
 
-            return finalImage;
+        void SaveGlobalFeatures(
+            const String& fileName, 
+            const ArrayList<GlobalFeature_f>& features,
+            const ArrayList<int>& labels)
+        {
+            if (features.Count() == 0)
+                return;
+
+            int nFeature = features.Count();
+            int nDim = features[0].Count();
+            FILE* file = fopen(fileName, "w");
+
+            fprintf(file, "%d\n", nDim);
+
+            fprintf(file, "%d\n", nFeature);
+            for (int i = 0; i < nFeature; i++)
+            {
+                fprintf(file, "%d ", labels[i]);
+                for (int j = 0; j < nDim; j++)
+                    fprintf(file, "%f ", features[i][j]);
+                fprintf(file, "\n");
+            }
+
+            fclose(file);
         }
 
 

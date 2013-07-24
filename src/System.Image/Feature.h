@@ -1,5 +1,6 @@
 #pragma once
 
+#include "../System/System.h"
 #include "Util.h"
 #include <cv.h>
 
@@ -10,10 +11,61 @@ namespace System
     namespace Image
     {
         //////////////////////////////////////////////////////////////////////////
-        // APIs for pre-processing
+        // APIs for Preprocessing
         //////////////////////////////////////////////////////////////////////////
 
         cv::Mat Preprocess(const cv::Mat& sketchImage, bool thinning, cv::Size size);
+
+
+        //////////////////////////////////////////////////////////////////////////
+        // APIs for Save Features
+        //////////////////////////////////////////////////////////////////////////
+
+        void SaveLocalFeatures(
+            const String& fileName,
+            const ArrayList<Word_f>& words,
+            const ArrayList<Histogram>& freqHists,
+            const ArrayList<int>& labels);
+
+        void SaveGlobalFeatures(
+            const String& fileName, 
+            const ArrayList<GlobalFeature_f>& features,
+            const ArrayList<int>& labels);
+
+        template<typename T>
+        cv::Mat SaveDistanceMatrix(
+            const String& fileName, 
+            const ArrayList<T>& vecs, 
+            const ArrayList<int>& labels, 
+            double (*getDistance)(const T&, const T&) = Math::NormOneDistance)
+        {
+            if (vecs.Count() == 0)
+                return cv::Mat();
+
+            int nVec = vecs.Count();
+            cv::Mat distanceMatrix = Mat::zeros(nVec, nVec, CV_64F);
+            
+            #pragma omp parallel for
+            for (int i = 0; i < nVec; i++)
+                for (int j = 0; j < nVec; j++)
+                    distanceMatrix.at<double>(i, j) = getDistance(vecs[i], vecs[j]);
+            
+            FILE* file = fopen(fileName, "w");
+
+            fprintf(file, "%d\n", nVec);
+
+            for (int i = 0; i < nVec; i++)
+            {
+                fprintf(file, "%d", labels[i]);
+                for (int j = 0; j < nVec; j++)
+                    fprintf(file, " %f", distanceMatrix.at<double>(i, j));
+                fprintf(file, "\n");
+            }
+
+            fclose(file);
+
+            return distanceMatrix;
+        }
 
 
         //////////////////////////////////////////////////////////////////////////

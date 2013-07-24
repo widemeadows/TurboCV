@@ -12,7 +12,7 @@ using namespace TurboCV::System::ML;
 using namespace cv;
 using namespace std;
 
-//#define SAVE_FEATURE
+#define SAVE_FEATURE
 //#define SAVE_DISTANCE_MATRIX
 
 inline TurboCV::System::ArrayList<Group<TurboCV::System::String, int>> GetImagePaths(
@@ -36,29 +36,6 @@ inline TurboCV::System::ArrayList<Group<TurboCV::System::String, int>> GetImageP
     return paths;
 }
 
-void NormlizeDeviation(ArrayList<Histogram> vecs)
-{
-    Histogram mean(vecs[0].Count());
-    double deviation = 0;
-
-    for (size_t i = 0; i < vecs.Count(); i++)
-        for (size_t j = 0; j < vecs[i].Count(); j++)
-            mean[j] += vecs[i][j];
-    
-    for (size_t i = 0; i < mean.Count(); i++)
-        mean[i] /= vecs.Count();
-
-    for (size_t i = 0; i < vecs.Count(); i++)
-        for (size_t j = 0; j < vecs[i].Count(); j++)
-            deviation += (vecs[i][j] - mean[j]) * (vecs[i][j] - mean[j]);
-
-    deviation = sqrt(deviation / vecs.Count());
-
-    for (size_t i = 0; i < vecs.Count(); i++)
-        for (size_t j = 0; j < vecs[i].Count(); j++)
-            vecs[i][j] /= deviation;
-}
-
 template<typename LocalFeature>
 void LocalFeatureCrossValidation(const TurboCV::System::String& imageSetPath, LocalFeature algo, 
                                  int wordNum, bool thinning = false, int sampleNum = 1000000, int fold = 3)
@@ -76,92 +53,17 @@ void LocalFeatureCrossValidation(const TurboCV::System::String& imageSetPath, Lo
         Convert(algo(Preprocess(image, thinning, Size(256, 256))), features[i]);
     }
 
-#ifdef SAVE_FEATURE
-    { // Use a block here to destruct words and freqHistograms immediately.
-        printf("Compute Visual Words...\n");
-        ArrayList<Word_f> words = BOV(SampleDescriptors(features, sampleNum), wordNum).GetVisualWords();
+    ArrayList<ArrayList<size_t>> pass = RandomSplit(imageNum, fold);
+    ArrayList<Group<double, ArrayList<Word_f>, ArrayList<Histogram>>> passResult;
 
-        printf("Compute Frequency Histograms...\n");
-        ArrayList<Histogram> freqHistograms = FreqHist(features, words).GetFrequencyHistograms();
-
-        printf("Write To File...\n");
-        TurboCV::System::String savePath = algo.GetName() + "_" + imageSetPath;
-        FILE* file = fopen(savePath, "w");
-        for (int i = 0; i < freqHistograms.Count(); i++)
-        {
-            fprintf(file, "%d", images[i].Item2());
-            for (int j = 0; j < freqHistograms[i].Count(); j++)
-                fprintf(file, " %d:%f", j + 1, freqHistograms[i][j]);
-            fprintf(file, "\n");
-        }
-        fclose(file);
-    }
-#endif
-
-#ifdef SAVE_DISTANCE_MATRIX
-    {
-        printf("Compute Visual Words...\n");
-        ArrayList<Word_f> words = BOV(SampleDescriptors(features, sampleNum), wordNum).GetVisualWords();
-
-        printf("Compute Frequency Histograms...\n");
-        ArrayList<Histogram> freqHistograms = FreqHist(features, words).GetFrequencyHistograms();
-
-        Mat distanceMatrix = Mat::zeros(imageNum, imageNum, CV_64F);
-        #pragma omp parallel for
-        for (int i = 0; i < imageNum; i++)
-        {
-            for (int j = 0; j < imageNum; j++)
-            {
-                if (i != j)
-                    distanceMatrix.at<double>(i, j) = 
-                        Math::NormOneDistance(freqHistograms[i], freqHistograms[j]);
-            }
-        }
-
-        printf("Write To File...\n");
-        TurboCV::System::String savePath = algo.GetName() + "_" + imageSetPath + "_matrix";
-        FILE* file = fopen(savePath, "w");
-        for (int i = 0; i < imageNum; i++)
-        {
-            fprintf(file, "%d", images[i].Item2());
-            for (int j = 0; j < imageNum; j++)
-            {
-                if (i != j)
-                {
-                    fprintf(file, " %d:%f", images[i].Item2() == images[j].Item2() ? 1 : 0, 
-                        distanceMatrix.at<double>(i, j));
-                }
-            }
-            fprintf(file, "\n");
-        }
-        fclose(file);
-        distanceMatrix.release();
-    }
-#endif
-
-    ArrayList<Group<ArrayList<LocalFeature_f>, ArrayList<LocalFeature_f>, ArrayList<size_t>>> pass = 
-        RandomSplit(features, fold);
-
-#ifdef SAVE_ROC
-    ArrayList<ArrayList<double>> DRs(imageNum), FPRs(imageNum);
-#endif
-
-    ArrayList<double> passResult;
     for (int i = 0; i < fold; i++)
     {
         printf("\nBegin Fold %d...\n", i + 1);
-        ArrayList<LocalFeature_f>& evaluationSet = pass[i].Item1();
-        ArrayList<LocalFeature_f>& trainingSet = pass[i].Item2();
-        ArrayList<size_t>& pickUpIndexes = pass[i].Item3();
 
-        printf("Compute Visual Words...\n");
-        ArrayList<Word_f> words = BOV(SampleDescriptors(trainingSet, sampleNum), wordNum).GetVisualWords();
-
-        printf("Compute Frequency Histograms...\n");
-        ArrayList<Histogram> trainingHistograms = FreqHist(trainingSet, words).GetFrequencyHistograms();
-        ArrayList<Histogram> evaluationHistograms = FreqHist(evaluationSet, words).GetFrequencyHistograms();
-        
+        ArrayList<LocalFeature_f> trainingSet;
         ArrayList<int> trainingLabels, evaluationLabels;
+        ArrayList<size_t>& pickUpIndexes = pass[i];
+
         int counter = 0;
         for (int j = 0; j < imageNum; j++)
         {
@@ -171,58 +73,86 @@ void LocalFeatureCrossValidation(const TurboCV::System::String& imageSetPath, Lo
                 counter++;
             }
             else
+            {
+                trainingSet.Add(features[j]);
                 trainingLabels.Add(paths[j].Item2());
+            }
+        }
+
+        printf("Compute Visual Words...\n");
+        ArrayList<Word_f> words = BOV(SampleDescriptors(trainingSet, sampleNum), wordNum).GetVisualWords();
+
+        printf("Compute Frequency Histograms...\n");
+        ArrayList<Histogram> histograms = FreqHist(features, words).GetFrequencyHistograms();
+        ArrayList<Histogram> trainingHistograms ,evaluationHistograms;
+        
+        counter = 0;
+        for (int j = 0; j < imageNum; j++)
+        {
+            if (counter < pickUpIndexes.Count() && j == pickUpIndexes[counter])
+            {
+                evaluationHistograms.Add(histograms[j]);
+                counter++;
+            }
+            else
+                trainingHistograms.Add(histograms[j]);
         }
 
         KNN<Histogram> knn;
-        pair<double, map<pair<int, int>, double>> precisions = 
-            knn.Evaluate(trainingHistograms, trainingLabels, evaluationHistograms, evaluationLabels);
+        passResult.Add(CreateGroup(
+            knn.Evaluate(trainingHistograms, trainingLabels, evaluationHistograms, evaluationLabels).first,
+            words, histograms));
        
-        passResult.Add(precisions.first);
-        printf("Fold %d Accuracy: %f\n", i + 1, precisions.first);
-
-#ifdef SAVE_ROC
-        pair<ArrayList<ArrayList<double>>, ArrayList<ArrayList<bool>>> matrix =
-            GetDistanceMatrix(trainingHistograms, trainingLabels, evaluationHistograms, evaluationLabels);
-        ArrayList<ArrayList<double>>& distances = matrix.first;
-        ArrayList<ArrayList<bool>>& relevants = matrix.second;
-        for (int j = 0; j < pickUpIndexes.Count(); j++)
-        {
-            int index = pickUpIndexes[j];
-            auto roc = roc(distances[j], relevants[j]);
-            DRs[index] = roc.Item1();
-            FPRs[index] = roc.Item2();
-        }
-#endif
+        printf("Fold %d Accuracy: %f\n", i + 1, passResult[i].Item1());
     }
-
-#ifdef SAVE_ROC
-    {
-        TurboCV::System::String savePath = algo.GetName() + "_" + imageSetPath + "_roc";
-        FILE* file = fopen(savePath, "w");
-        for (int i = 0; i < DRs.Count(); i++)
-        {
-            for (int j = 0; j < DRs[i].Count(); j++)
-                fprintf(file, "%f ", DRs[i][j]);
-            fprintf(file, "\n");
-
-            for (int j = 0; j < FPRs[i].Count(); j++)
-                fprintf(file, "%f ", FPRs[i][j]);
-            fprintf(file, "\n");
-        }
-        fclose(file);
-    }
-#endif
 
     TurboCV::System::String savePath = algo.GetName() + "_" + imageSetPath + "_knn.out";
+    ArrayList<double> precisions;
     FILE* file = fopen(savePath, "w");
+
     for (int i = 0; i < passResult.Count(); i++)
-        fprintf(file, "Fold %d Accuracy: %f\n", i + 1, passResult[i]);
-    fprintf(file, "Average: %f, Standard Deviation: %f\n", Math::Mean(passResult), 
-        Math::StandardDeviation(passResult));
-    printf("\nAverage: %f, Standard Deviation: %f\n", Math::Mean(passResult), 
-        Math::StandardDeviation(passResult));
+    {
+        precisions.Add(passResult[i].Item1());
+        fprintf(file, "Fold %d Accuracy: %f\n", i + 1, precisions[i]);
+    }
+    
+    fprintf(file, "Average: %f, Standard Deviation: %f\n", Math::Mean(precisions), 
+        Math::StandardDeviation(precisions));
+    printf("\nAverage: %f, Standard Deviation: %f\n", Math::Mean(precisions), 
+        Math::StandardDeviation(precisions));
+    
     fclose(file);
+
+#if defined(SAVE_FEATURE) || defined(SAVE_DISTANCE_MATRIX)
+    double maxPrecision = -1;
+    ArrayList<Word_f> bestWords;
+    ArrayList<Histogram> bestHistograms;
+    ArrayList<int> labels;
+
+    for (int i = 0; i < passResult.Count(); i++)
+    {
+        if (passResult[i].Item1() > maxPrecision)
+        {
+            maxPrecision = passResult[i].Item1();
+            bestWords = passResult[i].Item2();
+            bestHistograms = passResult[i].Item3();
+        }
+    }
+
+    for (int i = 0; i < imageNum; i++)
+        labels.Add(paths[i].Item2());
+
+#if defined(SAVE_FEATURE)
+    savePath = algo.GetName() + "_" + imageSetPath + "_data";
+    SaveLocalFeatures(savePath, bestWords, bestHistograms, labels);
+#endif
+
+#if defined(SAVE_DISTANCE_MATRIX)
+    savePath = algo.GetName() + "_" + imageSetPath + "_matrix";
+    SaveDistanceMatrix(savePath, bestHistograms, labels);
+#endif
+
+#endif
 }
 
 template<typename GlobalFeature>
@@ -242,63 +172,8 @@ void GlobalFeatureCrossValidation(const TurboCV::System::String& imageSetPath, G
         Convert(algo(Preprocess(image, thinning, Size(256, 256))), features[i]);
     }
 
-#ifdef SAVE_FEATURE
-    {
-        printf("Write To File...\n");
-        TurboCV::System::String savePath = algo.GetName() + "_" + imageSetPath;
-        FILE* file = fopen(savePath, "w");
-        for (int i = 0; i < features.Count(); i++)
-        {
-            fprintf(file, "%d", images[i].Item2());
-            for (int j = 0; j < features[i].Count(); j++)
-                fprintf(file, " %d:%f", j + 1, features[i][j]);
-            fprintf(file, "\n");
-        }
-        fclose(file);
-    }
-#endif
-
-#ifdef SAVE_DISTANCE_MATRIX
-    {
-        Mat distanceMatrix = Mat::zeros(imageNum, imageNum, CV_64F);
-        #pragma omp parallel for
-        for (int i = 0; i < imageNum; i++)
-        {
-            for (int j = 0; j < imageNum; j++)
-            {
-                if (i != j)
-                    distanceMatrix.at<double>(i, j) = 
-                        Math::NormOneDistance(features[i], features[j]);
-            }
-        }
-
-        printf("Write To File...\n");
-        TurboCV::System::String savePath = algo.GetName() + "_" + imageSetPath + "_matrix";
-        FILE* file = fopen(savePath, "w");
-        for (int i = 0; i < imageNum; i++)
-        {
-            fprintf(file, "%d", images[i].Item2());
-            for (int j = 0; j < imageNum; j++)
-            {
-                if (i != j)
-                {
-                    fprintf(file, " %d:%f", images[i].Item2() == images[j].Item2() ? 1 : 0, 
-                        distanceMatrix.at<double>(i, j));
-                }
-            }
-            fprintf(file, "\n");
-        }
-        fclose(file);
-        distanceMatrix.release();
-    }
-#endif
-
     ArrayList<Group<ArrayList<GlobalFeature_f>, ArrayList<GlobalFeature_f>, ArrayList<size_t>>> pass = 
         RandomSplit(features, fold);
-
-#ifdef SAVE_ROC
-    ArrayList<ArrayList<double>> DRs(imageNum), FPRs(imageNum);
-#endif
 
     ArrayList<double> passResult;
     for (int i = 0; i < fold; i++)
@@ -321,58 +196,13 @@ void GlobalFeatureCrossValidation(const TurboCV::System::String& imageSetPath, G
                 trainingLabels.Add(paths[j].Item2());
         }
 
-        //ArrayList<size_t> actualIndexes = RandomPermutate(evaluationSet.Count(), 10000);
-        //ArrayList<GlobalFeature_f> actualEvaSet;
-        //ArrayList<int> actualEvaLabels;
-        //for (int i = 0; i < actualIndexes.Count(); i++)
-        //{
-        //    actualEvaSet.Add(evaluationSet[actualIndexes[i]]);
-        //    actualEvaLabels.Add(evaluationLabels[actualIndexes[i]]);
-        //}
-
-        //MQDF<GlobalFeature_f> mqdf;
-        //pair<double, map<pair<int, int>, double>> precisions = 
-        //    mqdf.Evaluate(trainingSet, trainingLabels, actualEvaSet, actualEvaLabels);
-
 		KNN<GlobalFeature_f> knn;
 		pair<double, map<pair<int, int>, double>> precisions = 
 			knn.Evaluate(trainingSet, trainingLabels, evaluationSet, evaluationLabels);
 
         passResult.Add(precisions.first);
         printf("Fold %d Accuracy: %f\n", i + 1, precisions.first);
-
-#ifdef SAVE_ROC
-        pair<ArrayList<ArrayList<double>>, ArrayList<ArrayList<bool>>> matrix =
-            GetDistanceMatrix(trainingSet, trainingLabels, evaluationSet, evaluationLabels);
-        ArrayList<ArrayList<double>>& distances = matrix.first;
-        ArrayList<ArrayList<bool>>& relevants = matrix.second;
-        for (int j = 0; j < pickUpIndexes.Count(); j++)
-        {
-            int index = pickUpIndexes[j];
-            auto roc = roc(distances[j], relevants[j]);
-            DRs[index] = roc.Item1();
-            FPRs[index] = roc.Item2();
-        }
-#endif
     }
-
-#ifdef SAVE_ROC
-    {
-        TurboCV::System::String savePath = algo.GetName() + "_" + imageSetPath + "_roc";
-        FILE* file = fopen(savePath, "w");
-        for (int i = 0; i < DRs.Count(); i++)
-        {
-            for (int j = 0; j < DRs[i].Count(); j++)
-                fprintf(file, "%f ", DRs[i][j]);
-            fprintf(file, "\n");
-
-            for (int j = 0; j < FPRs[i].Count(); j++)
-                fprintf(file, "%f ", FPRs[i][j]);
-            fprintf(file, "\n");
-        }
-        fclose(file);
-    }
-#endif
 
     TurboCV::System::String savePath = algo.GetName() + "_" + imageSetPath + "_knn.out";
     FILE* file = fopen(savePath, "w");
@@ -384,6 +214,24 @@ void GlobalFeatureCrossValidation(const TurboCV::System::String& imageSetPath, G
         Math::StandardDeviation(passResult));
 
     fclose(file);
+
+#if defined(SAVE_FEATURE) || defined(SAVE_DISTANCE_MATRIX)
+    ArrayList<int> labels;
+
+    for (int i = 0; i < imageNum; i++)
+        labels.Add(paths[i].Item2());
+
+#if defined(SAVE_FEATURE)
+    savePath = algo.GetName() + "_" + imageSetPath + "_data";
+    SaveGlobalFeatures(savePath, features, labels);
+#endif
+
+#if defined(SAVE_DISTANCE_MATRIX)
+    savePath = algo.GetName() + "_" + imageSetPath + "_matrix";
+    SaveDistanceMatrix(savePath, features, labels);
+#endif
+
+#endif
 }
 
 //template<typename EdgeMatching>
@@ -868,36 +716,6 @@ void Batch(const TurboCV::System::String& imageSetPath, bool thinning = false)
 
 int main()
 {
-    //ArrayList<ArrayList<double>> samples;
-    //ArrayList<int> labels;
-    //double token;
-
-    //FILE* file = fopen("Y.txt", "r");
-    //while (fscanf(file, "%lf", &token) != EOF)
-    //{
-    //    ArrayList<double> sample;
-
-    //    sample.Add(token);
-    //    for (int i = 1; i < 10; i++)
-    //    {
-    //        fscanf(file, "%lf", &token);
-    //        sample.Add(token);
-    //    }
-
-    //    samples.Add(sample);
-    //}
-    //fclose(file);
-
-    //file = fopen("labels.txt", "r");
-    //while (fscanf(file, "%lf", &token) != EOF)
-    //{
-    //    labels.Add(token);
-    //}
-    //fclose(file);
-
-    //CrossValidation(samples, labels);
-
-
     LocalFeatureCrossValidation("sketches", RHOG(), 500, false);
     printf("\n");
 
@@ -913,69 +731,6 @@ int main()
     //Batch("sketches", false);
     //Batch("oracles", true);
 
-    /*ArrayList<Point> points = GetEdgels(image);
-    ArrayList<int> xCount(image.cols);
-
-    for (auto point : points)
-        xCount[point.x]++;
-
-    for (int i = 1; i < xCount.size(); i++)
-        xCount[i] += xCount[i - 1];
-
-    int blockNum = 4;
-    double xStep = xCount.back() / (double)blockNum;
-
-    ArrayList<int> xSep(blockNum + 1);
-    int tmp = 1;
-    for (int i = 0; i < xCount.size(); i++)
-    {
-        if (xCount[i] >= tmp * xStep)
-        {
-            xSep[tmp++] = i;
-
-            if (tmp == blockNum)
-                break;
-        }
-    }
-    xSep[blockNum] = image.cols - 1;
-
-    Mat ySep(blockNum + 1, blockNum, CV_32S);
-    for (int i = 1; i < xSep.size(); i++)
-    {
-        int prevSep = xSep[i - 1], curSep = xSep[i];
-
-        ArrayList<int> yCount(image.rows);
-        for (auto point : points)
-        {
-            if (prevSep <= point.x && point.x < curSep)
-                yCount[point.y]++;
-        }
-
-        for (int j = 1; j < yCount.size(); j++)
-            yCount[j] += yCount[j - 1];
-
-        double yStep = yCount.back() / (double)blockNum;
-        int tmp = 1;
-        for (int j = 0; j < yCount.size(); j++)
-        {
-            if (yCount[j] >= tmp * yStep)
-            {
-                ySep.at<int>(tmp++, i - 1) = j;
-
-                if (tmp == blockNum)
-                    break;
-            }
-        }
-    }
-
-    cvtColor(image, image, CV_GRAY2BGR);
-
-    for (int i = 1; i < xSep.size() - 1; i++)
-        line(image, Point(xSep[i], 0), Point(xSep[i], image.rows - 1), Scalar(0, 255, 0));
-
-    for (int i = 1; i < ySep.rows - 1; i++)
-        for (int j = 0; j < ySep.cols; j++)
-            line(image, Point(xSep[j], ySep.at<int>(i, j)), Point(xSep[j + 1], ySep.at<int>(i, j)), Scalar(0, 255, 0));*/
 
     //Mat img = imread("00002.png", CV_LOAD_IMAGE_GRAYSCALE);
     //vector<Point> points;
