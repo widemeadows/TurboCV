@@ -28,8 +28,7 @@ namespace System
 		typedef ArrayList<float> Histogram_f;
 
 		const long long INF = std::numeric_limits<long long>::max();
-		const double EPS = 1e-14;
-		const int MAX_GRAYSCALE = 255;
+        const double EPS = 1e-14;
 
 		class PointHash
 		{

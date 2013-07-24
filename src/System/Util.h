@@ -2,6 +2,7 @@
 
 #include <cassert>
 #include <cstdlib>
+#include <algorithm>
 #include "Collection.h"
 
 namespace TurboCV
@@ -125,7 +126,8 @@ namespace System
 
             for (size_t j = begin; j < end; j++)
                 subsetIndexes.Add(permutation[j]);
-
+            
+            std::sort(subsetIndexes.begin(), subsetIndexes.end());
             result.Add(subsetIndexes);
         }
 

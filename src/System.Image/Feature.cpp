@@ -1,4 +1,5 @@
 #include "../System/System.h"
+#include "Core.h"
 #include "Feature.h"
 #include <cv.h>
 #include <cstdio>
@@ -65,17 +66,15 @@ namespace System
             const ArrayList<Histogram>& freqHists, 
             const ArrayList<int>& labels)
         {
-            if (words.Count() == 0)
+            if (words.Count() == 0 || freqHists.Count() == 0)
                 return;
 
-            int nWord = words.Count();
-            int nHist = freqHists.Count();
-            int nDim = words[0].Count();
             FILE* file = fopen(fileName, "w");
 
-            fprintf(file, "%d\n", nDim);
+            int nWord = words.Count();      
+            int nDim = words[0].Count();
 
-            fprintf(file, "%d\n", nWord);
+            fprintf(file, "%d %d\n", nWord, nDim);
             for (int i = 0; i < nWord; i++)
             {
                 for (int j = 0; j < nDim; j++)
@@ -83,7 +82,10 @@ namespace System
                 fprintf(file, "\n");
             }
 
-            fprintf(file, "%d\n", nHist);
+            int nHist = freqHists.Count();
+            nDim = freqHists[0].Count();
+
+            fprintf(file, "%d %d\n", nHist, nDim);
             for (int i = 0; i < nHist; i++)
             {
                 fprintf(file, "%d ", labels[i]);
@@ -103,13 +105,12 @@ namespace System
             if (features.Count() == 0)
                 return;
 
+            FILE* file = fopen(fileName, "w");
             int nFeature = features.Count();
             int nDim = features[0].Count();
-            FILE* file = fopen(fileName, "w");
 
-            fprintf(file, "%d\n", nDim);
+            fprintf(file, "%d %d\n", nFeature, nDim);
 
-            fprintf(file, "%d\n", nFeature);
             for (int i = 0; i < nFeature; i++)
             {
                 fprintf(file, "%d ", labels[i]);

@@ -1,5 +1,5 @@
 #include "../System/System.h"
-#include "Util.h"
+#include "Core.h"
 #include <cv.h>
 #include <highgui.h>
 #include <cassert>
@@ -24,7 +24,7 @@ namespace System
 
 			for (int i = 0; i < image.rows; i++)
 				for (int j = 0; j < image.cols; j++)
-					result.at<uchar>(i, j) = MAX_GRAYSCALE - image.at<uchar>(i, j);
+					result.at<uchar>(i, j) = 255 - image.at<uchar>(i, j);
 
 			return result;
 		}

@@ -1,7 +1,7 @@
 #pragma once
 
 #include "../System/System.h"
-#include "Util.h"
+#include "Core.h"
 #include <cv.h>
 
 namespace TurboCV
@@ -43,7 +43,7 @@ namespace System
                 return cv::Mat();
 
             int nVec = vecs.Count();
-            cv::Mat distanceMatrix = Mat::zeros(nVec, nVec, CV_64F);
+            cv::Mat distanceMatrix(nVec, nVec, CV_64F);
             
             #pragma omp parallel for
             for (int i = 0; i < nVec; i++)

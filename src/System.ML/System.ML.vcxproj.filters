@@ -15,27 +15,21 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="DimensionReduction.cpp">
+    <ClCompile Include="Reduction.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="KNN.h">
-      <Filter>头文件</Filter>
-    </ClInclude>
     <ClInclude Include="LDA.h">
       <Filter>头文件</Filter>
     </ClInclude>
-    <ClInclude Include="MQDF.h">
-      <Filter>头文件</Filter>
-    </ClInclude>
-    <ClInclude Include="SNE.h">
-      <Filter>头文件</Filter>
-    </ClInclude>
-    <ClInclude Include="TSNE.h">
-      <Filter>头文件</Filter>
-    </ClInclude>
     <ClInclude Include="System.ML.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="Classifier.hpp">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="Reduction.h">
       <Filter>头文件</Filter>
     </ClInclude>
   </ItemGroup>

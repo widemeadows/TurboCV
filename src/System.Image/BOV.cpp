@@ -1,5 +1,5 @@
 #include "../System/System.h"
-#include "Util.h"
+#include "Core.h"
 #include <cv.h>
 using namespace cv;
 
@@ -57,7 +57,7 @@ namespace System
             size_t imageNum = features.Count();
             ArrayList<Histogram> freqHistograms(imageNum);
 
-            #pragma omp parallel for schedule(guided)
+            #pragma omp parallel for schedule(dynamic)
             for (int i = 0; i < imageNum; i++)
                 freqHistograms[i] = GetFrequencyHistogram(features[i], words);
 

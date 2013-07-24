@@ -31,7 +31,7 @@
     <ClInclude Include="Feature.h" />
     <ClInclude Include="Feature1.h" />
     <ClInclude Include="System.Image.h" />
-    <ClInclude Include="Util.h" />
+    <ClInclude Include="Core.h" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{1D468C5B-7B34-4E6F-90B2-069C597EACD6}</ProjectGuid>

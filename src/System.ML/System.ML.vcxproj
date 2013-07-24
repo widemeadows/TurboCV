@@ -19,15 +19,13 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="DimensionReduction.cpp" />
+    <ClCompile Include="Reduction.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="KNN.h" />
+    <ClInclude Include="Classifier.hpp" />
     <ClInclude Include="LDA.h" />
-    <ClInclude Include="MQDF.h" />
-    <ClInclude Include="SNE.h" />
+    <ClInclude Include="Reduction.h" />
     <ClInclude Include="System.ML.h" />
-    <ClInclude Include="TSNE.h" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{007A4066-E45A-4959-9083-B21250B69673}</ProjectGuid>
