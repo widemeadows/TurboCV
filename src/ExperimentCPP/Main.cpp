@@ -12,7 +12,7 @@ using namespace TurboCV::System::ML;
 using namespace cv;
 using namespace std;
 
-//#define SAVE_FEATURE
+#define SAVE_FEATURE
 //#define SAVE_DISTANCE_MATRIX
 
 inline TurboCV::System::ArrayList<Group<TurboCV::System::String, int>> GetImagePaths(
@@ -56,7 +56,7 @@ void LocalFeatureCrossValidation(const TurboCV::System::String& imageSetPath, Lo
     ArrayList<ArrayList<size_t>> pass = RandomSplit(imageNum, fold);
     ArrayList<Group<double, ArrayList<Word_f>, ArrayList<Histogram>>> passResult;
 
-    for (int i = 0; i < 1; i++)
+    for (int i = 0; i < fold; i++)
     {
         printf("\nBegin Fold %d...\n", i + 1);
 
@@ -106,22 +106,22 @@ void LocalFeatureCrossValidation(const TurboCV::System::String& imageSetPath, Lo
         printf("Fold %d Accuracy: %f\n", i + 1, passResult[i].Item1());
     }
 
-    //TurboCV::System::String savePath = algo.GetName() + "_" + imageSetPath + "_knn.out";
-    //ArrayList<double> precisions;
-    //FILE* file = fopen(savePath, "w");
+    TurboCV::System::String savePath = algo.GetName() + "_" + imageSetPath + "_knn.out";
+    ArrayList<double> precisions;
+    FILE* file = fopen(savePath, "w");
 
-    //for (int i = 0; i < passResult.Count(); i++)
-    //{
-    //    precisions.Add(passResult[i].Item1());
-    //    fprintf(file, "Fold %d Accuracy: %f\n", i + 1, precisions[i]);
-    //}
-    //
-    //fprintf(file, "Average: %f, Standard Deviation: %f\n", Math::Mean(precisions), 
-    //    Math::StandardDeviation(precisions));
-    //printf("\nAverage: %f, Standard Deviation: %f\n", Math::Mean(precisions), 
-    //    Math::StandardDeviation(precisions));
-    //
-    //fclose(file);
+    for (int i = 0; i < passResult.Count(); i++)
+    {
+        precisions.Add(passResult[i].Item1());
+        fprintf(file, "Fold %d Accuracy: %f\n", i + 1, precisions[i]);
+    }
+    
+    fprintf(file, "Average: %f, Standard Deviation: %f\n", Math::Mean(precisions), 
+        Math::StandardDeviation(precisions));
+    printf("\nAverage: %f, Standard Deviation: %f\n", Math::Mean(precisions), 
+        Math::StandardDeviation(precisions));
+    
+    fclose(file);
 
 #if defined(SAVE_FEATURE) || defined(SAVE_DISTANCE_MATRIX)
     double maxPrecision = -1;
@@ -153,18 +153,6 @@ void LocalFeatureCrossValidation(const TurboCV::System::String& imageSetPath, Lo
 #endif
 
 #endif
-    printf("Compute Visual Words...\n");
-    ArrayList<Word_f> words = BOV(SampleDescriptors(features, sampleNum), wordNum).GetVisualWords();
-
-    printf("Compute Frequency Histograms...\n");
-    ArrayList<Histogram> histograms = FreqHist(features, words).GetFrequencyHistograms();
-
-    ArrayList<int> labels;
-    for (int i = 0; i < imageNum; i++)
-        labels.Add(paths[i].Item2());
-
-    TurboCV::System::String savePath = algo.GetName() + "_" + imageSetPath + "_data";
-    SaveLocalFeatures(savePath, words, histograms, labels);
 }
 
 template<typename GlobalFeature>

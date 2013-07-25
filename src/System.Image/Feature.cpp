@@ -20,34 +20,39 @@ namespace System
         {
             assert(size.width == size.height);
 
-            Mat binaryImage;
-            threshold(sketchImage, binaryImage, 200, 1, CV_THRESH_BINARY_INV);
+            Mat tmpImage = reverse(sketchImage);
+            resize(tmpImage, tmpImage, Size(256, 256));
 
-            Mat boundingBox = GetBoundingBox(binaryImage);
+            //threshold(tmpImage, tmpImage, 200, 1, CV_THRESH_BINARY_INV);
 
-            Mat squareImage;
-            int widthPadding = 0, heightPadding = 0;
-            if (boundingBox.rows < boundingBox.cols)
-                heightPadding = (boundingBox.cols - boundingBox.rows) / 2;
-            else
-                widthPadding = (boundingBox.rows - boundingBox.cols) / 2;
-            copyMakeBorder(boundingBox, squareImage, heightPadding, heightPadding, 
-                widthPadding, widthPadding, BORDER_CONSTANT, Scalar(0, 0, 0, 0));
+            //Mat binaryImage;
+            //threshold(sketchImage, binaryImage, 200, 1, CV_THRESH_BINARY_INV);
 
-            Mat scaledImage;
-            Size scaledSize = Size((int)(size.width - 2 * size.width / 16.0),
-                (int)(size.height - 2 * size.height / 16.0));
-            resize(squareImage, scaledImage, scaledSize);
+            //Mat boundingBox = GetBoundingBox(binaryImage);
 
-            Mat paddedImage;
-            heightPadding = (size.height - scaledSize.height) / 2,
-                widthPadding = (size.width - scaledSize.width) / 2; 
-            copyMakeBorder(scaledImage, paddedImage, heightPadding, heightPadding, 
-                widthPadding, widthPadding, BORDER_CONSTANT, Scalar(0, 0, 0, 0));
-            assert(paddedImage.rows == size.height && paddedImage.cols == size.width);
+            //Mat squareImage;
+            //int widthPadding = 0, heightPadding = 0;
+            //if (boundingBox.rows < boundingBox.cols)
+            //    heightPadding = (boundingBox.cols - boundingBox.rows) / 2;
+            //else
+            //    widthPadding = (boundingBox.rows - boundingBox.cols) / 2;
+            //copyMakeBorder(boundingBox, squareImage, heightPadding, heightPadding, 
+            //    widthPadding, widthPadding, BORDER_CONSTANT, Scalar(0, 0, 0, 0));
 
-            Mat finalImage;
-            clean(paddedImage, finalImage, 3);
+            //Mat scaledImage;
+            //Size scaledSize = Size((int)(size.width - 2 * size.width / 18.0),
+            //    (int)(size.height - 2 * size.height / 18.0));
+            //resize(squareImage, scaledImage, scaledSize);
+
+            //Mat paddedImage;
+            //heightPadding = (size.height - scaledSize.height) / 2,
+            //    widthPadding = (size.width - scaledSize.width) / 2; 
+            //copyMakeBorder(scaledImage, paddedImage, heightPadding, heightPadding, 
+            //    widthPadding, widthPadding, BORDER_CONSTANT, Scalar(0, 0, 0, 0));
+            //assert(paddedImage.rows == size.height && paddedImage.cols == size.width);
+
+            Mat finalImage = tmpImage;
+            //clean(paddedImage, finalImage, 3);
 
             if (thinning)
                 thin(finalImage, finalImage);
