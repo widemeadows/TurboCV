@@ -18,9 +18,9 @@ namespace System
 		typedef ArrayList<double> Descriptor;
 		typedef ArrayList<float> Descriptor_f;
 		typedef ArrayList<Descriptor> LocalFeatureVec;
-		typedef ArrayList<Descriptor_f> LocalFeature_f;
+		typedef ArrayList<Descriptor_f> LocalFeatureVec_f;
 		typedef ArrayList<double> GlobalFeatureVec;
-		typedef ArrayList<float> GlobalFeature_f;
+		typedef ArrayList<float> GlobalFeatureVec_f;
 
 		typedef ArrayList<double> Word;
 		typedef ArrayList<float> Word_f;
@@ -162,7 +162,7 @@ namespace System
         class FreqHist
         {
         public:
-            FreqHist(const ArrayList<LocalFeature_f>& features, const ArrayList<Word_f>& words)
+            FreqHist(const ArrayList<LocalFeatureVec_f>& features, const ArrayList<Word_f>& words)
             {
                 histograms = GetFrequencyHistograms(features, words);
             }
@@ -171,11 +171,11 @@ namespace System
 
         protected:
             ArrayList<Histogram> GetFrequencyHistograms(
-                const ArrayList<LocalFeature_f>& features, 
+                const ArrayList<LocalFeatureVec_f>& features, 
                 const ArrayList<Word_f>& words);
 
             Histogram GetFrequencyHistogram(
-                const LocalFeature_f& feature, 
+                const LocalFeatureVec_f& feature, 
                 const ArrayList<Word_f>& words);
 
             ArrayList<double> GetDistancesToVisualWords(
@@ -186,7 +186,7 @@ namespace System
             ArrayList<Histogram> histograms;
         };
 
-        inline ArrayList<Descriptor_f> SampleDescriptors(const ArrayList<LocalFeature_f>& features, 
+        inline ArrayList<Descriptor_f> SampleDescriptors(const ArrayList<LocalFeatureVec_f>& features, 
             size_t sampleNum = INF)
         {
             ArrayList<Descriptor_f> allDescriptors;
@@ -198,7 +198,7 @@ namespace System
             return RandomPickUp(allDescriptors, sampleNum);
         }
 
-        inline ArrayList<Histogram> PerformBOV(const ArrayList<LocalFeature_f>& features,
+        inline ArrayList<Histogram> PerformBOV(const ArrayList<LocalFeatureVec_f>& features,
             size_t clusterNum, size_t sampleNum)
         {
             ArrayList<Descriptor_f> samples = SampleDescriptors(features, sampleNum);
@@ -211,7 +211,7 @@ namespace System
 		// Others
 		//////////////////////////////////////////////////////////////////////////
 
-		inline void Convert(const LocalFeatureVec& src, LocalFeature_f& dst)
+		inline void Convert(const LocalFeatureVec& src, LocalFeatureVec_f& dst)
 		{
 			dst.Clear();
 
@@ -227,7 +227,7 @@ namespace System
 			dst.Shrink();
 		}
 
-		inline void Convert(const GlobalFeatureVec& src, GlobalFeature_f& dst)
+		inline void Convert(const GlobalFeatureVec& src, GlobalFeatureVec_f& dst)
 		{
 			dst.Clear();
 

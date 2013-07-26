@@ -38,5 +38,8 @@
     <ClInclude Include="TinyXml.h">
       <Filter>头文件</Filter>
     </ClInclude>
+    <ClInclude Include="System.XML.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

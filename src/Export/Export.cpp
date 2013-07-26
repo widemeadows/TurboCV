@@ -85,7 +85,7 @@ EXPORT_API Group<ArrayList<NativeWord>, ArrayList<NativeHistogram>> LocalFeature
     bool thinning)
 {
     int imageNum = images.Count();
-    ArrayList<LocalFeature_f> features(imageNum);
+    ArrayList<LocalFeatureVec_f> features(imageNum);
 
     #pragma omp parallel for
     for (int i = 0; i < imageNum; i++)
@@ -132,7 +132,7 @@ EXPORT_API NativeHistogram LocalFeaturePredict(
     const ArrayList<NativeWord>& words, 
     bool thinning)
 {
-    LocalFeature_f feature;
+    LocalFeatureVec_f feature;
     cv::Mat cvImage = ConvertNativeMatToCvMat(image, uchar());
 
     switch (type)

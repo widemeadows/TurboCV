@@ -24,12 +24,14 @@
     <ClCompile Include="Feature.cpp" />
     <ClCompile Include="Geometry.cpp" />
     <ClCompile Include="GrayImage.cpp" />
+    <ClCompile Include="Solver.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="EdgeMatching.h" />
     <ClInclude Include="Eigen.h" />
     <ClInclude Include="Feature.h" />
     <ClInclude Include="Feature1.h" />
+    <ClInclude Include="Solver.hpp" />
     <ClInclude Include="System.Image.h" />
     <ClInclude Include="Core.h" />
   </ItemGroup>
@@ -147,6 +149,7 @@
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <PreprocessorDefinitions>WIN32;NDEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
+      <OpenMPSupport>true</OpenMPSupport>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>

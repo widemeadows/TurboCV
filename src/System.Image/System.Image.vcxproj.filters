@@ -30,6 +30,9 @@
     <ClCompile Include="GrayImage.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
+    <ClCompile Include="Solver.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="EdgeMatching.h">
@@ -48,6 +51,9 @@
       <Filter>头文件</Filter>
     </ClInclude>
     <ClInclude Include="Core.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="Solver.hpp">
       <Filter>头文件</Filter>
     </ClInclude>
   </ItemGroup>

@@ -1,7 +1,9 @@
 #include "../System/System.h"
 #include "../System.XML/System.XML.h"
+#include "Solver.hpp"
 #include <string>
 #include <map>
+#include <algorithm>
 using namespace TurboCV::System::XML;
 using namespace std;
 
@@ -11,37 +13,64 @@ namespace System
 {
     namespace Image
     {
-        class Solver
+        //////////////////////////////////////////////////////////////////////////
+        // Solver
+        //////////////////////////////////////////////////////////////////////////
+
+        TiXmlDocument Solver::LoadConfiguration(const String& configfileName)
         {
-        public:
-            Solver(const String& configFilePath)
+            TiXmlDocument doc((const char*)configfileName);
+            doc.LoadFile();
+
+            return doc;
+        }
+
+        Group<ArrayList<String>, ArrayList<int>> Solver::LoadDataset(const String& datasetPath)
+        {
+            DirectoryInfo imageSetInfo(datasetPath);
+
+            ArrayList<String> classInfos = imageSetInfo.GetDirectories();
+            sort(classInfos.begin(), classInfos.end());
+
+            ArrayList<String> imagePaths;
+            ArrayList<int> imageLabels;
+            for (int i = 0; i < classInfos.Count(); i++)
             {
-                try
+                ArrayList<String> fileInfos = DirectoryInfo(classInfos[i]).GetFiles();
+                sort(fileInfos.begin(), fileInfos.end());
+
+                for (int j = 0; j < fileInfos.Count(); j++)
                 {
-                    TiXmlDocument* doc = new TiXmlDocument(configFilePath);
-                    doc->LoadFile();
-
-                    //TiXmlElement* root = doc->RootElement();
-                    //root->
-
-                    ////获得根元素，即Persons。
-                    //TiXmlElement *RootElement = myDocument->RootElement();
-                    ////输出根元素名称，即输出Persons。
-                    //cout << RootElement->Value() << endl;
-                    ////获得第一个Person节点。
-                    //TiXmlElement *FirstPerson = RootElement->FirstChildElement();
-                    ////获得第一个Person的name节点和age节点和ID属性。
-                    //TiXmlElement *NameElement = FirstPerson->FirstChildElement();
-                    //TiXmlElement *AgeElement = NameElement->NextSiblingElement();
-                    //TiXmlAttribute *IDAttribute = FirstPerson->FirstAttribute();
-                    ////输出第一个Person的name内容，即周星星；age内容，即；ID属性，即。
+                    imagePaths.Add(fileInfos[j]);
+                    imageLabels.Add(i + 1);
                 }
-                catch (string& e) {}
             }
 
-        protected:
-            map<String, double> params;
-        };
+            return CreateGroup(imagePaths, imageLabels);
+        }
+
+        map<String, String> Solver::GetConfiguration(const String& featureName)
+        {
+            map<String, String> params;
+
+            try
+            {
+                TiXmlNode* configs = doc.RootElement()->FirstChild();
+                TiXmlElement* config = configs->FirstChild((const char*)featureName)->ToElement();
+
+                TiXmlAttribute* attr = config->FirstAttribute();
+                params[attr->Name()] = attr->Value();
+
+                while ((attr = attr->Next()) != NULL)
+                    params[attr->Name()] = attr->Value();
+            }
+            catch (string& e) 
+            {
+                return map<String, String>();
+            }
+
+            return params;
+        }
     }
 }
 }

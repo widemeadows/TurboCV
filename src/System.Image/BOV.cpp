@@ -51,7 +51,7 @@ namespace System
         //////////////////////////////////////////////////////////////////////////
 
         ArrayList<Histogram> FreqHist::GetFrequencyHistograms(
-            const ArrayList<LocalFeature_f>& features, 
+            const ArrayList<LocalFeatureVec_f>& features, 
             const ArrayList<Word_f>& words)
         {
             size_t imageNum = features.Count();
@@ -65,7 +65,7 @@ namespace System
         }
 
         Histogram FreqHist::GetFrequencyHistogram(
-            const LocalFeature_f& feature, 
+            const LocalFeatureVec_f& feature, 
             const ArrayList<Word_f>& words)
         {    
             size_t wordNum = words.Count();

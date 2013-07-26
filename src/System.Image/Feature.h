@@ -3,6 +3,7 @@
 #include "../System/System.h"
 #include "Core.h"
 #include <cv.h>
+#include <map>
 
 namespace TurboCV
 {
@@ -11,10 +12,42 @@ namespace System
     namespace Image
     {
         //////////////////////////////////////////////////////////////////////////
-        // APIs for Preprocessing
+        // APIs for Helper Functions
         //////////////////////////////////////////////////////////////////////////
 
-        cv::Mat Preprocess(const cv::Mat& sketchImage, bool thinning, cv::Size size);
+        inline double GetDoubleValue(
+            const std::map<String, String>& params, 
+            const String& paramName, 
+            const double defaultValue)
+        {
+            std::map<String, String>::const_iterator itr = params.find(paramName);
+
+            if (itr == params.end())
+                return defaultValue;
+            else
+                return Double::Parse(itr->second);
+        }
+
+        inline ArrayList<double> GetDoubleList(
+            const std::map<String, String>& params, 
+            const String& paramName, 
+            const ArrayList<double>& defaultValue)
+        {
+            std::map<String, String>::const_iterator itr = params.find(paramName);
+
+            if (itr == params.end())
+                return defaultValue;
+            else
+            {
+                ArrayList<String> tokens = itr->second.Split(",");
+                ArrayList<double> values(tokens.Count());
+
+                for (int i = tokens.Count() - 1; i >= 0; i--)
+                    values[i] = Double::Parse(tokens[i]);
+
+                return values;
+            }
+        }
 
 
         //////////////////////////////////////////////////////////////////////////
@@ -29,7 +62,7 @@ namespace System
 
         void SaveGlobalFeatures(
             const String& fileName, 
-            const ArrayList<GlobalFeature_f>& features,
+            const ArrayList<GlobalFeatureVec_f>& features,
             const ArrayList<int>& labels);
 
         template<typename T>
@@ -83,6 +116,17 @@ namespace System
         class HOG : public LocalFeature
         {
         public:
+            HOG(): orientNum(4), cellNum(4), cellSize(23) {}
+
+            HOG(const std::map<String, String>& params)
+            {
+                orientNum = GetDoubleValue(params, "orientNum", 4);
+                cellNum = GetDoubleValue(params, "cellNum", 4);
+                cellSize = GetDoubleValue(params, "cellSize", 23);
+
+                printf("OrientNum: %d, CellNum: %d, CellSize: %d\n", orientNum, cellNum, (int)cellSize);
+            }
+
             virtual LocalFeatureVec operator()(const cv::Mat& sketchImage) 
             {
                 return GetFeature(sketchImage);
@@ -96,13 +140,30 @@ namespace System
         protected:
             LocalFeatureVec GetFeature(const cv::Mat& sketchImage);
             Descriptor GetDescriptor(const ArrayList<cv::Mat>& filteredOrientImages, 
-                const cv::Point& center, int cellSize, int cellNum);
+                const cv::Point& center);
+
+        private:
+            int orientNum, cellNum;
+            double cellSize;
         };
 
         // Regularly Sampling HOG
         class RHOG : public LocalFeature
         {
         public:
+            RHOG(): orientNum(4), cellNum(4), sampleNum(28), blockSize(92) {}
+
+            RHOG(const std::map<String, String>& params)
+            {
+                orientNum = GetDoubleValue(params, "orientNum", 4);
+                cellNum = GetDoubleValue(params, "cellNum", 4);
+                sampleNum = GetDoubleValue(params, "sampleNum", 28);
+                blockSize = GetDoubleValue(params, "blockSize", 92);
+
+                printf("OrientNum: %d, CellNum: %d, SampleNum: %d, BlockSize: %d\n", 
+                    orientNum, cellNum, sampleNum, (int)blockSize);
+            }
+
             virtual LocalFeatureVec operator()(const cv::Mat& sketchImage) 
             {
                 return GetFeature(sketchImage);
@@ -116,13 +177,27 @@ namespace System
         protected:
             LocalFeatureVec GetFeature(const cv::Mat& sketchImage);
             Descriptor GetDescriptor(const ArrayList<cv::Mat>& filteredOrientImages, 
-                const cv::Point& center, int blockSize, int cellNum);
+                const cv::Point& center);
+
+        private:
+            int orientNum, cellNum, sampleNum;
+            double blockSize;
         };
 
         // Shape Based HOG
         class SHOG : public LocalFeature
         {
         public:
+            SHOG(): orientNum(4), cellNum(4) {}
+
+            SHOG(const std::map<String, String>& params)
+            {
+                orientNum = GetDoubleValue(params, "orientNum", 4);
+                cellNum = GetDoubleValue(params, "cellNum", 4);
+
+                printf("OrientNum: %d, CellNum: %d\n", orientNum, cellNum);
+            }
+
             virtual LocalFeatureVec operator()(const cv::Mat& sketchImage) 
             {
                 return GetFeature(sketchImage);
@@ -136,13 +211,30 @@ namespace System
         protected:
             LocalFeatureVec GetFeature(const cv::Mat& sketchImage);
             Descriptor GetDescriptor(const ArrayList<cv::Mat>& orientChannels,
-                const cv::Point& pivot, const ArrayList<cv::Point>& points, int cellNum);
+                const cv::Point& pivot, const ArrayList<cv::Point>& points);
+
+        private:
+            int orientNum, cellNum;
         };
 
         // Log-SHOG
         class LogSHOG : public LocalFeature
         {
         public:
+            LogSHOG(): orientNum(4), cellNum(4), scaleNum(15), sigmaInit(0.7), sigmaStep(1.2) {}
+
+            LogSHOG(const std::map<String, String>& params)
+            {
+                orientNum = GetDoubleValue(params, "orientNum", 4);
+                cellNum = GetDoubleValue(params, "cellNum", 4);
+                scaleNum = GetDoubleValue(params, "scaleNum", 15);
+                sigmaInit = GetDoubleValue(params, "sigmaInit", 0.7);
+                sigmaStep = GetDoubleValue(params, "sigmaStep", 1.2);
+
+                printf("OrientNum: %d, CellNum: %d, ScaleNum: %d, SigmaInit: %f, SigmaStep: %f\n", 
+                    orientNum, cellNum, scaleNum, sigmaInit, sigmaStep);
+            }
+
             virtual LocalFeatureVec operator()(const cv::Mat& sketchImage) 
             {
                 return GetFeature(sketchImage);
@@ -156,7 +248,11 @@ namespace System
         protected:
             LocalFeatureVec GetFeature(const cv::Mat& sketchImage);
             Descriptor GetDescriptor(const ArrayList<cv::Mat>& orientChannels, 
-                const cv::Point& pivot, int blockSize, int cellNum);
+                const cv::Point& pivot, double blockSize);
+
+        private:
+            int orientNum, cellNum, scaleNum;
+            double sigmaInit, sigmaStep;
         };
 
         // Histogram of Oriented Shape Context

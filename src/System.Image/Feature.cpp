@@ -13,55 +13,6 @@ namespace System
     namespace Image
     {
         //////////////////////////////////////////////////////////////////////////
-        // Preprocess
-        //////////////////////////////////////////////////////////////////////////
-
-        Mat Preprocess(const Mat& sketchImage, bool thinning, Size size)
-        {
-            assert(size.width == size.height);
-
-            Mat tmpImage = reverse(sketchImage);
-            resize(tmpImage, tmpImage, Size(256, 256));
-
-            //threshold(tmpImage, tmpImage, 200, 1, CV_THRESH_BINARY_INV);
-
-            //Mat binaryImage;
-            //threshold(sketchImage, binaryImage, 200, 1, CV_THRESH_BINARY_INV);
-
-            //Mat boundingBox = GetBoundingBox(binaryImage);
-
-            //Mat squareImage;
-            //int widthPadding = 0, heightPadding = 0;
-            //if (boundingBox.rows < boundingBox.cols)
-            //    heightPadding = (boundingBox.cols - boundingBox.rows) / 2;
-            //else
-            //    widthPadding = (boundingBox.rows - boundingBox.cols) / 2;
-            //copyMakeBorder(boundingBox, squareImage, heightPadding, heightPadding, 
-            //    widthPadding, widthPadding, BORDER_CONSTANT, Scalar(0, 0, 0, 0));
-
-            //Mat scaledImage;
-            //Size scaledSize = Size((int)(size.width - 2 * size.width / 18.0),
-            //    (int)(size.height - 2 * size.height / 18.0));
-            //resize(squareImage, scaledImage, scaledSize);
-
-            //Mat paddedImage;
-            //heightPadding = (size.height - scaledSize.height) / 2,
-            //    widthPadding = (size.width - scaledSize.width) / 2; 
-            //copyMakeBorder(scaledImage, paddedImage, heightPadding, heightPadding, 
-            //    widthPadding, widthPadding, BORDER_CONSTANT, Scalar(0, 0, 0, 0));
-            //assert(paddedImage.rows == size.height && paddedImage.cols == size.width);
-
-            Mat finalImage = tmpImage;
-            //clean(paddedImage, finalImage, 3);
-
-            if (thinning)
-                thin(finalImage, finalImage);
-
-            return finalImage;
-        }
-
-
-        //////////////////////////////////////////////////////////////////////////
         // Save Features
         //////////////////////////////////////////////////////////////////////////
 
@@ -104,7 +55,7 @@ namespace System
 
         void SaveGlobalFeatures(
             const String& fileName, 
-            const ArrayList<GlobalFeature_f>& features,
+            const ArrayList<GlobalFeatureVec_f>& features,
             const ArrayList<int>& labels)
         {
             if (features.Count() == 0)
@@ -134,8 +85,6 @@ namespace System
 
         LocalFeatureVec HOG::GetFeature(const Mat& sketchImage)
         {
-            int orientNum = 4, cellSize = 23 * sketchImage.rows / 256, cellNum = 4;
-
             int kernelSize = cellSize * 2 + 1;
             Mat tentKernel(kernelSize, kernelSize, CV_64F);
             for (int i = 0; i < kernelSize; i++)
@@ -161,8 +110,7 @@ namespace System
             {
                 for (int j = 0; j < sketchImage.cols; j += cellSize)
                 {
-                    Descriptor descriptor = GetDescriptor(filteredOrientChannels, Point(j, i), 
-                        cellSize, cellNum);
+                    Descriptor descriptor = GetDescriptor(filteredOrientChannels, Point(j, i));
                     feature.Add(descriptor);
                 }
             }
@@ -171,14 +119,13 @@ namespace System
         }
 
         Descriptor HOG::GetDescriptor(const ArrayList<Mat>& filteredOrientChannels, 
-            const Point& center, int cellSize, int cellNum)
+            const Point& center)
         {
             int height = filteredOrientChannels[0].rows, 
                 width = filteredOrientChannels[0].cols;
             int blockSize = cellSize * cellNum;
-            int expectedTop = center.y - blockSize / 2,
-                expectedLeft = center.x - blockSize / 2,
-                orientNum = filteredOrientChannels.Count();
+            int expectedTop = (int)(center.y - blockSize / 2),
+                expectedLeft = (int)(center.x - blockSize / 2);
             int dims[] = { cellNum, cellNum, orientNum };
             Mat hist(3, dims, CV_64F);
 
@@ -216,9 +163,6 @@ namespace System
 
         LocalFeatureVec RHOG::GetFeature(const Mat& sketchImage)
         {
-            int orientNum = 4, sampleNum = 28, blockSize = 92 * sketchImage.rows / 256, 
-                cellNum = 4;
-
             int cellSize = blockSize / cellNum, kernelSize = cellSize * 2 + 1;
             Mat tentKernel(kernelSize, kernelSize, CV_64F);
             for (int i = 0; i < kernelSize; i++)
@@ -243,8 +187,7 @@ namespace System
             ArrayList<Point> centers = SampleOnGrid(sketchImage.rows, sketchImage.cols, sampleNum);
             for (Point center : centers)
             {
-                Descriptor descriptor = GetDescriptor(filteredOrientChannels, center, 
-                    blockSize, cellNum);
+                Descriptor descriptor = GetDescriptor(filteredOrientChannels, center);
                 feature.Add(descriptor);
             }
 
@@ -252,14 +195,13 @@ namespace System
         }
 
         Descriptor RHOG::GetDescriptor(const ArrayList<Mat>& filteredOrientChannels, 
-            const Point& center, int blockSize, int cellNum)
+            const Point& center)
         {
             int height = filteredOrientChannels[0].rows, 
                 width = filteredOrientChannels[0].cols;
-            double cellSize = (double)blockSize / cellNum;
+            double cellSize = blockSize / cellNum;
             int expectedTop = center.y - blockSize / 2,
-                expectedLeft = center.x - blockSize / 2,
-                orientNum = filteredOrientChannels.Count();
+                expectedLeft = center.x - blockSize / 2;
             int dims[] = { cellNum, cellNum, orientNum };
             Mat hist(3, dims, CV_64F);
 
@@ -297,8 +239,6 @@ namespace System
 
         LocalFeatureVec SHOG::GetFeature(const Mat& sketchImage)
         {
-            int orientNum = 4, cellNum = 4;
-
             ArrayList<Point> points = GetEdgels(sketchImage);
             ArrayList<Point> pivots = SampleFromPoints(points, (int)(points.Count() * 0.33));
             ArrayList<Mat> orientChannels = GetOrientChannels(sketchImage, orientNum);
@@ -306,8 +246,7 @@ namespace System
             LocalFeatureVec feature;
             for (int i = 0; i < pivots.Count(); i++)
             {
-                Descriptor descriptor = GetDescriptor(orientChannels, pivots[i], 
-                    points, cellNum);
+                Descriptor descriptor = GetDescriptor(orientChannels, pivots[i], points);
                 feature.Add(descriptor);
             }
 
@@ -315,18 +254,17 @@ namespace System
         }
 
         Descriptor SHOG::GetDescriptor(const ArrayList<Mat>& orientChannels,
-            const Point& pivot, const ArrayList<Point>& points, int cellNum)
+            const Point& pivot, const ArrayList<Point>& points)
         {
             ArrayList<double> distances = EulerDistance(pivot, points);
             double mean = Math::Sum(distances) / (points.Count() - 1); // Except pivot
-            int blockSize = (int)(1.5 * mean);
+            double blockSize = 1.5 * mean;
 
             int height = orientChannels[0].rows, 
-                width = orientChannels[0].cols,
-                orientNum = orientChannels.Count();
+                width = orientChannels[0].cols;
             int expectedTop = pivot.y - blockSize / 2,
                 expectedLeft = pivot.x - blockSize / 2;
-            double cellSize = (double)blockSize / cellNum;
+            double cellSize = blockSize / cellNum;
             int dims[] = { cellNum, cellNum, orientNum };
             Mat hist(3, dims, CV_64F);
             hist = Scalar::all(0);
@@ -384,9 +322,6 @@ namespace System
 
         LocalFeatureVec LogSHOG::GetFeature(const Mat& sketchImage)
         {
-            int orientNum = 4, cellNum = 4, scaleNum = 15;
-            double sigmaInit = 0.7, sigmaStep = 1.2;
-
             ArrayList<double> sigmas;
             sigmas.Add(sigmaInit);
             for (int i = 1; i < scaleNum; i++)
@@ -408,8 +343,7 @@ namespace System
 
                     if (curr > next && curr > prev)
                     {
-                        Descriptor desc = GetDescriptor(orientChannels, pivots[i], 
-                            (int)(sigmas[j] * 6 + 1), cellNum);
+                        Descriptor desc = GetDescriptor(orientChannels, pivots[i], sigmas[j] * 6);
                         feature.Add(desc);
                     }
                 }
@@ -419,14 +353,13 @@ namespace System
         }
 
         Descriptor LogSHOG::GetDescriptor(const ArrayList<Mat>& orientChannels, 
-            const Point& pivot, int blockSize, int cellNum)
+            const Point& pivot, double blockSize)
         {
             int height = orientChannels[0].rows, 
-                width = orientChannels[0].cols,
-                orientNum = (int)orientChannels.Count();
+                width = orientChannels[0].cols;
             int expectedTop = pivot.y - blockSize / 2,
                 expectedLeft = pivot.x - blockSize / 2;
-            double cellSize = (double)blockSize / cellNum;
+            double cellSize = blockSize / cellNum;
             int dims[] = { cellNum, cellNum, orientNum };
             Mat hist(3, dims, CV_64F);
             hist = Scalar::all(0);
