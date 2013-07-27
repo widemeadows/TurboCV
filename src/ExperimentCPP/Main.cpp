@@ -107,79 +107,36 @@ void LocalFeatureCrossValidation(cv::Mat (*Preprocess)(const cv::Mat&), const St
 #endif
 }
 
-template<typename GlobalFeature>
-void GlobalFeatureCrossValidation(const TurboCV::System::String& imageSetPath, GlobalFeature algo, 
-                                  bool thinning = false, int fold = 3)
+template<typename FeatureType>
+void GlobalFeatureCrossValidation(cv::Mat (*Preprocess)(const cv::Mat&), const String& datasetPath, FeatureType)
 {
-    srand(1);
-    ArrayList<Group<TurboCV::System::String, int>> paths = GetImagePaths(imageSetPath);
-    int imageNum = (int)paths.Count();
+    GlobalFeatureSolver<FeatureType> solver(Preprocess, datasetPath);
+    solver.CrossValidation();
 
-    ArrayList<GlobalFeatureVec_f> features(imageNum);
-    printf("Compute " + algo.GetName() + "...\n");
-    #pragma omp parallel for private(algo)
-    for (int i = 0; i < imageNum; i++)
-    {
-        Mat image = imread(paths[i].Item1(), CV_LOAD_IMAGE_GRAYSCALE); 
-        Convert(algo(Preprocess(image, thinning, Size(256, 256))), features[i]);
-    }
+    String savePath = FeatureType().GetName() + "_" + datasetPath + "_knn.out";
 
-    ArrayList<Group<ArrayList<GlobalFeatureVec_f>, ArrayList<GlobalFeatureVec_f>, ArrayList<size_t>>> pass = 
-        RandomSplit(features, fold);
-
-    ArrayList<double> passResult;
-    for (int i = 0; i < fold; i++)
-    {
-        printf("\nBegin Fold %d...\n", i + 1);
-        ArrayList<GlobalFeatureVec_f>& evaluationSet = pass[i].Item1();
-        ArrayList<GlobalFeatureVec_f>& trainingSet = pass[i].Item2();
-        ArrayList<size_t>& pickUpIndexes = pass[i].Item3();
-
-        ArrayList<int> trainingLabels, evaluationLabels;
-        int counter = 0;
-        for (int j = 0; j < imageNum; j++)
-        {
-            if (counter < pickUpIndexes.Count() && j == pickUpIndexes[counter])
-            {
-                evaluationLabels.Add(paths[j].Item2());
-                counter++;
-            }
-            else
-                trainingLabels.Add(paths[j].Item2());
-        }
-
-		KNN<GlobalFeatureVec_f> knn;
-		pair<double, map<pair<int, int>, double>> precisions = 
-			knn.Evaluate(trainingSet, trainingLabels, evaluationSet, evaluationLabels);
-
-        passResult.Add(precisions.first);
-        printf("Fold %d Accuracy: %f\n", i + 1, precisions.first);
-    }
-
-    TurboCV::System::String savePath = algo.GetName() + "_" + imageSetPath + "_knn.out";
+    ArrayList<double> precisions = solver.GetPrecisions();
     FILE* file = fopen(savePath, "w");
-    for (int i = 0; i < passResult.Count(); i++)
-        fprintf(file, "Fold %d Accuracy: %f\n", i + 1, passResult[i]);
-    fprintf(file, "Average: %f, Standard Deviation: %f\n", Math::Mean(passResult), 
-        Math::StandardDeviation(passResult));
-    printf("\nAverage: %f, Standard Deviation: %f\n", Math::Mean(passResult), 
-        Math::StandardDeviation(passResult));
+
+    for (int i = 0; i < precisions.Count(); i++)
+        fprintf(file, "Fold %d Accuracy: %f\n", i + 1, precisions[i]);
+
+    fprintf(file, "Average: %f, Standard Deviation: %f\n", Math::Mean(precisions), 
+        Math::StandardDeviation(precisions));
 
     fclose(file);
 
 #if defined(SAVE_FEATURE) || defined(SAVE_DISTANCE_MATRIX)
-    ArrayList<int> labels;
-
-    for (int i = 0; i < imageNum; i++)
-        labels.Add(paths[i].Item2());
+    ArrayList<GlobalFeatureVec_f> features = solver.GetFeatures();
+    ArrayList<int> labels = solver.GetLabels();
 
 #if defined(SAVE_FEATURE)
-    savePath = algo.GetName() + "_" + imageSetPath + "_data";
+    savePath = FeatureType().GetName() + "_" + datasetPath + "_data";
     SaveGlobalFeatures(savePath, features, labels);
 #endif
 
 #if defined(SAVE_DISTANCE_MATRIX)
-    savePath = algo.GetName() + "_" + imageSetPath + "_matrix";
+    savePath = FeatureType().GetName() + "_" + datasetPath + "_matrix";
     SaveDistanceMatrix(savePath, features, labels);
 #endif
 
@@ -618,63 +575,56 @@ void CrossValidation(const ArrayList<T>& samples, const ArrayList<int>& labels, 
         Math::StandardDeviation(passResult));
 }
 
-void Batch(const TurboCV::System::String& imageSetPath, bool thinning = false)
+void Batch()
 {
-    /*LocalFeatureCrossValidation(imageSetPath, HOG(), 500, thinning);
+    LocalFeatureCrossValidation(sketchPreprocess, "sketches", HOG());
     printf("\n");
 
-    LocalFeatureCrossValidation(imageSetPath, RHOG(), 500, thinning);
+    LocalFeatureCrossValidation(sketchPreprocess, "sketches", RHOG());
     printf("\n");
 
-    LocalFeatureCrossValidation(imageSetPath, SHOG(), 500, thinning);
+    LocalFeatureCrossValidation(sketchPreprocess, "sketches", SHOG());
     printf("\n");
 
-    LocalFeatureCrossValidation(imageSetPath, LogSHOG(), 500, thinning);
+    LocalFeatureCrossValidation(sketchPreprocess, "sketches", LogSHOG());
     printf("\n");
 
-    GlobalFeatureCrossValidation(imageSetPath, GHOG(), thinning);
+    LocalFeatureCrossValidation(sketchPreprocess, "sketches", HOOSC());
     printf("\n");
 
-    LocalFeatureCrossValidation(imageSetPath, HOOSC(), 1000, thinning);
+    LocalFeatureCrossValidation(sketchPreprocess, "sketches", RHOOSC());
     printf("\n");
 
-    LocalFeatureCrossValidation(imageSetPath, RHOOSC(), 1000, thinning);
+    LocalFeatureCrossValidation(sketchPreprocess, "sketches", SC());
     printf("\n");
 
-    LocalFeatureCrossValidation(imageSetPath, SC(), 1000, thinning);
+    LocalFeatureCrossValidation(sketchPreprocess, "sketches", PSC());
     printf("\n");
 
-    LocalFeatureCrossValidation(imageSetPath, PSC(), 1000, thinning);
+    LocalFeatureCrossValidation(sketchPreprocess, "sketches", RSC());
     printf("\n");
 
-    LocalFeatureCrossValidation(imageSetPath, RSC(), 1000, thinning);
+    LocalFeatureCrossValidation(sketchPreprocess, "sketches", RPSC());
     printf("\n");
 
-    LocalFeatureCrossValidation(imageSetPath, RPSC(), 1000, thinning);
+    GlobalFeatureCrossValidation(sketchPreprocess, "sketches", GHOG());
     printf("\n");
 
-    GlobalFeatureCrossValidation(imageSetPath, GIST(), thinning);
-    printf("\n");*/
-
-    //EdgeMatchingCrossValidation(imageSetPath, CM(), thinning);
-    //printf("\n");
-
-    //EdgeMatchingCrossValidation(imageSetPath, OCM(), thinning);
-    //printf("\n");
-
-    //EdgeMatchingCrossValidation(imageSetPath, Hitmap(), thinning);
-    //printf("\n");
+    GlobalFeatureCrossValidation(sketchPreprocess, "sketches", GIST());
+    printf("\n");
 }
 
 int main()
 {
-    LocalFeatureCrossValidation(sketchPreprocess, "sketches", RHOG());
+    //LocalFeatureCrossValidation(sketchPreprocess, "sketches", HOOSC());
+
+    LocalFeatureCrossValidation(sketchPreprocess, "sketches", RGabor());
+
+    // Batch();
 
     //LocalFeatureTest("sketches", Test(), 1500);
     //printf("\n");
 
-    //Batch("sketches", false);
-    //Batch("oracles", true);
 
     //Mat img = imread("00002.png", CV_LOAD_IMAGE_GRAYSCALE);
     //vector<Point> points;

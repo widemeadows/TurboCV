@@ -1,6 +1,17 @@
 <configurations>
   <features>
-    <rhog blockNum="92" cellNum="4"/>
-    <hog blockNum="91"/>
+    <hog orientNum="4" cellNum="4" cellSize="23" wordNum="500"/>
+    <rhog orientNum="4" cellNum="4" sampleNum="28" blockSize="92" wordNum="500"/>
+    <shog orientNum="4" cellNum="4" pivotRatio="0.33" wordNum="500"/>
+    <lshog orientNum="4" cellNum="4" scaleNum="15" sigmaInit="0.7" sigmaStep="1.2" pivotRatio="0.33" wordNum="500"/>
+    <hoosc angleNum="9" orientNum="8" pivotRatio="0.33" logDistances="0,0.125,0.25,0.5,1,2" wordNum="1000"/>
+    <rhoosc angleNum="9" orientNum="8" sampleNum="28" logDistances="0,0.125,0.25,0.5,1,2" wordNum="1000"/>
+    <sc angleNum="12" pivotRatio="0.33" logDistances="0,0.125,0.25,0.5,1,2" wordNum="1000"/>
+    <psc angleNum="12" pivotRatio="0.33" logDistances="0,0.125,0.25,0.5,1,2" wordNum="1000"/>
+    <rsc angleNum="12" sampleNum="28" pivotRatio="0.33" logDistances="0,0.125,0.25,0.5,1,2" wordNum="1000"/>
+    <rpsc angleNum="12" sampleNum="28" logDistances="0,0.125,0.25,0.5,1,2" wordNum="1000"/>
+    <rgabor orientNum="9" cellNum="4" sampleNum="28" blockSize="92" wordNum="1500"/>
+    <ghog orientNum="8" blockSize="48"/>
+    <gist blockNum="4" orientNumPerScale="8,8,8,8"/>
   </features>
 </configurations>

@@ -72,7 +72,7 @@ namespace System
                 cv::Mat (*preprocess)(const cv::Mat&), 
                 const String& datasetPath, 
                 const String& configFilePath = "config.xml"):
-            Solver(preprocess, datasetPath, configFilePath) {}
+                Solver(preprocess, datasetPath, configFilePath) {}
 
             virtual void CrossValidation(int nFold = 3);
             ArrayList<double> GetPrecisions() { return precisions; }
@@ -94,10 +94,11 @@ namespace System
             ArrayList<int> labels = GetLabels();
             std::map<String, String> params = GetConfiguration(LocalFeature().GetName());
             int nImage = paths.Count(), 
-                nSample = GetDoubleValue(params, "sampleNum", 1000000),
+                nSample = GetDoubleValue(params, "inputNum", 1000000),
                 nWord = GetDoubleValue(params, "wordNum", 500);
 
             printf("ImageNum: %d, SampleNum: %d, WordNum: %d\n", nImage, nSample, nWord);
+            LocalFeature(params, true); // display all params of the algorithm
 
             printf("Cross Validation on " + LocalFeature().GetName() + "...\n");
             ArrayList<LocalFeatureVec_f> features(nImage);
@@ -112,6 +113,7 @@ namespace System
 
             ArrayList<ArrayList<size_t>> pass = RandomSplit(nImage, nFold);
             double maxPrecision = -1;
+            this->precisions.Clear();
             for (int i = 0; i < nFold; i++)
             {
                 printf("\nBegin Fold %d...\n", i + 1);
@@ -128,7 +130,6 @@ namespace System
                 ArrayList<Histogram> trainingHistograms = Divide(histograms, pickUpIndexes).Item2();
                 ArrayList<Histogram> evaluationHistograms = Divide(histograms, pickUpIndexes).Item1();
 
-                this->precisions.Clear();
                 this->precisions.Add(KNN<Histogram>().
                     Evaluate(trainingHistograms, trainingLabels, evaluationHistograms, evaluationLabels).first);
 
@@ -138,6 +139,77 @@ namespace System
                     this->words = words;
                     this->histograms = histograms;
                 }
+
+                printf("Fold %d Accuracy: %f\n", i + 1, this->precisions[i]);
+            }
+
+            printf("\nAverage: %f, Standard Deviation: %f\n", Math::Mean(precisions), Math::StandardDeviation(precisions));
+        }
+
+
+        //////////////////////////////////////////////////////////////////////////
+        // APIs for GlobalFeatureSolver
+        //////////////////////////////////////////////////////////////////////////
+
+        template<typename GlobalFeature>
+        class GlobalFeatureSolver : public Solver
+        {
+        public:
+            GlobalFeatureSolver(
+                cv::Mat (*preprocess)(const cv::Mat&), 
+                const String& datasetPath, 
+                const String& configFilePath = "config.xml"):
+                Solver(preprocess, datasetPath, configFilePath) {}
+
+            virtual void CrossValidation(int nFold = 3);
+            ArrayList<double> GetPrecisions() { return precisions; }
+            ArrayList<GlobalFeatureVec_f> GetFeatures() { return features; }
+
+        private:
+            ArrayList<double> precisions;
+            ArrayList<GlobalFeatureVec_f> features;
+        };
+
+        template<typename GlobalFeature>
+        void GlobalFeatureSolver<GlobalFeature>::CrossValidation(int nFold)
+        {
+            srand(1);
+            LoadData();
+            ArrayList<String> paths = GetPaths();
+            ArrayList<int> labels = GetLabels();
+            std::map<String, String> params = GetConfiguration(GlobalFeature().GetName());
+            int nImage = paths.Count();
+
+            printf("ImageNum: %d\n", nImage);
+            GlobalFeature(params, true); // display all params of the algorithm
+
+            printf("Cross Validation on " + GlobalFeature().GetName() + "...\n");
+            ArrayList<GlobalFeatureVec_f> features(nImage);
+
+            #pragma omp parallel for
+            for (int i = 0; i < nImage; i++)
+            {
+                GlobalFeature machine(params);
+                cv::Mat image = cv::imread(paths[i], CV_LOAD_IMAGE_GRAYSCALE); 
+                Convert(machine(Preprocess(image)), features[i]);
+            }
+
+            this->features = features;
+
+            ArrayList<ArrayList<size_t>> pass = RandomSplit(nImage, nFold);
+            double maxPrecision = -1;
+            this->precisions.Clear();
+            for (int i = 0; i < nFold; i++)
+            {
+                printf("\nBegin Fold %d...\n", i + 1);
+                ArrayList<size_t>& pickUpIndexes = pass[i];
+                ArrayList<GlobalFeatureVec_f> trainingSet = Divide(features, pickUpIndexes).Item2();
+                ArrayList<GlobalFeatureVec_f> evaluationSet = Divide(features, pickUpIndexes).Item1();
+                ArrayList<int> trainingLabels = Divide(labels, pickUpIndexes).Item2();
+                ArrayList<int> evaluationLabels = Divide(labels, pickUpIndexes).Item1();
+
+                this->precisions.Add(KNN<GlobalFeatureVec_f>().
+                    Evaluate(trainingSet, trainingLabels, evaluationSet, evaluationLabels).first);
 
                 printf("Fold %d Accuracy: %f\n", i + 1, this->precisions[i]);
             }

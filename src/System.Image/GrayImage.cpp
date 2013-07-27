@@ -264,6 +264,23 @@ namespace System
             return orientChannels;
         }
 
+        ArrayList<Mat> GetGaborChannels(const Mat& image, int orientNum, int sigma, int lambda)
+        {
+            int ksize = sigma * 6 + 1;
+            ArrayList<Mat> gaborChannels(orientNum);
+
+            for (int i = 0; i < orientNum; i++)
+            {
+                Mat kernel = getGaborKernel(Size(ksize, ksize), sigma, 
+                    CV_PI / orientNum * i, lambda, 1, 0);
+
+                filter2D(image, gaborChannels[i], CV_64F, kernel);
+                gaborChannels[i] = abs(gaborChannels[i]);
+            }
+
+            return gaborChannels;
+        }
+
 
         //////////////////////////////////////////////////////////////////////////
         // APIs for LoG and DoG

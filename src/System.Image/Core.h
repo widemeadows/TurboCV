@@ -78,6 +78,8 @@ namespace System
         Group<cv::Mat, cv::Mat> GetGradient(const cv::Mat& image, double sigma = 1.0);
         ArrayList<cv::Mat> GetOrientChannels(const cv::Mat& image, int orientNum);
 
+        ArrayList<cv::Mat> GetGaborChannels(const cv::Mat& image, int orientNum, int sigma = 4, int lambda = 10);
+
         cv::Mat GetLoGKernel(int ksize, double sigma, int ktype = CV_64F);
         ArrayList<cv::Mat> GetLoGPyramid(const cv::Mat& image, const ArrayList<double>& sigmas);
         ArrayList<cv::Mat> GetDoGPyramid(const cv::Mat& image, const ArrayList<double>& sigmas);

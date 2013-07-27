@@ -240,7 +240,7 @@ namespace System
         LocalFeatureVec SHOG::GetFeature(const Mat& sketchImage)
         {
             ArrayList<Point> points = GetEdgels(sketchImage);
-            ArrayList<Point> pivots = SampleFromPoints(points, (int)(points.Count() * 0.33));
+            ArrayList<Point> pivots = SampleFromPoints(points, (int)(points.Count() * pivotRatio));
             ArrayList<Mat> orientChannels = GetOrientChannels(sketchImage, orientNum);
 
             LocalFeatureVec feature;
@@ -328,7 +328,7 @@ namespace System
                 sigmas.Add(sigmas[i - 1] * sigmaStep);
 
             ArrayList<Point> points = GetEdgels(sketchImage);
-            ArrayList<Point> pivots = SampleFromPoints(points, (int)(points.Count() * 0.33));
+            ArrayList<Point> pivots = SampleFromPoints(points, (int)(points.Count() * pivotRatio));
             ArrayList<Mat> orientChannels = GetOrientChannels(sketchImage, orientNum);
             ArrayList<Mat> pyramid = GetLoGPyramid(sketchImage, sigmas);
 
@@ -417,12 +417,8 @@ namespace System
 
         LocalFeatureVec HOOSC::GetFeature(const Mat& sketchImage)
         {
-            double tmp[] = { 0, 0.125, 0.25, 0.5, 1, 2 };
-            ArrayList<double> logDistances(tmp, tmp + sizeof(tmp) / sizeof(double));
-            int angleNum = 9, orientNum = 8;
-
             ArrayList<Point> points = GetEdgels(sketchImage);
-            ArrayList<Point> pivots = SampleFromPoints(points, (size_t)(points.Count() * 0.33));
+            ArrayList<Point> pivots = SampleFromPoints(points, (size_t)(points.Count() * pivotRatio));
 
             Group<Mat, Mat> gradient = GetGradient(sketchImage);
             Mat& powerImage = gradient.Item1();
@@ -431,17 +427,15 @@ namespace System
             LocalFeatureVec feature;
             for (int i = 0; i < pivots.Count(); i++)
             {
-                Descriptor descriptor = GetDescriptor(orientImage, pivots[i], points,
-                    logDistances, angleNum, orientNum);
+                Descriptor descriptor = GetDescriptor(orientImage, pivots[i], points);
                 feature.Add(descriptor);
             }
 
             return feature;
         }
 
-        Descriptor HOOSC::GetDescriptor(const Mat& orientImage,
-            const Point& pivot, const ArrayList<Point>& points,
-            const ArrayList<double>& logDistances, int angleNum, int orientNum)
+        Descriptor HOOSC::GetDescriptor(const Mat& orientImage, const Point& pivot, 
+            const ArrayList<Point>& points)
         {
             int pointNum = points.Count();
             assert(pointNum > 1);
@@ -503,10 +497,6 @@ namespace System
 
         LocalFeatureVec RHOOSC::GetFeature(const Mat& sketchImage)
         {
-            double tmp[] = { 0, 0.125, 0.25, 0.5, 1, 2 };
-            ArrayList<double> logDistances(tmp, tmp + sizeof(tmp) / sizeof(double));
-            int angleNum = 9, orientNum = 8, sampleNum = 28;
-
             Mat orientImage = GetGradient(sketchImage).Item2();
             ArrayList<Point> points = GetEdgels(sketchImage); 
 
@@ -514,17 +504,15 @@ namespace System
             ArrayList<Point> centers = SampleOnGrid(sketchImage.rows, sketchImage.cols, sampleNum);
             for (Point center : centers)
             {
-                Descriptor desc = GetDescriptor(orientImage, center, points,
-                    logDistances, angleNum, orientNum);
+                Descriptor desc = GetDescriptor(orientImage, center, points);
                 feature.Add(desc);
             }
 
             return feature;
         }
 
-        Descriptor RHOOSC::GetDescriptor(const Mat& orientImage, 
-            const Point& center, const ArrayList<Point>& points, 
-            const ArrayList<double>& logDistances, int angleNum, int orientNum)
+        Descriptor RHOOSC::GetDescriptor(const Mat& orientImage, const Point& center, 
+            const ArrayList<Point>& points)
         {
             int pointNum = points.Count();
             assert(pointNum > 1);
@@ -592,25 +580,20 @@ namespace System
 
         LocalFeatureVec SC::GetFeature(const Mat& sketchImage)
         {
-            double tmp[] = { 0, 0.125, 0.25, 0.5, 1, 2 };
-            ArrayList<double> logDistances(tmp, tmp + sizeof(tmp) / sizeof(double));
-            int angleNum = 12;
-
             ArrayList<Point> points = GetEdgels(sketchImage);
-            ArrayList<Point> pivots = SampleFromPoints(points, (int)(points.Count() * 0.33));
+            ArrayList<Point> pivots = SampleFromPoints(points, (int)(points.Count() * pivotRatio));
 
             LocalFeatureVec feature;
             for (int i = 0; i < pivots.Count(); i++)
             {
-                Descriptor descriptor = GetDescriptor(pivots[i], pivots, logDistances, angleNum);
+                Descriptor descriptor = GetDescriptor(pivots[i], pivots);
                 feature.Add(descriptor);
             }
 
             return feature;
         }
 
-        Descriptor SC::GetDescriptor(const Point& pivot, const ArrayList<Point>& pivots,
-            const ArrayList<double>& logDistances, int angleNum)
+        Descriptor SC::GetDescriptor(const Point& pivot, const ArrayList<Point>& pivots)
         {
             int pivotNum = pivots.Count();
             assert(pivotNum > 1);
@@ -663,25 +646,20 @@ namespace System
 
         LocalFeatureVec PSC::GetFeature(const Mat& sketchImage)
         {
-            double tmp[] = { 0, 0.125, 0.25, 0.5, 1, 2 };
-            ArrayList<double> logDistances(tmp, tmp + sizeof(tmp) / sizeof(double));
-            int angleNum = 12;
-
             ArrayList<Point> points = GetEdgels(sketchImage);
-            ArrayList<Point> pivots = SampleFromPoints(points, (int)(points.Count() * 0.33));
+            ArrayList<Point> pivots = SampleFromPoints(points, (int)(points.Count() * pivotRatio));
 
             LocalFeatureVec feature;
             for (int i = 0; i < pivots.Count(); i++)
             {
-                Descriptor descriptor = GetDescriptor(pivots[i], points, logDistances, angleNum);
+                Descriptor descriptor = GetDescriptor(pivots[i], points);
                 feature.Add(descriptor);
             }
 
             return feature;
         }
 
-        Descriptor PSC::GetDescriptor(const Point& pivot, const ArrayList<Point>& points,
-            const ArrayList<double>& logDistances, int angleNum)
+        Descriptor PSC::GetDescriptor(const Point& pivot, const ArrayList<Point>& points)
         {
             int pointNum = points.Count();
             assert(pointNum > 1);
@@ -740,21 +718,20 @@ namespace System
 
             Mat orientImage = GetGradient(sketchImage).Item2();
             ArrayList<Point> points = GetEdgels(sketchImage); 
-            ArrayList<Point> pivots = SampleFromPoints(points, (int)(points.Count() * 0.33));
+            ArrayList<Point> pivots = SampleFromPoints(points, (int)(points.Count() * pivotRatio));
 
             LocalFeatureVec feature;
             ArrayList<Point> centers = SampleOnGrid(sketchImage.rows, sketchImage.cols, sampleNum);
             for (Point center : centers)
             {
-                Descriptor desc = GetDescriptor(center, pivots, logDistances, angleNum);
+                Descriptor desc = GetDescriptor(center, pivots);
                 feature.Add(desc);
             }
 
             return feature;
         }
 
-        Descriptor RSC::GetDescriptor(const Point& center, const ArrayList<Point>& pivots, 
-            const ArrayList<double>& logDistances, int angleNum)
+        Descriptor RSC::GetDescriptor(const Point& center, const ArrayList<Point>& pivots)
         {
             int pivotNum = pivots.Count();
             assert(pivotNum > 1);
@@ -813,10 +790,6 @@ namespace System
 
         LocalFeatureVec RPSC::GetFeature(const Mat& sketchImage)
         {
-            double tmp[] = { 0, 0.125, 0.25, 0.5, 1, 2 };
-            ArrayList<double> logDistances(tmp, tmp + sizeof(tmp) / sizeof(double));
-            int angleNum = 12, sampleNum = 28;
-
             Mat orientImage = GetGradient(sketchImage).Item2();
             ArrayList<Point> points = GetEdgels(sketchImage); 
 
@@ -886,13 +859,87 @@ namespace System
 
 
         //////////////////////////////////////////////////////////////////////////
+        // RGabor
+        //////////////////////////////////////////////////////////////////////////
+
+        LocalFeatureVec RGabor::GetFeature(const Mat& sketchImage)
+        {
+            int cellSize = blockSize / cellNum, kernelSize = cellSize * 2 + 1;
+            Mat tentKernel(kernelSize, kernelSize, CV_64F);
+            for (int i = 0; i < kernelSize; i++)
+            {
+                for (int j = 0; j < kernelSize; j++)
+                {
+                    double ratio = 1 - sqrt((i - cellSize) * (i - cellSize) + 
+                        (j - cellSize) * (j - cellSize)) / cellSize;
+                    if (ratio < 0)
+                        ratio = 0;
+
+                    tentKernel.at<double>(i, j) = ratio;
+                }
+            }
+
+            ArrayList<Mat> orientChannels = GetGaborChannels(sketchImage, orientNum);
+            ArrayList<Mat> filteredOrientChannels(orientNum);
+            for (int i = 0; i < orientNum; i++)
+                filter2D(orientChannels[i], filteredOrientChannels[i], -1, tentKernel);
+
+            LocalFeatureVec feature;
+            ArrayList<Point> centers = SampleOnGrid(sketchImage.rows, sketchImage.cols, sampleNum);
+            for (Point center : centers)
+            {
+                Descriptor descriptor = GetDescriptor(filteredOrientChannels, center);
+                feature.Add(descriptor);
+            }
+
+            return feature;
+        }
+
+        Descriptor RGabor::GetDescriptor(const ArrayList<Mat>& filteredOrientChannels, 
+            const Point& center)
+        {
+            int height = filteredOrientChannels[0].rows, 
+                width = filteredOrientChannels[0].cols;
+            double cellSize = blockSize / cellNum;
+            int expectedTop = center.y - blockSize / 2,
+                expectedLeft = center.x - blockSize / 2;
+            int dims[] = { cellNum, cellNum, orientNum };
+            Mat hist(3, dims, CV_64F);
+
+            for (int i = 0; i < cellNum; i++)
+            {
+                for (int j = 0; j < cellNum; j++)
+                {
+                    for (int k = 0; k < orientNum; k++)
+                    {
+                        int r = (int)(expectedTop + (i + 0.5) * cellSize),
+                            c = (int)(expectedLeft + (j + 0.5) * cellSize);
+
+                        if (r < 0 || r >= height || c < 0 || c >= width)
+                            hist.at<double>(i, j, k) = 0;
+                        else
+                            hist.at<double>(i, j, k) = filteredOrientChannels[k].at<double>(r, c);
+                    }
+                }
+            }
+
+            Descriptor descriptor;
+            for (int i = 0; i < cellNum; i++)
+                for (int j = 0; j < cellNum; j++)
+                    for (int k = 0; k < orientNum; k++)
+                        descriptor.Add(hist.at<double>(i, j, k));
+
+            NormTwoNormalize(descriptor.begin(), descriptor.end());
+            return descriptor;
+        }
+
+
+        //////////////////////////////////////////////////////////////////////////
         // GHOG
         //////////////////////////////////////////////////////////////////////////
 
         GlobalFeatureVec GHOG::GetFeature(const Mat& sketchImage)
         {
-            int orientNum = 8, blockSize = 48 * sketchImage.rows / 256;
-
             int kernelSize = blockSize * 2 + 1;
             Mat tentKernel(kernelSize, kernelSize, CV_64F);
             for (int i = 0; i < kernelSize; i++)
@@ -930,12 +977,7 @@ namespace System
 
         GlobalFeatureVec GIST::GetFeature(const Mat& sketchImage)
         {
-            int blockNum = 4;
-            int tmp[] = { 8, 8, 8, 8 };
-            ArrayList<int> orientNumPerScale(tmp, tmp + sizeof(tmp) / sizeof(int));
-
-            ArrayList<Mat> gaborsInFreqDomain = GetGaborsInFreqDomain(sketchImage.size(), 
-                orientNumPerScale);
+            ArrayList<Mat> gaborsInFreqDomain = GetGaborsInFreqDomain(sketchImage.size());
 
             Mat dftInReal, dftOutComplex, dftOutPlanes[2];
             sketchImage.convertTo(dftInReal, CV_64FC1);
@@ -984,14 +1026,10 @@ namespace System
             return feature;
         }
 
-        ArrayList<Mat> GIST::GetGaborsInFreqDomain(const Size& size, 
-            const ArrayList<int>& orientNumPerScale)
+        ArrayList<Mat> GIST::GetGaborsInFreqDomain(const Size& size)
         {
             int height = size.height, width = size.width;
-
-            int filterNum = 0;
-            for (int i = orientNumPerScale.Count() - 1; i >= 0; i--)
-                filterNum += orientNumPerScale[i];
+            int filterNum = Math::Sum(orientNumPerScale);
 
             Mat param(filterNum, 4, CV_64F);
             int l = 0;
@@ -1001,7 +1039,7 @@ namespace System
                 {
                     param.at<double>(l, 0) = 0.35;
                     param.at<double>(l, 1) = 0.3 / pow(1.85, i);
-                    param.at<double>(l, 2) = 16 * pow(orientNumPerScale[i], 2) / pow(32, 2);
+                    param.at<double>(l, 2) = 16.0 * pow(orientNumPerScale[i], 2) / pow(32, 2);
                     param.at<double>(l, 3) = CV_PI / orientNumPerScale[i] * j;
                     l++;
                 }
@@ -1027,6 +1065,7 @@ namespace System
                 Mat gaborInFreqDomain(size, CV_64F);
 
                 for (int j = 0; j < height; j++)
+                {
                     for (int k = 0; k < width; k++)
                     {
                         double tmp = fo.at<double>(j, k) + param.at<double>(i, 3);
@@ -1041,8 +1080,9 @@ namespace System
                             2.0 * param.at<double>(i, 2) * CV_PI * tmp * tmp);
 
                     }
+                }
 
-                    gaborsInFreqDomain.Add(gaborInFreqDomain);
+                gaborsInFreqDomain.Add(gaborInFreqDomain);
             }
 
             return gaborsInFreqDomain;
