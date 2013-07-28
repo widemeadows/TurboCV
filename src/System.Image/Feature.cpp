@@ -17,7 +17,7 @@ namespace System
         //////////////////////////////////////////////////////////////////////////
 
         void SaveLocalFeatures(
-            const String& fileName, 
+            const TString& fileName, 
             const ArrayList<Word_f>& words,
             const ArrayList<Histogram>& freqHists, 
             const ArrayList<int>& labels)
@@ -54,7 +54,7 @@ namespace System
         }
 
         void SaveGlobalFeatures(
-            const String& fileName, 
+            const TString& fileName, 
             const ArrayList<GlobalFeatureVec_f>& features,
             const ArrayList<int>& labels)
         {

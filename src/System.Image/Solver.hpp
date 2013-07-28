@@ -21,8 +21,8 @@ namespace System
         public:
             Solver(
                 cv::Mat (*preprocess)(const cv::Mat&), 
-                const String& datasetPath, 
-                const String& configFilePath = "config.xml")
+                const TString& datasetPath, 
+                const TString& configFilePath = "config.xml")
             {
                 this->datasetPath = datasetPath;
                 this->configFilePath = configFilePath;
@@ -38,8 +38,8 @@ namespace System
                 labels = dataset.Item2();
             }
 
-            std::map<String, String> GetConfiguration(const String& featureName);
-            ArrayList<String> GetPaths() { return paths; }
+            std::map<TString, TString> GetConfiguration(const TString& featureName);
+            ArrayList<TString> GetPaths() { return paths; }
             ArrayList<int> GetLabels() { return labels; }
 
             virtual void CrossValidation(int nFold = 3) = 0;
@@ -48,14 +48,14 @@ namespace System
             cv::Mat (*Preprocess)(const cv::Mat&);
 
         private:
-            System::XML::TiXmlDocument LoadConfiguration(const String& configFilePath);
-            Group<ArrayList<String>, ArrayList<int>> LoadDataset(const String& datasetPath);
+            System::XML::TiXmlDocument LoadConfiguration(const TString& configFilePath);
+            Group<ArrayList<TString>, ArrayList<int>> LoadDataset(const TString& datasetPath);
 
-            String datasetPath;
-            String configFilePath;
+            TString datasetPath;
+            TString configFilePath;
 
             System::XML::TiXmlDocument doc;
-            ArrayList<String> paths;
+            ArrayList<TString> paths;
             ArrayList<int> labels;
         };
 
@@ -70,8 +70,8 @@ namespace System
         public:
             LocalFeatureSolver(
                 cv::Mat (*preprocess)(const cv::Mat&), 
-                const String& datasetPath, 
-                const String& configFilePath = "config.xml"):
+                const TString& datasetPath, 
+                const TString& configFilePath = "config.xml"):
                 Solver(preprocess, datasetPath, configFilePath) {}
 
             virtual void CrossValidation(int nFold = 3);
@@ -90,9 +90,9 @@ namespace System
         {
             srand(1);
             LoadData();
-            ArrayList<String> paths = GetPaths();
+            ArrayList<TString> paths = GetPaths();
             ArrayList<int> labels = GetLabels();
-            std::map<String, String> params = GetConfiguration(LocalFeature().GetName());
+            std::map<TString, TString> params = GetConfiguration(LocalFeature().GetName());
             int nImage = paths.Count(), 
                 nSample = GetDoubleValue(params, "inputNum", 1000000),
                 nWord = GetDoubleValue(params, "wordNum", 500);
@@ -157,8 +157,8 @@ namespace System
         public:
             GlobalFeatureSolver(
                 cv::Mat (*preprocess)(const cv::Mat&), 
-                const String& datasetPath, 
-                const String& configFilePath = "config.xml"):
+                const TString& datasetPath, 
+                const TString& configFilePath = "config.xml"):
                 Solver(preprocess, datasetPath, configFilePath) {}
 
             virtual void CrossValidation(int nFold = 3);
@@ -175,9 +175,9 @@ namespace System
         {
             srand(1);
             LoadData();
-            ArrayList<String> paths = GetPaths();
+            ArrayList<TString> paths = GetPaths();
             ArrayList<int> labels = GetLabels();
-            std::map<String, String> params = GetConfiguration(GlobalFeature().GetName());
+            std::map<TString, TString> params = GetConfiguration(GlobalFeature().GetName());
             int nImage = paths.Count();
 
             printf("ImageNum: %d\n", nImage);

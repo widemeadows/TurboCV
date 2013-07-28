@@ -13,63 +13,63 @@ namespace TurboCV
 {
 namespace System
 {
-    class String
+    class TString
     {
     public:
-        // Constructs an empty String object, with a length of zero characters.
-        String();
+        // Constructs an empty TString object, with a length of zero characters.
+        TString();
 
         // Copies the null-terminated character sequence (C-string) pointed by str.
-        String(const char* str);
+        TString(const char* str);
 
         // Copies the std::string referenced by str.
-        String(const std::string& str);
+        TString(const std::string& str);
 
         // Constructs a copy of str.
-        String(const String& str);
+        TString(const TString& str);
 
         // Destroys this instance.
         // This method deallocates all the storage capacity allocated by this instance using its allocator.
-        ~String()
+        ~TString()
         {
             delete[] _chars;
         }
 
         // Assigns the null-terminated character sequence (C-string) to this instance, 
         // replacing its current contents.
-        String& operator=(const char* str);
+        TString& operator=(const char* str);
 
         // Assigns the std::string to this instance, replacing its current contents.
-        String& operator=(const std::string& str);
+        TString& operator=(const std::string& str);
 
-        // Assigns another String object to this instance, replacing its current contents.
-        String& operator=(const String& str);
+        // Assigns another TString object to this instance, replacing its current contents.
+        TString& operator=(const TString& str);
 
-        // Returns a newly constructed String object with its value being the concatenation of 
+        // Returns a newly constructed TString object with its value being the concatenation of 
         // the characters in this instance followed by those of append.
-        String operator+(const char* append) const;
+        TString operator+(const char* append) const;
 
-        // Returns a newly constructed String object with its value being the concatenation of 
+        // Returns a newly constructed TString object with its value being the concatenation of 
         // the characters in this instance followed by those of append.
-        String operator+(const std::string& append) const;
+        TString operator+(const std::string& append) const;
 
-        // Returns a newly constructed String object with its value being the concatenation of 
+        // Returns a newly constructed TString object with its value being the concatenation of 
         // the characters in this instance followed by those of append.
-        String operator+(const String& append) const;
+        TString operator+(const TString& append) const;
 
-        // Returns a newly constructed String object with its value being the concatenation of 
+        // Returns a newly constructed TString object with its value being the concatenation of 
         // the characters in lhs followed by those of rhs.
-        friend String operator+(const char* lhs, const String& rhs);
+        friend TString operator+(const char* lhs, const TString& rhs);
 
-        // Returns a newly constructed String object with its value being the concatenation of 
+        // Returns a newly constructed TString object with its value being the concatenation of 
         // the characters in lhs followed by those of rhs.
-        friend String operator+(const std::string& lhs, const String& rhs);
+        friend TString operator+(const std::string& lhs, const TString& rhs);
 
         // Indicates whether this instance is less than str.
-        bool operator<(const String& str) const;
+        bool operator<(const TString& str) const;
 
         // Indicates whether this instance is equal to str.
-        bool operator==(const String& str) const;
+        bool operator==(const TString& str) const;
 
         // Converts this instance to a null-terminated character sequence (C-string).
         // A pointer to an array that contains a null-terminated sequence of characters is returned.
@@ -81,21 +81,21 @@ namespace System
         operator std::string() const;
 
         // Inserts the sequence of characters that conforms value of str into out.
-        friend std::ostream& operator<<(std::ostream& out, const String& str);
+        friend std::ostream& operator<<(std::ostream& out, const TString& str);
 
-        // Extracts a String object from the input stream in, storing the sequence in str, 
+        // Extracts a TString object from the input stream in, storing the sequence in str, 
         // which is overwritten (the previous value of str is deleted).
-        friend std::istream& operator>>(std::istream& in, String& str);
+        friend std::istream& operator>>(std::istream& in, TString& str);
 
         // Returns a newly constructed string object with its value initialized to a copy of 
         // a substring of this instance. The substring is the portion of this instance that starts 
         // at character position offset and ends at the end of this instance.
-        String Substring(size_t offset) const;
+        TString Substring(size_t offset) const;
 
         // Returns a newly constructed string object with its value initialized to a copy of 
         // a substring of this instance. The substring is the portion of this instance that starts 
         // at character position offset and spans length characters.
-        String Substring(size_t offset, size_t length) const;
+        TString Substring(size_t offset, size_t length) const;
 
         // Searches this instance for the first character that matches the characters specified in its arguments.
         // If found, the index of the specific character is returned. Otherwise, -1 is returned.
@@ -103,7 +103,7 @@ namespace System
 
         // Searches this instance for the first occurrence of substr.
         // If found, the index indicated the first occurrence of substr is returned. Otherwise, -1 is returned.
-        size_t IndexOf(const String& substr) const;
+        size_t IndexOf(const TString& substr) const;
 
         // Searches this instance for the last character that matches the characters specified in its arguments.
         // If found, the index of the specific character is returned. Otherwise, -1 is returned.
@@ -111,19 +111,19 @@ namespace System
 
         // Searches this instance for the last occurrence of substr.
         // If found, the index indicated the last occurrence of substr is returned. Otherwise, -1 is returned.
-        size_t LastIndexOf(const String& substr) const;
+        size_t LastIndexOf(const TString& substr) const;
 
-        // Returns a String array that contains the substrings in this instance that are delimited 
+        // Returns a TString array that contains the substrings in this instance that are delimited 
         // by the specific character.
-        ArrayList<String> Split(char separateCharacter) const;
+        ArrayList<TString> Split(char separateCharacter) const;
 
-        // Returns a String array that contains the substrings in this instance that are delimited 
+        // Returns a TString array that contains the substrings in this instance that are delimited 
         // by elements of a character array.
-        ArrayList<String> Split(const char* separateCharacters) const;
+        ArrayList<TString> Split(const char* separateCharacters) const;
 
         // Returns a pointer to an array that contains a null-terminated sequence of characters 
         // (i.e., a C-string) representing the current value of this instance.
-        // The array mentioned above is newly allocated (i.e., deep copy), so after using this C-String,
+        // The array mentioned above is newly allocated (i.e., deep copy), so after using this C-TString,
         // delete[] operation on the returned pointer is required.
         char* Chars() const;
 
@@ -135,8 +135,8 @@ namespace System
         size_t _length;
     };
 
-    // Constructs an empty String object, with a length of zero characters.
-    inline String::String()
+    // Constructs an empty TString object, with a length of zero characters.
+    inline TString::TString()
     {
         _length = 0;
 
@@ -145,7 +145,7 @@ namespace System
     }
 
     // Copies the null-terminated character sequence (C-string) pointed by str.
-    inline String::String(const char* str)
+    inline TString::TString(const char* str)
     {
         if (!str)
             throw ArgumentNullException();
@@ -157,7 +157,7 @@ namespace System
     }
 
     // Copies the std::string referenced by str.
-    inline String::String(const std::string& str)
+    inline TString::TString(const std::string& str)
     {
         _length = str.length();
 
@@ -166,7 +166,7 @@ namespace System
     }
 
     // Constructs a copy of str.
-    inline String::String(const String& str)
+    inline TString::TString(const TString& str)
     {
         _length = str._length;
 
@@ -176,7 +176,7 @@ namespace System
 
     // Assigns the null-terminated character sequence (C-string) to this instance, 
     // replacing its current contents.
-    inline String& String::operator=(const char* str)
+    inline TString& TString::operator=(const char* str)
     {
         if (!str)
             throw ArgumentNullException();
@@ -192,7 +192,7 @@ namespace System
     }
 
     // Assigns the std::string to this instance, replacing its current contents.
-    inline String& String::operator=(const std::string& str)
+    inline TString& TString::operator=(const std::string& str)
     {
         _length = str.length();
 
@@ -204,8 +204,8 @@ namespace System
         return *this;
     }
 
-    // Assigns another String object to this instance, replacing its current contents.
-    inline String& String::operator=(const String& str)
+    // Assigns another TString object to this instance, replacing its current contents.
+    inline TString& TString::operator=(const TString& str)
     {
         _length = str._length;
 
@@ -217,15 +217,15 @@ namespace System
         return *this;
     }
 
-    // Returns a newly constructed String object with its value being the concatenation of 
+    // Returns a newly constructed TString object with its value being the concatenation of 
     // the characters in this instance followed by those of append.
-    inline String String::operator+(const char* append) const
+    inline TString TString::operator+(const char* append) const
     {
         if (!append)
             throw ArgumentNullException();
 
         size_t appendLength = std::strlen(append);
-        String result;
+        TString result;
 
         result._length = _length + appendLength;
         result._chars = new char[result._length + 1];
@@ -235,12 +235,12 @@ namespace System
         return result;
     }
 
-    // Returns a newly constructed String object with its value being the concatenation of 
+    // Returns a newly constructed TString object with its value being the concatenation of 
     // the characters in this instance followed by those of append.
-    inline String String::operator+(const std::string& append) const
+    inline TString TString::operator+(const std::string& append) const
     {
         size_t appendLength = append.length();
-        String result;
+        TString result;
 
         result._length = _length + appendLength;
         result._chars = new char[result._length + 1];
@@ -250,12 +250,12 @@ namespace System
         return result;
     }
 
-    // Returns a newly constructed String object with its value being the concatenation of 
+    // Returns a newly constructed TString object with its value being the concatenation of 
     // the characters in this instance followed by those of append.
-    inline String String::operator+(const String& append) const
+    inline TString TString::operator+(const TString& append) const
     {
         size_t appendLength = append._length;
-        String result;
+        TString result;
 
         result._length = _length + appendLength;
         result._chars = new char[result._length + 1];
@@ -265,28 +265,28 @@ namespace System
         return result;
     }
 
-    // Returns a newly constructed String object with its value being the concatenation of 
+    // Returns a newly constructed TString object with its value being the concatenation of 
     // the characters in lhs followed by those of rhs.
-    inline String operator+(const char* lhs, const String& rhs)
+    inline TString operator+(const char* lhs, const TString& rhs)
     {
-        return String(lhs) + rhs;
+        return TString(lhs) + rhs;
     }
 
-    // Returns a newly constructed String object with its value being the concatenation of 
+    // Returns a newly constructed TString object with its value being the concatenation of 
     // the characters in lhs followed by those of rhs.
-    inline String operator+(const std::string& lhs, const String& rhs)
+    inline TString operator+(const std::string& lhs, const TString& rhs)
     {
-        return String(lhs) + rhs;
+        return TString(lhs) + rhs;
     }
 
     // Indicates whether this instance is less than str.
-    inline bool String::operator<(const String& str) const
+    inline bool TString::operator<(const TString& str) const
     {
         return std::strcmp(_chars, str._chars) < 0;
     }
 
     // Indicates whether this instance is equal to str.
-    inline bool String::operator==(const String& str) const
+    inline bool TString::operator==(const TString& str) const
     {
         return std::strcmp(_chars, str._chars) == 0;
     }
@@ -295,27 +295,27 @@ namespace System
     // A pointer to an array that contains a null-terminated sequence of characters is returned.
     // However, different from Chars() method, the pointer just points to an internal structure
     // of this instance (shadow copy). Therefore, the contents in the array should not be modified.
-    inline String::operator const char*() const
+    inline TString::operator const char*() const
     {
         return _chars;
     }
 
     // Converts this instance to an std::string.
-    inline String::operator std::string() const
+    inline TString::operator std::string() const
     {
         return std::string(_chars); 
     }
 
     // Inserts the sequence of characters that conforms value of str into out.
-    inline std::ostream& operator<<(std::ostream& out, const String& str)
+    inline std::ostream& operator<<(std::ostream& out, const TString& str)
     {
         out << str._chars;
         return out;
     }
 
-    // Extracts a String object from the input stream in, storing the sequence in str, 
+    // Extracts a TString object from the input stream in, storing the sequence in str, 
     // which is overwritten (the previous value of str is deleted).
-    inline std::istream& operator>>(std::istream& in, String& str)
+    inline std::istream& operator>>(std::istream& in, TString& str)
     {
         std::string tmp;
         in >> tmp;
@@ -327,7 +327,7 @@ namespace System
     // Returns a newly constructed string object with its value initialized to a copy of 
     // a substring of this instance. The substring is the portion of this instance that starts 
     // at character position offset and ends at the end of this instance.
-    inline String String::Substring(size_t offset) const
+    inline TString TString::Substring(size_t offset) const
     {
         return Substring(offset, _length - offset);
     }
@@ -335,12 +335,12 @@ namespace System
     // Returns a newly constructed string object with its value initialized to a copy of 
     // a substring of this instance. The substring is the portion of this instance that starts 
     // at character position offset and spans length characters.
-    inline String String::Substring(size_t offset, size_t length) const
+    inline TString TString::Substring(size_t offset, size_t length) const
     {
         if (offset + length > _length)
             throw ArgumentOutOfRangeException();
 
-        String result;
+        TString result;
         result._length = length;
         result._chars = new char[length + 1];
         std::strncpy(result._chars, _chars + offset, length);
@@ -351,7 +351,7 @@ namespace System
 
     // Searches this instance for the first character that matches the characters specified in its arguments.
     // If found, the index of the specific character is returned. Otherwise, -1 is returned.
-    inline size_t String::IndexOf(char value) const
+    inline size_t TString::IndexOf(char value) const
     {
         char* ptr = std::strchr(_chars, value);
 
@@ -363,7 +363,7 @@ namespace System
 
     // Searches this instance for the first occurrence of substr.
     // If found, the index indicated the first occurrence of substr is returned. Otherwise, -1 is returned.
-    inline size_t String::IndexOf(const String& substr) const
+    inline size_t TString::IndexOf(const TString& substr) const
     {
         char* ptr = std::strstr(_chars, substr._chars);
 
@@ -375,7 +375,7 @@ namespace System
 
     // Searches this instance for the last character that matches the characters specified in its arguments.
     // If found, the index of the specific character is returned. Otherwise, -1 is returned.
-    inline size_t String::LastIndexOf(char value) const
+    inline size_t TString::LastIndexOf(char value) const
     {
         char* ptr = std::strrchr(_chars, value);
 
@@ -387,7 +387,7 @@ namespace System
 
     // Searches this instance for the last occurrence of substr.
     // If found, the index indicated the last occurrence of substr is returned. Otherwise, -1 is returned.
-    inline size_t String::LastIndexOf(const String& substr) const
+    inline size_t TString::LastIndexOf(const TString& substr) const
     {
         char* prev = NULL;
         char* cur = _chars;
@@ -404,22 +404,22 @@ namespace System
             return prev - _chars;
     }
 
-    // Returns a String array that contains the substrings in this instance that are delimited 
+    // Returns a TString array that contains the substrings in this instance that are delimited 
     // by the specific character.
-    inline ArrayList<String> String::Split(char separateCharacter) const
+    inline ArrayList<TString> TString::Split(char separateCharacter) const
     {
         char tmp[] = { separateCharacter };
         return Split(tmp);
     }
 
-    // Returns a String array that contains the substrings in this instance that are delimited 
+    // Returns a TString array that contains the substrings in this instance that are delimited 
     // by elements of a character array.
-    inline ArrayList<String> String::Split(const char* separateCharacters) const
+    inline ArrayList<TString> TString::Split(const char* separateCharacters) const
     {
         if (!separateCharacters)
             throw ArgumentNullException();
 
-        ArrayList<String> tokens;
+        ArrayList<TString> tokens;
         int beginPos = -1, endPos = -1;
 
         while (++beginPos < _length)
@@ -444,9 +444,9 @@ namespace System
 
     // Returns a pointer to an array that contains a null-terminated sequence of characters 
     // (i.e., a C-string) representing the current value of this instance.
-    // The array mentioned above is newly allocated (i.e., deep copy), so after using this C-String,
+    // The array mentioned above is newly allocated (i.e., deep copy), so after using this C-TString,
     // delete[] operation on the returned pointer is required.
-    inline char* String::Chars() const
+    inline char* TString::Chars() const
     {
         char* result = new char[_length + 1];
         std::strcpy(result, _chars);
@@ -455,7 +455,7 @@ namespace System
     }
 
     // Returns the length of this instance, in terms of number of characters.
-    inline size_t String::Length() const
+    inline size_t TString::Length() const
     {
         return _length;
     }
@@ -465,11 +465,11 @@ namespace System
     class Int
     {
     public:
-        static int Parse(const String& integer);
-        static String ToString(int integer);
+        static int Parse(const TString& integer);
+        static TString ToString(int integer);
     };
 
-    inline int Int::Parse(const String& integer)
+    inline int Int::Parse(const TString& integer)
     {
         std::stringstream ss;
         int result;
@@ -480,10 +480,10 @@ namespace System
         return result;
     }
 
-    inline String Int::ToString(int integer)
+    inline TString Int::ToString(int integer)
     {
         std::stringstream ss;
-        String result;
+        TString result;
 
         ss << integer;
         ss >> result;
@@ -496,11 +496,11 @@ namespace System
     class Float
     {
     public:
-        static float Parse(const String& floating);
-        static String ToString(float floating);
+        static float Parse(const TString& floating);
+        static TString ToString(float floating);
     };
 
-    inline float Float::Parse(const String& floating)
+    inline float Float::Parse(const TString& floating)
     {
         std::stringstream ss;
         float result;
@@ -511,10 +511,10 @@ namespace System
         return result;
     }
 
-    inline String Float::ToString(float floating)
+    inline TString Float::ToString(float floating)
     {
         std::stringstream ss;
-        String result;
+        TString result;
 
         ss << std::setprecision(7) << floating;
         ss >> result;
@@ -527,11 +527,11 @@ namespace System
     class Double
     {
     public:
-        static double Parse(const String& floating);
-        static String ToString(double floating);
+        static double Parse(const TString& floating);
+        static TString ToString(double floating);
     };
 
-    inline double Double::Parse(const String& floating)
+    inline double Double::Parse(const TString& floating)
     {
         std::stringstream ss;
         double result;
@@ -542,10 +542,10 @@ namespace System
         return result;
     }
 
-    inline String Double::ToString(double floating)
+    inline TString Double::ToString(double floating)
     {
         std::stringstream ss;
-        String result;
+        TString result;
 
         ss << std::setprecision(16) << floating;
         ss >> result;

@@ -14,7 +14,7 @@ namespace UnitTest
     public:
         TEST_METHOD(IORelatedTest)
         {
-            String rootDirFullName = "D:\\IOUnitTest";
+            TString rootDirFullName = "D:\\IOUnitTest";
             DirectoryInfo rootDir(rootDirFullName + "\\");
 
             Assert::AreEqual(false, rootDir.Exists());
@@ -27,8 +27,8 @@ namespace UnitTest
             Assert::AreEqual(true, rootDir.Exists());
             Assert::AreEqual(false, rootDir.Create());
 
-            String subDirFullName1 = rootDirFullName + "\\SubDir1";
-            String subDirFullName2 = rootDirFullName + "\\SubDir2";
+            TString subDirFullName1 = rootDirFullName + "\\SubDir1";
+            TString subDirFullName2 = rootDirFullName + "\\SubDir2";
             DirectoryInfo subDir1(subDirFullName1);
             DirectoryInfo subDir2(subDirFullName2 + "\\");
 
@@ -39,8 +39,8 @@ namespace UnitTest
             Assert::AreEqual((const char*)rootDirFullName, subDir1.Parent());
             Assert::AreEqual((const char*)rootDirFullName, subDir2.Parent());
 
-            String fileFullName1 = rootDirFullName + "\\File1.txt";
-            String fileFullName2 = rootDirFullName + "\\File2.txt";
+            TString fileFullName1 = rootDirFullName + "\\File1.txt";
+            TString fileFullName2 = rootDirFullName + "\\File2.txt";
             FileInfo file1 = FileInfo(fileFullName1);
             FileInfo file2 = FileInfo(fileFullName2);
             
@@ -51,27 +51,27 @@ namespace UnitTest
             Assert::AreEqual((const char*)rootDirFullName, file1.Directory());
             Assert::AreEqual((const char*)rootDirFullName, file2.Directory());
 
-            vector<String> subDirs = rootDir.GetDirectories();
+            vector<TString> subDirs = rootDir.GetDirectories();
             sort(subDirs.begin(), subDirs.end());
 
             Assert::AreEqual(2, (int)subDirs.size());
             Assert::AreEqual((const char*)subDirFullName1, subDirs[0]);
             Assert::AreEqual((const char*)subDirFullName2, subDirs[1]);
 
-            vector<String> files = rootDir.GetFiles();
+            vector<TString> files = rootDir.GetFiles();
             sort(files.begin(), files.end());
             
             Assert::AreEqual(2, (int)files.size());
             Assert::AreEqual((const char*)fileFullName1, files[0]);
             Assert::AreEqual((const char*)fileFullName2, files[1]);
 
-            String subDirNewFullName = rootDirFullName + "\\SubDirNew";
+            TString subDirNewFullName = rootDirFullName + "\\SubDirNew";
 
             Assert::AreEqual(true, subDir1.MoveTo(subDirNewFullName));
             Assert::AreEqual("SubDirNew", subDir1.Name());
             Assert::AreEqual((const char*)subDirNewFullName, subDir1.FullName());
 
-            String fileNewFullName = rootDirFullName + "\\FileNew.txt";
+            TString fileNewFullName = rootDirFullName + "\\FileNew.txt";
 
             Assert::AreEqual(true, file1.MoveTo(fileNewFullName));
             Assert::AreEqual("FileNew.txt", file1.Name());

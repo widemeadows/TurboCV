@@ -3,12 +3,13 @@
 #include "../System.ML/System.ML.h"
 #include "../System.XML/System.XML.h"
 #include "Util.h"
+#include "Test.h"
 #include <cv.h>
 #include <highgui.h>
-#include <utility>
 using namespace TurboCV::System;
 using namespace TurboCV::System::Image;
 using namespace TurboCV::System::ML;
+using namespace cv;
 using namespace std;
 
 #define SAVE_FEATURE
@@ -71,12 +72,12 @@ cv::Mat sketchPreprocess(const cv::Mat& image)
 //}
 
 template<typename FeatureType>
-void LocalFeatureCrossValidation(cv::Mat (*Preprocess)(const cv::Mat&), const String& datasetPath, FeatureType)
+void LocalFeatureCrossValidation(cv::Mat (*Preprocess)(const cv::Mat&), const TString& datasetPath)
 {
     LocalFeatureSolver<FeatureType> solver(Preprocess, datasetPath);
     solver.CrossValidation();
 
-    String savePath = FeatureType().GetName() + "_" + datasetPath + "_knn.out";
+    TString savePath = FeatureType().GetName() + "_" + datasetPath + "_knn.out";
 
     ArrayList<double> precisions = solver.GetPrecisions();
     FILE* file = fopen(savePath, "w");
@@ -108,12 +109,12 @@ void LocalFeatureCrossValidation(cv::Mat (*Preprocess)(const cv::Mat&), const St
 }
 
 template<typename FeatureType>
-void GlobalFeatureCrossValidation(cv::Mat (*Preprocess)(const cv::Mat&), const String& datasetPath, FeatureType)
+void GlobalFeatureCrossValidation(cv::Mat (*Preprocess)(const cv::Mat&), const TString& datasetPath)
 {
     GlobalFeatureSolver<FeatureType> solver(Preprocess, datasetPath);
     solver.CrossValidation();
 
-    String savePath = FeatureType().GetName() + "_" + datasetPath + "_knn.out";
+    TString savePath = FeatureType().GetName() + "_" + datasetPath + "_knn.out";
 
     ArrayList<double> precisions = solver.GetPrecisions();
     FILE* file = fopen(savePath, "w");
@@ -144,7 +145,7 @@ void GlobalFeatureCrossValidation(cv::Mat (*Preprocess)(const cv::Mat&), const S
 }
 
 //template<typename EdgeMatching>
-//void EdgeMatchingCrossValidation(const TurboCV::System::String& imageSetPath, const EdgeMatching& matching,
+//void EdgeMatchingCrossValidation(const TurboCV::System::TString& imageSetPath, const EdgeMatching& matching,
 //                                 bool thinning = false, int fold = 3)
 //{
 //    srand(1);
@@ -175,7 +176,7 @@ void GlobalFeatureCrossValidation(cv::Mat (*Preprocess)(const cv::Mat&), const S
 //        }
 //
 //        printf("Write To File...\n");
-//        TurboCV::System::String savePath = matching.GetName() + "_" + imageSetPath + "_matrix";
+//        TurboCV::System::TString savePath = matching.GetName() + "_" + imageSetPath + "_matrix";
 //        FILE* file = fopen(savePath, "w");
 //        for (int i = 0; i < imageNum; i++)
 //        {
@@ -248,7 +249,7 @@ void GlobalFeatureCrossValidation(cv::Mat (*Preprocess)(const cv::Mat&), const S
 //
 //#ifdef SAVE_ROC
 //    {
-//        TurboCV::System::String savePath = matching.GetName() + "_" + imageSetPath + "_roc";
+//        TurboCV::System::TString savePath = matching.GetName() + "_" + imageSetPath + "_roc";
 //        FILE* file = fopen(savePath, "w");
 //        for (int i = 0; i < DRs.Count(); i++)
 //        {
@@ -264,7 +265,7 @@ void GlobalFeatureCrossValidation(cv::Mat (*Preprocess)(const cv::Mat&), const S
 //    }
 //#endif
 //
-//    TurboCV::System::String savePath = matching.GetName() + "_" + imageSetPath + "_knn.out";
+//    TurboCV::System::TString savePath = matching.GetName() + "_" + imageSetPath + "_knn.out";
 //    FILE* file = fopen(savePath, "w");
 //    for (int i = 0; i < passResult.Count(); i++)
 //        fprintf(file, "Fold %d Accuracy: %f\n", i + 1, passResult[i]);
@@ -318,224 +319,6 @@ void GlobalFeatureCrossValidation(cv::Mat (*Preprocess)(const cv::Mat&), const S
 //    return weights;
 //}
 
-//ArrayList<ArrayList<LocalFeatureVec_f>> DivideLocalFeatures(const ArrayList<LocalFeatureVec_f> features)
-//{
-//    int blockSize = 128;
-//
-//    ArrayList<Point> wordCenters;
-//    for (int i = 1; i <= 3; i++)
-//        for (int j = 1; j <= 3; j++)
-//            wordCenters.Add(Point(i * 64, j * 64));
-//
-//    ArrayList<Point> descPoints = SampleOnGrid(256, 256, 28);
-//    assert(descPoints.Count() == features[0].Count());
-//
-//    ArrayList<ArrayList<LocalFeatureVec_f>> parts(wordCenters.Count());
-//    for (int i = 0; i < features.Count(); i++)
-//    {
-//        ArrayList<LocalFeatureVec_f> tmp(wordCenters.Count());
-//
-//        for (int j = 0; j < wordCenters.Count(); j++)
-//        {
-//            int top = wordCenters[j].y - blockSize / 2,
-//                bottom = wordCenters[j].y + blockSize / 2,
-//                left = wordCenters[j].x - blockSize / 2,
-//                right = wordCenters[j].x + blockSize / 2;
-//
-//            for (int k = 0; k < descPoints.Count(); k++)
-//            {
-//                if (top <= descPoints[k].y && descPoints[k].y < bottom &&
-//                    left <= descPoints[k].x && descPoints[k].x < right)
-//                    tmp[j].Add(features[i][k]);
-//            }
-//        }
-//
-//        for (int j = 0; j < wordCenters.Count(); j++)
-//            parts[j].Add(tmp[j]);
-//    }
-//
-//    return parts;
-//}
-//
-//template<typename LocalFeature>
-//void LocalFeatureTest(const TurboCV::System::String& imageSetPath, const LocalFeature& feature, 
-//                        int wordNum, int sampleNum = 1000000, int fold = 3)
-//{
-//    srand(1);
-//    ArrayList<Group<Mat, int>> images = GetImagePaths(imageSetPath, CV_LOAD_IMAGE_GRAYSCALE);
-//    int imageNum = (int)images.Count();
-//
-//    ArrayList<LocalFeatureVec_f> features(imageNum);
-//    printf("Compute " + feature.GetName() + "...\n");
-//    LocalFeature machine = feature;
-//    #pragma omp parallel for private(machine)
-//    for (int i = 0; i < imageNum; i++)
-//        Convert(machine.GetFeatureWithPreprocess(images[i].Item1(), true), features[i]);
-//
-//    { // Use a block here to destruct words and freqHistograms immediately.
-//        printf("Compute Visual Words...\n");
-//        ArrayList<Word_f> words = BOV::GetVisualWords(features, wordNum, sampleNum);
-//
-//        printf("Compute Frequency Histograms...\n");
-//        ArrayList<Histogram> freqHistograms = BOV::GetFrequencyHistograms(features, words);
-//
-//        printf("Write To File...\n");
-//        TurboCV::System::String savePath = feature.GetName() + "_features";
-//        FILE* file = fopen(savePath, "w");
-//        for (int i = 0; i < freqHistograms.Count(); i++)
-//        {
-//            for (int j = 0; j < freqHistograms[i].Count(); j++)
-//                fprintf(file, "%.12f ", freqHistograms[i][j]);
-//            fprintf(file, "\n");
-//        }
-//        fclose(file);
-//
-//        savePath = feature.GetName() + "_labels";
-//        file = fopen(savePath, "w");
-//        for (int i = 0; i < features.Count(); i++)
-//            fprintf(file, "%d\n", images[i].Item2());
-//        fclose(file);
-//    }
-//
-//    ArrayList<Group<ArrayList<LocalFeatureVec_f>, ArrayList<LocalFeatureVec_f>, ArrayList<size_t>>> pass = 
-//        RandomSplit(features, fold);
-//    ArrayList<double> passResult;
-//    for (int i = 0; i < fold; i++)
-//    {
-//        printf("\nBegin Fold %d...\n", i + 1);
-//        ArrayList<LocalFeatureVec_f>& evaluationSet = pass[i].Item1();
-//        ArrayList<LocalFeatureVec_f>& trainingSet = pass[i].Item2();
-//        ArrayList<size_t>& pickUpIndexes = pass[i].Item3();
-//
-//        /*ArrayList<LocalFeature_f> evaluationSet1(evaluationSet.size());
-//        ArrayList<LocalFeature_f> evaluationSet2(evaluationSet.size());
-//        for (int i = 0; i < evaluationSet.size(); i++)
-//        {
-//            evaluationSet1[i].push_back(evaluationSet[i].begin(), 
-//                evaluationSet[i].begin() + evaluationSet[i].size() / 2);
-//            evaluationSet2[i].push_back(evaluationSet[i].begin() + evaluationSet[i].size() / 2, 
-//                evaluationSet[i].end());
-//        }
-//
-//        ArrayList<LocalFeature_f> trainingSet1(trainingSet.size());
-//        ArrayList<LocalFeature_f> trainingSet2(trainingSet.size());
-//        for (int i = 0; i < trainingSet.size(); i++)
-//        {
-//            trainingSet1[i].push_back(trainingSet[i].begin(), 
-//                trainingSet[i].begin() + trainingSet[i].size() / 2);
-//            trainingSet2[i].push_back(trainingSet[i].begin() + trainingSet[i].size() / 2, 
-//                trainingSet[i].end());
-//        }*/
-//
-//        printf("Compute Visual Words...\n");
-//        ArrayList<Word_f> words = BOV::GetVisualWords(trainingSet, wordNum, sampleNum);
-//
-//        //ArrayList<Word_f> words1 = BOV::GetVisualWords(trainingSet1, wordNum, sampleNum);
-//        //ArrayList<Word_f> words2 = BOV::GetVisualWords(trainingSet2, wordNum, sampleNum);
-//
-//        printf("Compute Frequency Histograms...\n");
-//        ArrayList<Histogram> trainingHistograms = BOV::GetFrequencyHistograms(trainingSet, words)/* * 9*/;
-//        ArrayList<Histogram> evaluationHistograms = BOV::GetFrequencyHistograms(evaluationSet, words)/* * 9*/;
-//
-//        //ArrayList<ArrayList<LocalFeature_f>> parts = DivideLocalFeatures(trainingSet);
-//        //for (int j = 0; j < parts.size(); j++)
-//        //{
-//        //    ArrayList<Histogram> result = BOV::GetFrequencyHistograms(parts[j], words);
-//
-//        //    assert(result.size() == trainingHistograms.size());
-//        //    for (int k = 0; k < result.size(); k++)
-//        //        trainingHistograms[k].push_back(result[k]);
-//        //}
-//
-//        //parts = DivideLocalFeatures(evaluationSet);
-//        //for (int j = 0; j < parts.size(); j++)
-//        //{
-//        //    ArrayList<Histogram> result = BOV::GetFrequencyHistograms(parts[j], words);
-//
-//        //    assert(result.size() == evaluationHistograms.size());
-//        //    for (int k = 0; k < result.size(); k++)
-//        //        evaluationHistograms[k].push_back(result[k]);
-//        //}
-//
-//        assert(trainingHistograms[0].Count() == wordNum &&
-//            evaluationHistograms[0].Count() == wordNum);
-//
-//        /*ArrayList<Histogram> trainingHistograms1 = BOV::GetFrequencyHistograms(trainingSet1, words1);
-//        ArrayList<Histogram> trainingHistograms2 = BOV::GetFrequencyHistograms(trainingSet2, words2);
-//
-//        ArrayList<Histogram> evaluationHistograms1 = BOV::GetFrequencyHistograms(evaluationSet1, words1);
-//        ArrayList<Histogram> evaluationHistograms2 = BOV::GetFrequencyHistograms(evaluationSet2, words2);
-//
-//        ArrayList<Histogram> trainingHistograms(trainingSet.size()), evaluationHistograms(evaluationSet.size());
-//
-//        NormlizeDeviation(trainingHistograms1);
-//        NormlizeDeviation(trainingHistograms2);
-//        for (int i = 0; i < trainingSet.size(); i++)
-//        {
-//            trainingHistograms[i].push_back(trainingHistograms1[i].begin(), trainingHistograms1[i].end());
-//            trainingHistograms[i].push_back(trainingHistograms2[i].begin(), trainingHistograms2[i].end());
-//        }
-//
-//        NormlizeDeviation(evaluationHistograms1);
-//        NormlizeDeviation(evaluationHistograms2);
-//        for (int i = 0; i < evaluationSet.size(); i++)
-//        {
-//            evaluationHistograms[i].push_back(evaluationHistograms1[i].begin(), evaluationHistograms1[i].end());
-//            evaluationHistograms[i].push_back(evaluationHistograms2[i].begin(), evaluationHistograms2[i].end());
-//        }*/
-//
-//        ArrayList<int> trainingLabels, evaluationLabels;
-//        int counter = 0;
-//        for (int k = 0; k < imageNum; k++)
-//        {
-//            if (counter < pickUpIndexes.Count() && k == pickUpIndexes[counter])
-//            {
-//                evaluationLabels.Add(images[k].Item2());
-//                counter++;
-//            }
-//            else
-//                trainingLabels.Add(images[k].Item2());
-//        }
-//
-//        //ArrayList<double> weights = Boosting(trainingHistograms, trainingLabels);
-//        //for (int k = 0; k < weights.size(); k++)
-//        //{
-//        //    for (int i = 0; i < trainingHistograms.size(); i++)
-//        //        trainingHistograms[i][k] *= weights[k];
-//
-//        //    for (int i = 0; i < evaluationHistograms.size(); i++)
-//        //        evaluationHistograms[i][k] *= weights[k];
-//        //}
-//
-//        //printf("Perform LDA...\n");
-//        //pair<ArrayList<Histogram>, ArrayList<Histogram>> result = LDAOperator::ComputeLDA(
-//        //    trainingHistograms, trainingLabels, 1000, evaluationHistograms);
-//        //trainingHistograms = result.first;
-//        //evaluationHistograms = result.second;
-//
-//        KNN<Histogram> knn;
-//        auto precisions = 
-//            knn.Evaluate(trainingHistograms, trainingLabels, evaluationHistograms, evaluationLabels);
-//
-//        passResult.Add(precisions.first);
-//
-//        printf("Fold %d Accuracy: %f\n", i + 1, precisions.first);
-//    }
-//
-//    TurboCV::System::String savePath = feature.GetName() + "_oracles_knn.out";
-//    FILE* file = fopen(savePath, "w");
-//
-//    for (int i = 0; i < passResult.Count(); i++)
-//        fprintf(file, "Fold %d Accuracy: %f\n", i + 1, passResult[i]);
-//
-//    fprintf(file, "Average: %f, Standard Deviation: %f\n", Math::Mean(passResult), 
-//        Math::StandardDeviation(passResult));
-//    printf("\nAverage: %f, Standard Deviation: %f\n", Math::Mean(passResult), 
-//        Math::StandardDeviation(passResult));
-//
-//    fclose(file);
-//}
-
 template<typename T>
 void CrossValidation(const ArrayList<T>& samples, const ArrayList<int>& labels, int fold = 3)
 {
@@ -577,53 +360,54 @@ void CrossValidation(const ArrayList<T>& samples, const ArrayList<int>& labels, 
 
 void Batch()
 {
-    LocalFeatureCrossValidation(sketchPreprocess, "sketches", HOG());
+    LocalFeatureCrossValidation<HOG>(sketchPreprocess, "sketches");
     printf("\n");
 
-    LocalFeatureCrossValidation(sketchPreprocess, "sketches", RHOG());
+    LocalFeatureCrossValidation<RHOG>(sketchPreprocess, "sketches");
     printf("\n");
 
-    LocalFeatureCrossValidation(sketchPreprocess, "sketches", SHOG());
+    LocalFeatureCrossValidation<SHOG>(sketchPreprocess, "sketches");
     printf("\n");
 
-    LocalFeatureCrossValidation(sketchPreprocess, "sketches", LogSHOG());
+    LocalFeatureCrossValidation<LogSHOG>(sketchPreprocess, "sketches");
     printf("\n");
 
-    LocalFeatureCrossValidation(sketchPreprocess, "sketches", HOOSC());
+    LocalFeatureCrossValidation<HOOSC>(sketchPreprocess, "sketches");
     printf("\n");
 
-    LocalFeatureCrossValidation(sketchPreprocess, "sketches", RHOOSC());
+    LocalFeatureCrossValidation<RHOOSC>(sketchPreprocess, "sketches");
     printf("\n");
 
-    LocalFeatureCrossValidation(sketchPreprocess, "sketches", SC());
+    LocalFeatureCrossValidation<SC>(sketchPreprocess, "sketches");
     printf("\n");
 
-    LocalFeatureCrossValidation(sketchPreprocess, "sketches", PSC());
+    LocalFeatureCrossValidation<PSC>(sketchPreprocess, "sketches");
     printf("\n");
 
-    LocalFeatureCrossValidation(sketchPreprocess, "sketches", RSC());
+    LocalFeatureCrossValidation<RSC>(sketchPreprocess, "sketches");
     printf("\n");
 
-    LocalFeatureCrossValidation(sketchPreprocess, "sketches", RPSC());
+    LocalFeatureCrossValidation<RPSC>(sketchPreprocess, "sketches");
     printf("\n");
 
-    GlobalFeatureCrossValidation(sketchPreprocess, "sketches", GHOG());
+    LocalFeatureCrossValidation<RGabor>(sketchPreprocess, "sketches");
     printf("\n");
 
-    GlobalFeatureCrossValidation(sketchPreprocess, "sketches", GIST());
+    GlobalFeatureCrossValidation<GHOG>(sketchPreprocess, "sketches");
+    printf("\n");
+
+    GlobalFeatureCrossValidation<GIST>(sketchPreprocess, "sketches");
     printf("\n");
 }
 
 int main()
 {
+    test("subset");
+
     //LocalFeatureCrossValidation(sketchPreprocess, "sketches", HOOSC());
 
-    LocalFeatureCrossValidation(sketchPreprocess, "sketches", RGabor());
 
     // Batch();
-
-    //LocalFeatureTest("sketches", Test(), 1500);
-    //printf("\n");
 
 
     //Mat img = imread("00002.png", CV_LOAD_IMAGE_GRAYSCALE);

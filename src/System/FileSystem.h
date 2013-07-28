@@ -13,18 +13,18 @@ namespace System
     {
     public:
         // Initializes a new instance of the FileSystemInfo class.
-        FileSystemInfo(const String& path);
+        FileSystemInfo(const TString& path);
 
         // Gets the string representing the extension part of the file.
-        String Extension() const;
+        TString Extension() const;
 
         // For files, gets the name of the file. For directories, gets the name of 
         // the last directory in the hierarchy if a hierarchy exists. Otherwise, 
         // the Name method gets the name of the directory.
-        String Name() const;
+        TString Name() const;
 
         // Gets the full path of the directory or file.
-        String FullName() const;
+        TString FullName() const;
 
         // Gets a value indicating whether the file or directory exists.
         virtual bool Exists() const = 0;
@@ -37,14 +37,14 @@ namespace System
 
         // Moves a specified file / direcotry to a new location, 
         // providing the option to specify a new file / directory name.
-        bool MoveTo(const String& newPath);
+        bool MoveTo(const TString& newPath);
 
     protected:
-        String _path;
+        TString _path;
     };
 
     // Initializes a new instance of the FileSystemInfo class.
-    inline FileSystemInfo::FileSystemInfo(const String& path)
+    inline FileSystemInfo::FileSystemInfo(const TString& path)
     {
         size_t pathLen = path.Length();
         size_t lastPos = pathLen - 1;
@@ -60,7 +60,7 @@ namespace System
     }
 
     // Gets the string representing the extension part of the file.
-    inline String FileSystemInfo::Extension() const
+    inline TString FileSystemInfo::Extension() const
     {
         size_t lastBacklash = _path.LastIndexOf('\\');
         size_t lastDot = _path.LastIndexOf('.');
@@ -74,18 +74,18 @@ namespace System
     // For files, gets the name of the file. For directories, gets the name of 
     // the last directory in the hierarchy if a hierarchy exists. Otherwise, 
     // the Name method gets the name of the directory.
-    inline String FileSystemInfo::Name() const
+    inline TString FileSystemInfo::Name() const
     {
         return _path.Substring(_path.LastIndexOf('\\') + 1);
     }
 
     // Gets the full path of the directory or file.
-    inline String FileSystemInfo::FullName() const
+    inline TString FileSystemInfo::FullName() const
     {
         TCHAR path[MAX_PATH] = TEXT(""); 
         TCHAR** fileName = { NULL };
         TCHAR curDir[MAX_PATH];
-        String result;
+        TString result;
 
         GetCurrentDirectory(MAX_PATH, curDir);
         SetCurrentDirectory(_path);
@@ -93,9 +93,9 @@ namespace System
         if (GetFullPathName(_path, MAX_PATH, path, fileName))
         {
             if (fileName == NULL) // if it is a directory
-                result = String(path);
+                result = TString(path);
             else // otherwise it is a file
-                result = String(path) + "\\" + String(*fileName);
+                result = TString(path) + "\\" + TString(*fileName);
         }
 
         SetCurrentDirectory(curDir);
@@ -104,7 +104,7 @@ namespace System
 
     // Moves a specified file / direcotry to a new location, 
     // providing the option to specify a new file / directory name.
-    inline bool FileSystemInfo::MoveTo(const String& newPath)
+    inline bool FileSystemInfo::MoveTo(const TString& newPath)
     {
         if (MoveFile(_path, newPath))
         {
@@ -123,7 +123,7 @@ namespace System
     public:
         // Initializes a new instance of the FileInfo class, 
         // which acts as a wrapper for a file path.
-        FileInfo(const String& path) : FileSystemInfo(path) {};
+        FileInfo(const TString& path) : FileSystemInfo(path) {};
 
         // Overridden. Gets a value indicating whether a file exists.
         virtual bool Exists() const;
@@ -135,7 +135,7 @@ namespace System
         virtual bool Delete() const;
 
         // Gets the full path of the parent directory.
-        String Directory() const;
+        TString Directory() const;
     };
 
     // Initializes a new instance of the FileInfo class, 
@@ -170,7 +170,7 @@ namespace System
     }
 
     // Gets the full path of the parent directory.
-    inline String FileInfo::Directory() const
+    inline TString FileInfo::Directory() const
     {
         return FullName().Substring(0, _path.LastIndexOf('\\'));
     }
@@ -183,7 +183,7 @@ namespace System
     {
     public:
         // Initializes a new instance of the DirectoryInfo class on the specified path.
-        DirectoryInfo(const String& path) : FileSystemInfo(path) {};
+        DirectoryInfo(const TString& path) : FileSystemInfo(path) {};
 
         // Overridden. Gets a value indicating whether the directory exists.
         virtual bool Exists() const;
@@ -195,13 +195,13 @@ namespace System
         virtual bool Delete() const;
 
         // Gets the parent directory of a specified subdirectory.
-        String Parent() const;
+        TString Parent() const;
 
         // Returns the full paths of subdirectories in the current directory.
-        ArrayList<String> GetDirectories() const;
+        ArrayList<TString> GetDirectories() const;
 
         // Returns the full paths of files in the current directory.
-        ArrayList<String> GetFiles() const;
+        ArrayList<TString> GetFiles() const;
     };
 
     // Overridden. Gets a value indicating whether the directory exists.
@@ -226,16 +226,16 @@ namespace System
     }
 
     // Gets the parent directory of a specified subdirectory.
-    inline String DirectoryInfo::Parent() const
+    inline TString DirectoryInfo::Parent() const
     {
         return FullName().Substring(0, _path.LastIndexOf('\\'));
     }
 
     // Returns the full paths of subdirectories in the current directory.
-    inline ArrayList<String> DirectoryInfo::GetDirectories() const
+    inline ArrayList<TString> DirectoryInfo::GetDirectories() const
     {
         WIN32_FIND_DATA data; 
-        ArrayList<String> subDirs;
+        ArrayList<TString> subDirs;
         TCHAR curDir[MAX_PATH];
 
         GetCurrentDirectory(MAX_PATH, curDir);
@@ -258,10 +258,10 @@ namespace System
     }
 
     // Returns the full paths of files in the current directory.
-    inline ArrayList<String> DirectoryInfo::GetFiles() const
+    inline ArrayList<TString> DirectoryInfo::GetFiles() const
     {
         WIN32_FIND_DATA data; 
-        ArrayList<String> files;
+        ArrayList<TString> files;
         TCHAR curDir[MAX_PATH];
 
         GetCurrentDirectory(MAX_PATH, curDir);

@@ -16,11 +16,11 @@ namespace System
         //////////////////////////////////////////////////////////////////////////
 
         inline double GetDoubleValue(
-            const std::map<String, String>& params, 
-            const String& paramName, 
+            const std::map<TString, TString>& params, 
+            const TString& paramName, 
             const double defaultValue)
         {
-            std::map<String, String>::const_iterator itr = params.find(paramName);
+            std::map<TString, TString>::const_iterator itr = params.find(paramName);
 
             if (itr == params.end())
                 return defaultValue;
@@ -29,17 +29,17 @@ namespace System
         }
 
         inline ArrayList<double> GetDoubleList(
-            const std::map<String, String>& params, 
-            const String& paramName, 
+            const std::map<TString, TString>& params, 
+            const TString& paramName, 
             const ArrayList<double>& defaultValue)
         {
-            std::map<String, String>::const_iterator itr = params.find(paramName);
+            std::map<TString, TString>::const_iterator itr = params.find(paramName);
 
             if (itr == params.end())
                 return defaultValue;
             else
             {
-                ArrayList<String> tokens = itr->second.Split(" ,");
+                ArrayList<TString> tokens = itr->second.Split(" ,");
                 ArrayList<double> values(tokens.Count());
 
                 for (int i = tokens.Count() - 1; i >= 0; i--)
@@ -55,19 +55,19 @@ namespace System
         //////////////////////////////////////////////////////////////////////////
 
         void SaveLocalFeatures(
-            const String& fileName,
+            const TString& fileName,
             const ArrayList<Word_f>& words,
             const ArrayList<Histogram>& freqHists,
             const ArrayList<int>& labels);
 
         void SaveGlobalFeatures(
-            const String& fileName, 
+            const TString& fileName, 
             const ArrayList<GlobalFeatureVec_f>& features,
             const ArrayList<int>& labels);
 
         template<typename T>
         cv::Mat SaveDistanceMatrix(
-            const String& fileName, 
+            const TString& fileName, 
             const ArrayList<T>& vecs, 
             const ArrayList<int>& labels, 
             double (*getDistance)(const T&, const T&) = Math::NormOneDistance)
@@ -109,7 +109,7 @@ namespace System
         {
         public:
             virtual LocalFeatureVec operator()(const cv::Mat& sketchImage) = 0;
-            virtual String GetName() const = 0;
+            virtual TString GetName() const = 0;
         };
 
         // Histogram of Gradient
@@ -118,7 +118,7 @@ namespace System
         public:
             HOG(): orientNum(4), cellNum(4), cellSize(23) {}
 
-            HOG(const std::map<String, String>& params, bool printParams = false)
+            HOG(const std::map<TString, TString>& params, bool printParams = false)
             {
                 orientNum = GetDoubleValue(params, "orientNum", 4);
                 cellNum = GetDoubleValue(params, "cellNum", 4);
@@ -135,7 +135,7 @@ namespace System
                 return GetFeature(sketchImage);
             }
 
-            virtual String GetName() const 
+            virtual TString GetName() const 
             { 
                 return "hog"; 
             }
@@ -156,7 +156,7 @@ namespace System
         public:
             RHOG(): orientNum(4), cellNum(4), sampleNum(28), blockSize(92) {}
 
-            RHOG(const std::map<String, String>& params, bool printParams = false)
+            RHOG(const std::map<TString, TString>& params, bool printParams = false)
             {
                 orientNum = GetDoubleValue(params, "orientNum", 4);
                 cellNum = GetDoubleValue(params, "cellNum", 4);
@@ -175,7 +175,7 @@ namespace System
                 return GetFeature(sketchImage);
             }
 
-            virtual String GetName() const 
+            virtual TString GetName() const 
             { 
                 return "rhog"; 
             }
@@ -196,7 +196,7 @@ namespace System
         public:
             SHOG(): orientNum(4), cellNum(4), pivotRatio(0.33) {}
 
-            SHOG(const std::map<String, String>& params, bool printParams = false)
+            SHOG(const std::map<TString, TString>& params, bool printParams = false)
             {
                 orientNum = GetDoubleValue(params, "orientNum", 4);
                 cellNum = GetDoubleValue(params, "cellNum", 4);
@@ -213,7 +213,7 @@ namespace System
                 return GetFeature(sketchImage);
             }
 
-            virtual String GetName() const 
+            virtual TString GetName() const 
             { 
                 return "shog"; 
             }
@@ -235,7 +235,7 @@ namespace System
             LogSHOG(): orientNum(4), cellNum(4), scaleNum(15), sigmaInit(0.7), 
                 sigmaStep(1.2), pivotRatio(0.33) {}
 
-            LogSHOG(const std::map<String, String>& params, bool printParams = false)
+            LogSHOG(const std::map<TString, TString>& params, bool printParams = false)
             {
                 orientNum = GetDoubleValue(params, "orientNum", 4);
                 cellNum = GetDoubleValue(params, "cellNum", 4);
@@ -256,7 +256,7 @@ namespace System
                 return GetFeature(sketchImage);
             }
 
-            virtual String GetName() const 
+            virtual TString GetName() const 
             { 
                 return "lshog"; 
             }
@@ -281,7 +281,7 @@ namespace System
                 logDistances = ArrayList<double>(tmp, tmp + sizeof(tmp) / sizeof(double));
             }
 
-            HOOSC(const std::map<String, String>& params, bool printParams = false)
+            HOOSC(const std::map<TString, TString>& params, bool printParams = false)
             {
                 angleNum = GetDoubleValue(params, "angleNum", 9);
                 orientNum = GetDoubleValue(params, "orientNum", 8);
@@ -307,7 +307,7 @@ namespace System
                 return GetFeature(sketchImage);
             }
 
-            virtual String GetName() const 
+            virtual TString GetName() const 
             { 
                 return "hoosc"; 
             }
@@ -333,7 +333,7 @@ namespace System
                 logDistances = ArrayList<double>(tmp, tmp + sizeof(tmp) / sizeof(double));
             }
 
-            RHOOSC(const std::map<String, String>& params, bool printParams = false)
+            RHOOSC(const std::map<TString, TString>& params, bool printParams = false)
             {
                 angleNum = GetDoubleValue(params, "angleNum", 9);
                 orientNum = GetDoubleValue(params, "orientNum", 8);
@@ -359,7 +359,7 @@ namespace System
                 return GetFeature(sketchImage);
             }
 
-            virtual String GetName() const 
+            virtual TString GetName() const 
             { 
                 return "rhoosc"; 
             }
@@ -384,7 +384,7 @@ namespace System
                 logDistances = ArrayList<double>(tmp, tmp + sizeof(tmp) / sizeof(double));
             }
 
-            SC(const std::map<String, String>& params, bool printParams = false)
+            SC(const std::map<TString, TString>& params, bool printParams = false)
             {
                 angleNum = GetDoubleValue(params, "angleNum", 12);
                 pivotRatio = GetDoubleValue(params, "pivotRatio", 0.33);
@@ -409,7 +409,7 @@ namespace System
                 return GetFeature(sketchImage);
             }
 
-            virtual String GetName() const 
+            virtual TString GetName() const 
             { 
                 return "sc"; 
             }
@@ -434,7 +434,7 @@ namespace System
                 logDistances = ArrayList<double>(tmp, tmp + sizeof(tmp) / sizeof(double));
             }
 
-            PSC(const std::map<String, String>& params, bool printParams = false)
+            PSC(const std::map<TString, TString>& params, bool printParams = false)
             {
                 angleNum = GetDoubleValue(params, "angleNum", 12);
                 pivotRatio = GetDoubleValue(params, "pivotRatio", 0.33);
@@ -459,7 +459,7 @@ namespace System
                 return GetFeature(sketchImage);
             }
 
-            virtual String GetName() const 
+            virtual TString GetName() const 
             { 
                 return "psc"; 
             }
@@ -484,7 +484,7 @@ namespace System
                 logDistances = ArrayList<double>(tmp, tmp + sizeof(tmp) / sizeof(double));
             }
 
-            RSC(const std::map<String, String>& params, bool printParams = false)
+            RSC(const std::map<TString, TString>& params, bool printParams = false)
             {
                 angleNum = GetDoubleValue(params, "angleNum", 12);
                 sampleNum = GetDoubleValue(params, "sampleNum", 28);
@@ -510,7 +510,7 @@ namespace System
                 return GetFeature(sketchImage);
             }
 
-            virtual String GetName() const 
+            virtual TString GetName() const 
             { 
                 return "rsc"; 
             }
@@ -535,7 +535,7 @@ namespace System
                 logDistances = ArrayList<double>(tmp, tmp + sizeof(tmp) / sizeof(double));
             }
 
-            RPSC(const std::map<String, String>& params, bool printParams = false)
+            RPSC(const std::map<TString, TString>& params, bool printParams = false)
             {
                 angleNum = GetDoubleValue(params, "angleNum", 12);
                 sampleNum = GetDoubleValue(params, "sampleNum", 28);
@@ -560,7 +560,7 @@ namespace System
                 return GetFeature(sketchImage);
             }
 
-            virtual String GetName() const 
+            virtual TString GetName() const 
             { 
                 return "rpsc"; 
             }
@@ -581,7 +581,7 @@ namespace System
         public:
             RGabor(): orientNum(9), cellNum(4), sampleNum(28), blockSize(92) {}
 
-            RGabor(const std::map<String, String>& params, bool printParams = false)
+            RGabor(const std::map<TString, TString>& params, bool printParams = false)
             {
                 orientNum = GetDoubleValue(params, "orientNum", 9);
                 cellNum = GetDoubleValue(params, "cellNum", 4);
@@ -600,7 +600,7 @@ namespace System
                 return GetFeature(sketchImage);
             }
 
-            virtual String GetName() const 
+            virtual TString GetName() const 
             { 
                 return "rgabor"; 
             }
@@ -624,7 +624,7 @@ namespace System
         {
         public:
             virtual GlobalFeatureVec operator()(const cv::Mat& sketchImage) = 0;
-            virtual String GetName() const = 0;
+            virtual TString GetName() const = 0;
         };
 
         // Global HOG
@@ -633,7 +633,7 @@ namespace System
         public:
             GHOG(): orientNum(8), blockSize(48) {}
 
-            GHOG(const std::map<String, String>& params, bool printParams = false)
+            GHOG(const std::map<TString, TString>& params, bool printParams = false)
             {
                 orientNum = GetDoubleValue(params, "orientNum", 8);
                 blockSize = GetDoubleValue(params, "blockSize", 48);
@@ -649,7 +649,7 @@ namespace System
                 return GetFeature(sketchImage);
             }
 
-            virtual String GetName() const 
+            virtual TString GetName() const 
             { 
                 return "ghog"; 
             }
@@ -671,7 +671,7 @@ namespace System
                 orientNumPerScale = ArrayList<int>(tmp, tmp + sizeof(tmp) / sizeof(int));
             }
 
-            GIST(const std::map<String, String>& params, bool printParams = false)
+            GIST(const std::map<TString, TString>& params, bool printParams = false)
             {
                 blockNum = GetDoubleValue(params, "blockNum", 4);
 
@@ -697,7 +697,7 @@ namespace System
                 return GetFeature(sketchImage);
             }
 
-            virtual String GetName() const 
+            virtual TString GetName() const 
             { 
                 return "gist"; 
             }

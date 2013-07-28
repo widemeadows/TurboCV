@@ -12,35 +12,35 @@ namespace UnitTest
     public:
         TEST_METHOD(ConstructorTest)
         {
-            String emptyString;
+            TString emptyString;
             Assert::AreEqual("", emptyString);
 
             const char* CString1 = "Hello World";
-            String fromCString1(CString1);
+            TString fromCString1(CString1);
             Assert::AreEqual(CString1, fromCString1);
 
             const char* CString2 = "";
-            String fromCString2(CString2);
+            TString fromCString2(CString2);
             Assert::AreEqual(CString2, fromCString2);
 
             const string StdString1 = "Hello World";
-            String fromStdString1(StdString1);
+            TString fromStdString1(StdString1);
             Assert::AreEqual(StdString1.c_str(), fromStdString1);
 
             const string StdString2 = "";
-            String fromStdString2(StdString2);
+            TString fromStdString2(StdString2);
             Assert::AreEqual(StdString2.c_str(), fromStdString2);
 
-            String copyString1(fromCString1);
+            TString copyString1(fromCString1);
             Assert::AreEqual(CString1, copyString1);
 
-            String copyString2(fromCString2);
+            TString copyString2(fromCString2);
             Assert::AreEqual("", copyString2);
         }
 
         TEST_METHOD(AssignmentOperatorTest)
         {
-            String testString = "test";
+            TString testString = "test";
 
             const char* CString1 = "Hello World";
             testString = CString1;
@@ -58,11 +58,11 @@ namespace UnitTest
             testString = StdString2;
             Assert::AreEqual(StdString2.c_str(), testString);
 
-            const String copyString1(CString1);
+            const TString copyString1(CString1);
             testString = copyString1;
             Assert::AreEqual(CString1, testString);
 
-            const String copyString2(CString2);
+            const TString copyString2(CString2);
             testString = copyString2;
             Assert::AreEqual(CString2, testString);
 
@@ -73,8 +73,8 @@ namespace UnitTest
 
         TEST_METHOD(AddOperatorTest)
         {
-            String emptyString;
-            String nonEmptyString = "Hello";
+            TString emptyString;
+            TString nonEmptyString = "Hello";
 
             Assert::AreEqual("", emptyString + "");
             Assert::AreEqual("", "" + emptyString);
@@ -99,37 +99,37 @@ namespace UnitTest
             Assert::AreEqual("Hello World", nonEmptyString + string(" World"));
             Assert::AreEqual("World Hello", string("World ") + nonEmptyString);
 
-            Assert::AreEqual("Hello World", nonEmptyString + String(" World"));
-            Assert::AreEqual("World Hello", String("World ") + nonEmptyString);
+            Assert::AreEqual("Hello World", nonEmptyString + TString(" World"));
+            Assert::AreEqual("World Hello", TString("World ") + nonEmptyString);
         }
 
         TEST_METHOD(RelationOperatorTest)
         {
-            Assert::AreEqual(true, String() < String("abc"));
-            Assert::AreEqual(true, String("ab") < String("abc"));
-            Assert::AreEqual(true, String("abb") < String("abc"));
-            Assert::AreEqual(false, String("abd") < String("abc"));
-            Assert::AreEqual(false, String("abc") < String("abc"));
-            Assert::AreEqual(false, String("ad") < String("abc"));
+            Assert::AreEqual(true, TString() < TString("abc"));
+            Assert::AreEqual(true, TString("ab") < TString("abc"));
+            Assert::AreEqual(true, TString("abb") < TString("abc"));
+            Assert::AreEqual(false, TString("abd") < TString("abc"));
+            Assert::AreEqual(false, TString("abc") < TString("abc"));
+            Assert::AreEqual(false, TString("ad") < TString("abc"));
 
-            Assert::AreEqual(true, String() == String());
-            Assert::AreEqual(true, String("abc") == String("abc"));
-            Assert::AreEqual(false, String() == String("abc"));
-            Assert::AreEqual(false, String("abd") == String("abc"));
+            Assert::AreEqual(true, TString() == TString());
+            Assert::AreEqual(true, TString("abc") == TString("abc"));
+            Assert::AreEqual(false, TString() == TString("abc"));
+            Assert::AreEqual(false, TString("abd") == TString("abc"));
         }
 
         TEST_METHOD(ConversionOperatorTest)
         {
-            Assert::AreEqual("", (const char*)String(""));
-            Assert::AreEqual("abc", (const char*)String("abc"));
+            Assert::AreEqual("", (const char*)TString(""));
+            Assert::AreEqual("abc", (const char*)TString("abc"));
 
-            Assert::AreEqual(true, string("") == String("").operator std::string());
-            Assert::AreEqual(true , string("abc") == String("abc").operator std::string());
+            Assert::AreEqual(true, string("") == TString("").operator std::string());
+            Assert::AreEqual(true , string("abc") == TString("abc").operator std::string());
         }
 
         TEST_METHOD(SubstringTest)
         {
-            String str = "Hello World";
+            TString str = "Hello World";
 
             Assert::AreEqual("Hello World", str.Substring(0));
             Assert::AreEqual("World", str.Substring(6));
@@ -147,7 +147,7 @@ namespace UnitTest
 
         TEST_METHOD(StrSearchTest)
         {
-            String str = "Hello World; Hi World.";
+            TString str = "Hello World; Hi World.";
 
             Assert::AreEqual(0ULL, str.IndexOf('H'));
             Assert::AreEqual(14ULL, str.IndexOf('i'));
@@ -174,9 +174,9 @@ namespace UnitTest
 
         TEST_METHOD(SplitTest)
         {
-            String expected[] = { "Good", "Morning", "Hello", "World" };
-            ArrayList<String> actual;
-            String test;
+            TString expected[] = { "Good", "Morning", "Hello", "World" };
+            ArrayList<TString> actual;
+            TString test;
             
             test = "Good Morning, Hello World!";
             actual = test.Split(" ,!");

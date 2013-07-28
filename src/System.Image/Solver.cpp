@@ -17,7 +17,7 @@ namespace System
         // Solver
         //////////////////////////////////////////////////////////////////////////
 
-        TiXmlDocument Solver::LoadConfiguration(const String& configfileName)
+        TiXmlDocument Solver::LoadConfiguration(const TString& configfileName)
         {
             TiXmlDocument doc((const char*)configfileName);
             doc.LoadFile();
@@ -25,18 +25,18 @@ namespace System
             return doc;
         }
 
-        Group<ArrayList<String>, ArrayList<int>> Solver::LoadDataset(const String& datasetPath)
+        Group<ArrayList<TString>, ArrayList<int>> Solver::LoadDataset(const TString& datasetPath)
         {
             DirectoryInfo imageSetInfo(datasetPath);
 
-            ArrayList<String> classInfos = imageSetInfo.GetDirectories();
+            ArrayList<TString> classInfos = imageSetInfo.GetDirectories();
             sort(classInfos.begin(), classInfos.end());
 
-            ArrayList<String> imagePaths;
+            ArrayList<TString> imagePaths;
             ArrayList<int> imageLabels;
             for (int i = 0; i < classInfos.Count(); i++)
             {
-                ArrayList<String> fileInfos = DirectoryInfo(classInfos[i]).GetFiles();
+                ArrayList<TString> fileInfos = DirectoryInfo(classInfos[i]).GetFiles();
                 sort(fileInfos.begin(), fileInfos.end());
 
                 for (int j = 0; j < fileInfos.Count(); j++)
@@ -49,9 +49,9 @@ namespace System
             return CreateGroup(imagePaths, imageLabels);
         }
 
-        map<String, String> Solver::GetConfiguration(const String& featureName)
+        map<TString, TString> Solver::GetConfiguration(const TString& featureName)
         {
-            map<String, String> params;
+            map<TString, TString> params;
 
             try
             {
@@ -66,7 +66,7 @@ namespace System
             }
             catch (string& e) 
             {
-                return map<String, String>();
+                return map<TString, TString>();
             }
 
             return params;

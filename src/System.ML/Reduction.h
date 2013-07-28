@@ -20,7 +20,7 @@ namespace System
             template<typename T>
             static cv::Mat Compute(ArrayList<ArrayList<T>> samples, double perplexity = 30.0, int yDim = 2)
             {
-                std::assert(samples.Count() > 0);
+                assert(samples.Count() > 0);
                 int n = samples.Count(), xDims = samples[0].Count();
 
                 cv::Mat X(n, xDims, CV_64F);
@@ -100,7 +100,7 @@ namespace System
                     for (int j = 0; j < X[i].Count(); j++)
                         tmp[j] = X[i][j] / root;
 
-                    results.Add(tmp);
+                    results[i] = tmp;
                 }
 
                 return results;
