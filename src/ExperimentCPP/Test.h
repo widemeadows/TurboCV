@@ -1,6 +1,7 @@
 #include "../System/System.h"
 #include "../System.Image/System.Image.h"
 #include "../System.ML/System.ML.h"
+#include "MNIST.h"
 #include <cv.h>
 #include <highgui.h>
 #include <random>
@@ -10,10 +11,59 @@ using namespace TurboCV::System::ML;
 using namespace cv;
 using namespace std;
 
+Descriptor GetBlock(const Mat& image, int top, int left, int blockSize)
+{
+    Mat block(image, Range(top, top + blockSize), Range(left, left + blockSize));
+    
+    double pixelSum = sum(block)[0];
+    if (pixelSum == 0)
+    {
+        Descriptor desc;
+        for (int i = 0; i < blockSize; i++)
+            for (int j = 0; j < blockSize; j++)
+                desc.Add(0);
+
+        return desc;
+    }
+
+    ArrayList<Point> points = GetEdgels(block);
+    Point massCenter(0, 0);
+    for (auto point : points)
+    {
+        massCenter.x += point.x;
+        massCenter.y += point.y;
+    }
+    massCenter.x /= points.Count();
+    massCenter.y /= points.Count();
+
+    int newTop = massCenter.y - blockSize / 2,
+        newBottom = newTop + blockSize,
+        newLeft = massCenter.x - blockSize / 2,
+        newRight = newLeft + blockSize;
+
+    Descriptor desc;
+    for (int i = newTop; i < newBottom; i++)
+    {
+        for (int j = newLeft; j < newRight; j++)
+        {
+            if (i < 0 || i >= block.rows || j < 0 || j >= block.cols)
+            {
+                desc.Add(0);
+            }
+            else
+            {
+                desc.Add(block.at<uchar>(i, j));
+            }
+        }
+    }
+
+    return desc;
+}
+
 class TestLevel1: public LocalFeature
 {
 public:
-    TestLevel1() : blockSize(12), descNum(30) {}
+    TestLevel1(): blockSize(6), descNum(100) {}
 
     virtual LocalFeatureVec operator()(const cv::Mat& image)
     {
@@ -26,19 +76,8 @@ public:
 
         for (int i = 0; i < descNum; i++)
         {
-            Descriptor desc;
-            double mean, std;
-
-            do
-            {
-                desc = GetBlock(image, rowDistribution(rowGenerator), colDistribution(colGenerator));
-            } while (desc.Count() == 0);
-
-            mean = Math::Mean(desc);
-            std = Math::StandardDeviation(desc);
-
-            for (int i = desc.Count() - 1; i >= 0; i--)
-                desc[i] = (desc[i] - mean) / std;
+            Descriptor desc = GetBlock(image, rowDistribution(rowGenerator), colDistribution(colGenerator), blockSize);
+            NormTwoNormalize(desc.begin(), desc.end());
 
             feature.Add(desc);
         }
@@ -52,92 +91,114 @@ public:
     }
 
 private:
-    Descriptor GetBlock(const Mat& image, int top, int left)
-    {
-        Mat patch(image, Range(top, top + blockSize), Range(left, left + blockSize));
-        double result = sum(patch)[0];
-
-        if (result == 0)
-            return Descriptor();
-
-        Mat boundingBox = GetBoundingBox(patch);
-
-        Mat squareImage;
-        int widthPadding = 0, heightPadding = 0;
-        if (boundingBox.rows < boundingBox.cols)
-            heightPadding = (boundingBox.cols - boundingBox.rows) / 2;
-        else
-            widthPadding = (boundingBox.rows - boundingBox.cols) / 2;
-        copyMakeBorder(boundingBox, squareImage, heightPadding, heightPadding, 
-            widthPadding, widthPadding, BORDER_CONSTANT, Scalar(0, 0, 0, 0));
-
-        Mat paddedImage;
-        heightPadding = (blockSize - squareImage.rows) / 2;
-        widthPadding = (blockSize - squareImage.cols) / 2; 
-        copyMakeBorder(squareImage, paddedImage, heightPadding, blockSize - squareImage.rows - heightPadding,
-            widthPadding, blockSize - squareImage.cols - widthPadding, BORDER_CONSTANT, Scalar(0, 0, 0, 0));
-        assert(paddedImage.rows == blockSize && paddedImage.cols == blockSize);
-
-        Descriptor desc;
-        for (int i = 0; i < patch.rows; i++)
-            for (int j = 0; j < patch.cols; j++)
-                desc.Add(patch.at<uchar>(i, j));
-
-        return desc;
-    }
-
     int blockSize, descNum;
 };
 
-inline void test(const TString& datasetPath)
+class TestLevel2
 {
-    DirectoryInfo imageSetInfo(datasetPath);
-    ArrayList<TString> classInfos = imageSetInfo.GetDirectories();
-    sort(classInfos.begin(), classInfos.end());
+public:
+    TestLevel2(): blockSize(6) {}
 
-    ArrayList<TString> imagePaths;
-    ArrayList<int> imageLabels;
-    for (int i = 0; i < classInfos.Count(); i++)
+    virtual ArrayList<LocalFeatureVec> operator()(const cv::Mat& image)
     {
-        ArrayList<TString> fileInfos = DirectoryInfo(classInfos[i]).GetFiles();
-        sort(fileInfos.begin(), fileInfos.end());
-
-        for (int j = 0; j < fileInfos.Count(); j++)
+        ArrayList<LocalFeatureVec> features(4);
+        
+        for (int i = 0; i < image.rows - blockSize; i++)
         {
-            imagePaths.Add(fileInfos[j]);
-            imageLabels.Add(i + 1);
+            for (int j = 0; j < image.cols - blockSize; j++)
+            {
+                Descriptor desc = GetBlock(image, i, j, blockSize);
+                NormTwoNormalize(desc.begin(), desc.end());
+
+                if (i < (image.rows - blockSize) / 2)
+                {
+                    if (j < (image.cols - blockSize) / 2)
+                        features[0].Add(desc);
+                    else
+                        features[1].Add(desc);
+                }
+                else
+                {
+                    if (j < (image.cols - blockSize) / 2)
+                        features[2].Add(desc);
+                    else
+                        features[3].Add(desc);
+                }
+            }
         }
+
+        return features;
     }
 
-    int nImage = imagePaths.Count();
-    ArrayList<Descriptor> allDesc;
+    virtual TString GetName() const
+    {
+        return "level2";
+    }
 
-    //#pragma omp parallel for
+private:
+    int blockSize;
+};
+
+inline ArrayList<Histogram> test(const TString& datasetPath)
+{
+    ArrayList<TString> imagePaths = Solver::LoadDataset(datasetPath).Item1();
+    int nImage = imagePaths.Count();
+    ArrayList<Mat> images(nImage);
+
+    #pragma omp parallel for
     for (int i = 0; i < nImage; i++)
     {
         Mat image = imread(imagePaths[i], CV_LOAD_IMAGE_GRAYSCALE);
         image = reverse(image);
-        resize(image, image, Size(32, 32), 0, 0, CV_INTER_AREA);
+        resize(image, image, Size(24, 24), 0, 0, CV_INTER_AREA);
+        //blur(image, image, Size(2, 2));
+        //threshold(image, image, 0, 255, CV_THRESH_BINARY);
 
-        LocalFeatureVec feature = TestLevel1()(image);
-        for (Descriptor& desc : feature)
+        images[i] = image;
+    }
+
+    ArrayList<Descriptor_f> allDesc;
+    for (int i = 0; i < nImage; i++)
+    {
+        LocalFeatureVec_f feature;
+        Convert(TestLevel1()(images[i]), feature);
+
+        for (Descriptor_f& desc : feature)
             allDesc.Add(desc);
     }
 
-    printf("%d\n", allDesc.Count());
-    auto points = PerformTSNE(allDesc);
-    printf("%d\n", points.Count());
-    FILE* file = fopen("Y.txt", "w");
-    for (auto point : points)
-    {
-        for (auto item : point)
-            fprintf(file, "%f ", item);
-        fprintf(file, "\n");
-    }
-    fclose(file);
+    allDesc = PCAWhiten(allDesc);
+    ArrayList<Word_f> words = BOV(allDesc, 1000).GetVisualWords();
 
-    file = fopen("labels.txt", "w");
-    for (auto point: points)
-        fprintf(file, "1\n");
-    fclose(file);
+    ArrayList<LocalFeatureVec_f> featureList[4];
+    for (int i = 0; i < nImage; i++)
+    {
+        ArrayList<LocalFeatureVec> features = TestLevel2()(images[i]);
+
+        for (int j = 0; j < 4; j++)
+        {
+            LocalFeatureVec_f feature;
+            Convert(features[j], feature);
+            featureList[j].Add(feature);
+        }
+    }
+
+    printf("Frequency Histogram...\n");
+    ArrayList<Histogram> histograms[4];
+    for (int i = 0; i < 4; i++)
+    {
+        histograms[i] = FreqHist(featureList[i], words).GetFrequencyHistograms();
+        for (int j = 0; j < histograms[i].Count(); j++)
+            for (int k = 0; k < histograms[i][j].Count(); k++)
+                histograms[i][j][k] /= 4.0;
+    }
+
+    ArrayList<Histogram> finalFeatures(histograms[0].Count());
+    for (int i = 0; i < finalFeatures.Count(); i++)
+        for (int j = 0; j < 4; j++)
+            for (int k = 0; k < histograms[j][i].Count(); k++)
+                finalFeatures[i].Add(histograms[j][i][k]);
+
+    printf("%d\n", (int)finalFeatures[0].Count());
+    return finalFeatures;
 }

@@ -23,6 +23,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Classifier.hpp" />
+    <ClInclude Include="Core.h" />
     <ClInclude Include="LDA.h" />
     <ClInclude Include="Reduction.h" />
     <ClInclude Include="System.ML.h" />

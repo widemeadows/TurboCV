@@ -24,6 +24,9 @@
     <ClInclude Include="Test.h">
       <Filter>头文件</Filter>
     </ClInclude>
+    <ClInclude Include="MNIST.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Main.cpp">

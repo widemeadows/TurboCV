@@ -32,5 +32,8 @@
     <ClInclude Include="Reduction.h">
       <Filter>头文件</Filter>
     </ClInclude>
+    <ClInclude Include="Core.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

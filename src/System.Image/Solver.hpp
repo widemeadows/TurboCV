@@ -38,6 +38,9 @@ namespace System
                 labels = dataset.Item2();
             }
 
+            static System::XML::TiXmlDocument LoadConfiguration(const TString& configFilePath);
+            static Group<ArrayList<TString>, ArrayList<int>> LoadDataset(const TString& datasetPath);
+
             std::map<TString, TString> GetConfiguration(const TString& featureName);
             ArrayList<TString> GetPaths() { return paths; }
             ArrayList<int> GetLabels() { return labels; }
@@ -48,9 +51,6 @@ namespace System
             cv::Mat (*Preprocess)(const cv::Mat&);
 
         private:
-            System::XML::TiXmlDocument LoadConfiguration(const TString& configFilePath);
-            Group<ArrayList<TString>, ArrayList<int>> LoadDataset(const TString& datasetPath);
-
             TString datasetPath;
             TString configFilePath;
 

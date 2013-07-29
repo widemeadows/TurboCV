@@ -4,6 +4,7 @@
 #include "../System.XML/System.XML.h"
 #include "Util.h"
 #include "Test.h"
+#include "MNIST.h"
 #include <cv.h>
 #include <highgui.h>
 using namespace TurboCV::System;
@@ -347,8 +348,7 @@ void CrossValidation(const ArrayList<T>& samples, const ArrayList<int>& labels, 
         }
 
         KNN<T> knn;
-        auto precisions = knn.Evaluate(trainingSet, trainingLabels, evaluationSet, 
-			evaluationLabels, Math::NormOneDistance, KNN<T>::HARD_VOTING);
+        auto precisions = knn.Evaluate(trainingSet, trainingLabels, evaluationSet, evaluationLabels);
 
         passResult.Add(precisions.first);
         printf("Fold %d Accuracy: %f\n\n", i + 1, precisions.first);
@@ -402,7 +402,33 @@ void Batch()
 
 int main()
 {
-    test("subset");
+    //ArrayList<Mat> images = ReadMnistImages("mnist-train-images");
+    //ArrayList<int> labels = ReadMnistLabels("mnist-train-labels");
+
+    ArrayList<int> labels = Solver::LoadDataset("subset").Item2();
+
+    CrossValidation(test("subset"), labels);
+
+    //ArrayList<Descriptor> descs;
+    //for (int i = 0; i < 20000; i++)
+    //{
+    //    //thin(images[i], images[i]);
+    //    //blur(images[i], images[i], Size(4, 4));
+
+    //    Descriptor desc;
+    //    for (int j = 0; j < images[i].rows; j++)
+    //        for (int k = 0; k < images[i].cols; k++)
+    //            desc.Add(images[i].at<uchar>(j, k));
+
+    //    double mean = Math::Mean(desc);
+    //    double std = Math::StandardDeviation(desc);
+    //    for (int i = 0; i < desc.Count(); i++)
+    //        desc[i] = (desc[i] - mean) / std;
+
+    //    descs.Add(desc);
+    //}
+
+    //CrossValidation(descs, actualLabels);
 
     //LocalFeatureCrossValidation(sketchPreprocess, "sketches", HOOSC());
 

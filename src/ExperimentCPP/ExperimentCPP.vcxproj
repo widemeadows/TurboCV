@@ -153,6 +153,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="LDPPI.h" />
+    <ClInclude Include="MNIST.h" />
     <ClInclude Include="Test.h" />
     <ClInclude Include="Util.h" />
   </ItemGroup>
