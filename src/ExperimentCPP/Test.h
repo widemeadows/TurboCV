@@ -14,11 +14,11 @@ using namespace std;
 Descriptor GetBlock(const Mat& image, int top, int left, int blockSize)
 {
     Mat block(image, Range(top, top + blockSize), Range(left, left + blockSize));
-    
+    Descriptor desc;
+
     double pixelSum = sum(block)[0];
     if (pixelSum == 0)
     {
-        Descriptor desc;
         for (int i = 0; i < blockSize; i++)
             for (int j = 0; j < blockSize; j++)
                 desc.Add(0);
@@ -27,33 +27,28 @@ Descriptor GetBlock(const Mat& image, int top, int left, int blockSize)
     }
 
     ArrayList<Point> points = GetEdgels(block);
-    Point massCenter(0, 0);
+    Point center(0, 0);
     for (auto point : points)
     {
-        massCenter.x += point.x;
-        massCenter.y += point.y;
+        center.x += point.x;
+        center.y += point.y;
     }
-    massCenter.x /= points.Count();
-    massCenter.y /= points.Count();
+    center.x /= points.Count();
+    center.y /= points.Count();
 
-    int newTop = massCenter.y - blockSize / 2,
+    int newTop = center.y - blockSize / 2,
         newBottom = newTop + blockSize,
-        newLeft = massCenter.x - blockSize / 2,
+        newLeft = center.x - blockSize / 2,
         newRight = newLeft + blockSize;
 
-    Descriptor desc;
     for (int i = newTop; i < newBottom; i++)
     {
         for (int j = newLeft; j < newRight; j++)
         {
             if (i < 0 || i >= block.rows || j < 0 || j >= block.cols)
-            {
                 desc.Add(0);
-            }
             else
-            {
                 desc.Add(block.at<uchar>(i, j));
-            }
         }
     }
 
@@ -63,7 +58,7 @@ Descriptor GetBlock(const Mat& image, int top, int left, int blockSize)
 class TestLevel1: public LocalFeature
 {
 public:
-    TestLevel1(): blockSize(6), descNum(100) {}
+    TestLevel1(): blockSize(8), descNum(100) {}
 
     virtual LocalFeatureVec operator()(const cv::Mat& image)
     {
@@ -97,7 +92,7 @@ private:
 class TestLevel2
 {
 public:
-    TestLevel2(): blockSize(6) {}
+    TestLevel2(): blockSize(8) {}
 
     virtual ArrayList<LocalFeatureVec> operator()(const cv::Mat& image)
     {

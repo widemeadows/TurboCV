@@ -400,40 +400,111 @@ void Batch()
     printf("\n");
 }
 
+Group<ArrayList<Word_f>, ArrayList<Histogram>, ArrayList<int>> LoadLocalFeatureData(const TString& fileName)
+{
+    FILE* file = fopen(fileName, "r");
+    int nRow, nCol;
+
+    fscanf(file, "%d %d", &nRow, &nCol);
+
+    ArrayList<Word_f> words(nRow);
+
+    for (int i = 0; i < nRow; i++)
+    {
+        Word_f word(nCol);
+        for (int j = 0; j < nCol; j++)
+            fscanf(file, "%f", &word[j]);
+
+        words[i] = word;
+    }
+
+    fscanf(file, "%d %d", &nRow, &nCol);
+
+    ArrayList<int> labels(nRow);
+    ArrayList<Histogram> histograms(nRow);
+
+    for (int i = 0; i < nRow; i++)
+    {
+        fscanf(file, "%d", &labels[i]);
+
+        Histogram histogram(nCol);
+        for (int j = 0; j < nCol; j++)
+            fscanf(file, "%f", &histogram[j]);
+
+        histograms[i] = histogram;
+    }
+
+    fclose(file);
+
+    return CreateGroup(words, histograms, labels);
+}
+
 int main()
 {
-    //ArrayList<Mat> images = ReadMnistImages("mnist-train-images");
-    //ArrayList<int> labels = ReadMnistLabels("mnist-train-labels");
+    /*auto result = LoadLocalFeatureData("hog_sketches_data");
+    ArrayList<int> labels = result.Item3();
+    ArrayList<Histogram> samples = result.Item2();
 
-    ArrayList<int> labels = Solver::LoadDataset("subset").Item2();
+    int fold = 3;
+    FILE* file = fopen("ap.txt", "w");
 
-    CrossValidation(test("subset"), labels);
+    fprintf(file, "%d\n", fold);
+    ArrayList<Group<ArrayList<Histogram>, ArrayList<Histogram>, ArrayList<size_t>>> pass = 
+        RandomSplit(samples, fold);
 
-    //ArrayList<Descriptor> descs;
-    //for (int i = 0; i < 20000; i++)
-    //{
-    //    //thin(images[i], images[i]);
-    //    //blur(images[i], images[i], Size(4, 4));
+    for (int i = 0; i < fold; i++)
+    {
+        printf("Begin Fold %d...\n", i + 1);
+        ArrayList<Histogram>& evaluationSet = pass[i].Item1();
+        ArrayList<Histogram>& trainingSet = pass[i].Item2();
+        ArrayList<size_t>& pickUpIndexes = pass[i].Item3();
 
-    //    Descriptor desc;
-    //    for (int j = 0; j < images[i].rows; j++)
-    //        for (int k = 0; k < images[i].cols; k++)
-    //            desc.Add(images[i].at<uchar>(j, k));
+        ArrayList<int> trainingLabels, evaluationLabels;
+        int counter = 0;
+        for (int k = 0; k < samples.Count(); k++)
+        {
+            if (counter < pickUpIndexes.Count() && k == pickUpIndexes[counter])
+            {
+                evaluationLabels.Add(labels[k]);
+                counter++;
+            }
+            else
+                trainingLabels.Add(labels[k]);
+        }
 
-    //    double mean = Math::Mean(desc);
-    //    double std = Math::StandardDeviation(desc);
-    //    for (int i = 0; i < desc.Count(); i++)
-    //        desc[i] = (desc[i] - mean) / std;
+        auto result = MAP().Evaluate(trainingSet, trainingLabels, evaluationSet, evaluationLabels);
+        ArrayList<double> map = result.Item1();
+        ArrayList<ArrayList<int>> idx = result.Item2();
 
-    //    descs.Add(desc);
-    //}
+        fprintf(file, "%d\n", map.Count());
+        for (int i = 0; i < map.Count(); i++)
+            fprintf(file, "%f ", map[i]);
+        fprintf(file, "\n");
 
-    //CrossValidation(descs, actualLabels);
+        fprintf(file, "%d\n", idx.Count());
+        for (int i = 0; i < idx.Count(); i++)
+        {
+            fprintf(file, "%d", idx[i].Count());
+            for (int j = 0; j < idx[i].Count(); j++)
+                fprintf(file, " %d", idx[i][j]);
+            fprintf(file, "\n");
+        }
+    }
 
-    //LocalFeatureCrossValidation(sketchPreprocess, "sketches", HOOSC());
+    fclose(file);*/
 
 
-    // Batch();
+
+    //ArrayList<TString> paths = Solver::LoadDataset("subset").Item1();
+    //ArrayList<int> labels = Solver::LoadDataset("subset").Item2();
+    //int nImage = paths.Count();
+
+    //ArrayList<Histogram> features = test("subset");
+
+    //printf("%d\n", (int)features[0].Count());
+    //CrossValidation(features, labels);
+
+
 
 
     //Mat img = imread("00002.png", CV_LOAD_IMAGE_GRAYSCALE);

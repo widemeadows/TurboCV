@@ -26,6 +26,7 @@
     <ClInclude Include="Core.h" />
     <ClInclude Include="LDA.h" />
     <ClInclude Include="Reduction.h" />
+    <ClInclude Include="Retrieval.hpp" />
     <ClInclude Include="System.ML.h" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
