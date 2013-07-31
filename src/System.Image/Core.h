@@ -166,30 +166,54 @@ namespace System
         public:
             FreqHist(const ArrayList<LocalFeatureVec_f>& features, const ArrayList<Word_f>& words)
             {
-                auto result = GetFrequencyHistograms(features, words);
-                histograms = result.Item1();
-                distances = result.Item2();
+                this->features = features;
+                this->words = words;
             }
 
-            ArrayList<Histogram> GetFrequencyHistograms() const { return histograms; }
-            ArrayList<LocalFeatureVec> GetDistancesToVisualWords() const { return distances; }
+            ArrayList<Histogram> GetFrequencyHistograms()
+            {
+                if (histograms.Count() != 0)
+                    return histograms;
+                else
+                    return histograms = GetFrequencyHistograms(features, words); 
+            }
+            
+            ArrayList<LocalFeatureVec> GetPoolingFeatures(int nPool)
+            {
+                if (pollFeatures.Count() != 0)
+                    return pollFeatures;
+                else
+                    return pollFeatures = GetPoolingFeatures(features, words, nPool);
+            }
 
         protected:
-            Group<ArrayList<Histogram>, ArrayList<LocalFeatureVec>> GetFrequencyHistograms(
+            static ArrayList<Histogram> GetFrequencyHistograms(
                 const ArrayList<LocalFeatureVec_f>& features, 
                 const ArrayList<Word_f>& words);
 
-            Group<Histogram, LocalFeatureVec> GetFrequencyHistogram(
+            static Histogram GetFrequencyHistogram(
                 const LocalFeatureVec_f& feature, 
                 const ArrayList<Word_f>& words);
 
-            ArrayList<double> GetDistancesToVisualWords(
+            static ArrayList<LocalFeatureVec> GetPoolingFeatures(
+                const ArrayList<LocalFeatureVec_f>& features, 
+                const ArrayList<Word_f>& words,
+                int nPool);
+
+            static LocalFeatureVec GetPoolingFeature(
+                const LocalFeatureVec_f& features, 
+                const ArrayList<Word_f>& words,
+                int nPool);
+
+            static ArrayList<double> GetDistancesToVisualWords(
                 const Descriptor_f& descriptor, 
                 const ArrayList<Word_f>& words);
 
         private:
+            ArrayList<LocalFeatureVec_f> features;
+            ArrayList<Word_f> words;
             ArrayList<Histogram> histograms;
-            ArrayList<LocalFeatureVec> distances;
+            ArrayList<LocalFeatureVec> pollFeatures;
         };
 
         inline ArrayList<Descriptor_f> SampleDescriptors(const ArrayList<LocalFeatureVec_f>& features, 

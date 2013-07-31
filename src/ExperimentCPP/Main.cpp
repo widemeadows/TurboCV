@@ -496,10 +496,23 @@ int main()
     }
 
     printf("Compute Visual Words...\n");
-    ArrayList<Word_f> words = BOV(SampleDescriptors(features, nSample), nWord).GetVisualWords();
+    ArrayList<Word_f> wordLevel1s = BOV(SampleDescriptors(features, nSample), nWord).GetVisualWords();
 
     printf("Compute Frequency Histograms...\n");
-    ArrayList<Histogram> histograms = FreqHist(features, words).GetFrequencyHistograms();
+    //ArrayList<Histogram> histograms = FreqHist(features, words).GetFrequencyHistograms();
+    ArrayList<LocalFeatureVec_f> poolFeatures;
+    for (LocalFeatureVec feature : FreqHist(features, wordLevel1s).GetPoolingFeatures(7))
+    {
+        LocalFeatureVec_f tmp;
+        Convert(feature, tmp);
+        poolFeatures.Add(tmp);
+    }
+
+    printf("Compute Visual Words...\n");
+    ArrayList<Word_f> wordLevel2s = BOV(SampleDescriptors(poolFeatures, nSample), nWord).GetVisualWords();
+
+    printf("Compute Frequency Histograms...\n");
+    ArrayList<Histogram> histograms = FreqHist(poolFeatures, wordLevel2s).GetFrequencyHistograms();
 
     ArrayList<ArrayList<size_t>> pass = RandomSplit(nImage, nFold);
     for (int i = 0; i < nFold; i++)
