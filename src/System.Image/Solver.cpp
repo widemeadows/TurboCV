@@ -71,6 +71,42 @@ namespace System
 
             return params;
         }
+
+        ArrayList<ArrayList<size_t>> Solver::SplitDatasetRandomly(int nFold)
+        {
+            return RandomSplit(labels.Count(), nFold);
+        }
+
+        ArrayList<ArrayList<size_t>> Solver::SplitDatasetEqually(int nFold)
+        {
+            int nItem = labels.Count();
+            ArrayList<ArrayList<size_t>> result(nFold);
+
+            ArrayList<Group<int, int>> labelAndIdx(nItem);
+            for (int i = 0; i < nItem; i++)
+                labelAndIdx[i] = CreateGroup(labels[i], i);
+            sort(labelAndIdx.begin(), labelAndIdx.end());
+
+            int begin = 0, end = 0;
+            while (end <= nItem)
+            {
+                if (end == nItem || labelAndIdx[end].Item1() != labelAndIdx[begin].Item1())
+                {
+                    int nCategory = end - begin;
+
+                    ArrayList<ArrayList<size_t>> pass = RandomSplit(nCategory, nFold);
+                    for (int i = 0; i < nFold; i++)
+                        for (int j = 0; j < pass[i].Count(); j++)
+                            result[i].Add(labelAndIdx[begin + pass[i][j]].Item2());
+                
+                    begin = end;
+                }
+
+                end++;
+            }
+
+            return result;
+        }
     }
 }
 }

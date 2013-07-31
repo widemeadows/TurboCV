@@ -166,17 +166,20 @@ namespace System
         public:
             FreqHist(const ArrayList<LocalFeatureVec_f>& features, const ArrayList<Word_f>& words)
             {
-                histograms = GetFrequencyHistograms(features, words);
+                auto result = GetFrequencyHistograms(features, words);
+                histograms = result.Item1();
+                distances = result.Item2();
             }
 
             ArrayList<Histogram> GetFrequencyHistograms() const { return histograms; }
+            ArrayList<LocalFeatureVec> GetDistancesToVisualWords() const { return distances; }
 
         protected:
-            ArrayList<Histogram> GetFrequencyHistograms(
+            Group<ArrayList<Histogram>, ArrayList<LocalFeatureVec>> GetFrequencyHistograms(
                 const ArrayList<LocalFeatureVec_f>& features, 
                 const ArrayList<Word_f>& words);
 
-            Histogram GetFrequencyHistogram(
+            Group<Histogram, LocalFeatureVec> GetFrequencyHistogram(
                 const LocalFeatureVec_f& feature, 
                 const ArrayList<Word_f>& words);
 
@@ -186,6 +189,7 @@ namespace System
 
         private:
             ArrayList<Histogram> histograms;
+            ArrayList<LocalFeatureVec> distances;
         };
 
         inline ArrayList<Descriptor_f> SampleDescriptors(const ArrayList<LocalFeatureVec_f>& features, 

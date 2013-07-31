@@ -50,27 +50,33 @@ namespace System
         // FrequencyHistogram
         //////////////////////////////////////////////////////////////////////////
 
-        ArrayList<Histogram> FreqHist::GetFrequencyHistograms(
+        Group<ArrayList<Histogram>, ArrayList<LocalFeatureVec>> FreqHist::GetFrequencyHistograms(
             const ArrayList<LocalFeatureVec_f>& features, 
             const ArrayList<Word_f>& words)
         {
             size_t imageNum = features.Count();
             ArrayList<Histogram> freqHistograms(imageNum);
+            ArrayList<LocalFeatureVec> distances(imageNum);
 
             #pragma omp parallel for schedule(dynamic)
             for (int i = 0; i < imageNum; i++)
-                freqHistograms[i] = GetFrequencyHistogram(features[i], words);
+            {
+                auto result = GetFrequencyHistogram(features[i], words);
+                freqHistograms[i] = result.Item1();
+                distances[i] = result.Item2();
+            }
 
-            return freqHistograms;
+            return CreateGroup(freqHistograms, distances);
         }
 
-        Histogram FreqHist::GetFrequencyHistogram(
+        Group<Histogram, LocalFeatureVec> FreqHist::GetFrequencyHistogram(
             const LocalFeatureVec_f& feature, 
             const ArrayList<Word_f>& words)
         {    
             size_t wordNum = words.Count();
             size_t descriptorNum = feature.Count();
             Histogram freqHistogram(wordNum);
+            LocalFeatureVec allDistances(descriptorNum);
 
             for (size_t i = 0; i < descriptorNum; i++)
             {
@@ -78,12 +84,14 @@ namespace System
 
                 for (size_t j = 0; j < wordNum; j++)
                     freqHistogram[j] += distances[j];
+                
+                allDistances[i] = distances;
             }
 
             for (size_t i = 0; i < wordNum; i++)
                 freqHistogram[i] /= descriptorNum;
 
-            return freqHistogram;
+            return CreateGroup(freqHistogram, allDistances);
         }
 
         ArrayList<double> FreqHist::GetDistancesToVisualWords(

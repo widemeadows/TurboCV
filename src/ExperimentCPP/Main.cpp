@@ -145,137 +145,91 @@ void GlobalFeatureCrossValidation(cv::Mat (*Preprocess)(const cv::Mat&), const T
 #endif
 }
 
-//template<typename EdgeMatching>
-//void EdgeMatchingCrossValidation(const TurboCV::System::TString& imageSetPath, const EdgeMatching& matching,
-//                                 bool thinning = false, int fold = 3)
-//{
-//    srand(1);
-//    ArrayList<Group<Mat, int>> images = GetImages(imageSetPath, CV_LOAD_IMAGE_GRAYSCALE);
-//    int imageNum = (int)images.Count();
-//
-//    ArrayList<EdgeMatching::Info> transforms(imageNum);
-//    printf("Compute " + matching.GetName() + "...\n");
-//    EdgeMatching machine = matching;
-//    #pragma omp parallel for private(machine)
-//    for (int i = 0; i < imageNum; i++)
-//    {
-//        transforms[i] = machine.GetFeatureWithPreprocess(images[i].Item1(), thinning);
-//        images[i].Item1().release();
-//    }
-//
-//#ifdef SAVE_DISTANCE_MATRIX
-//    {
-//        Mat distanceMatrix = Mat::zeros(imageNum, imageNum, CV_64F);
-//        #pragma omp parallel for
-//        for (int i = 0; i < imageNum; i++)
-//        {
-//            for (int j = 0; j < imageNum; j++)
-//            {
-//                if (i != j)
-//                    distanceMatrix.at<double>(i, j) = EdgeMatching::GetDistance(transforms[i], transforms[j]);
-//            }
-//        }
-//
-//        printf("Write To File...\n");
-//        TurboCV::System::TString savePath = matching.GetName() + "_" + imageSetPath + "_matrix";
-//        FILE* file = fopen(savePath, "w");
-//        for (int i = 0; i < imageNum; i++)
-//        {
-//            fprintf(file, "%d", images[i].Item2());
-//            for (int j = 0; j < imageNum; j++)
-//            {
-//                if (i != j)
-//                {
-//                    fprintf(file, " %d:%f", images[i].Item2() == images[j].Item2() ? 1 : 0, 
-//                        distanceMatrix.at<double>(i, j));
-//                }
-//            }
-//            fprintf(file, "\n");
-//        }
-//        fclose(file);
-//        distanceMatrix.release();
-//    }
-//#endif
-//
-//    ArrayList<Group<ArrayList<EdgeMatching::Info>, ArrayList<EdgeMatching::Info>, ArrayList<size_t>>> pass = 
-//        RandomSplit(transforms, fold);
-//
-//#ifdef SAVE_ROC
-//    ArrayList<ArrayList<double>> DRs(imageNum), FPRs(imageNum);
-//#endif
-//
-//    ArrayList<double> passResult;
-//    for (int i = 0; i < fold; i++)
-//    {
-//        printf("\nBegin Fold %d...\n", i + 1);
-//        ArrayList<EdgeMatching::Info>& evaluationSet = pass[i].Item1();
-//        ArrayList<EdgeMatching::Info>& trainingSet = pass[i].Item2();
-//        ArrayList<size_t>& pickUpIndexes = pass[i].Item3();
-//
-//        ArrayList<int> trainingLabels, evaluationLabels;
-//        int counter = 0;
-//        for (int j = 0; j < imageNum; j++)
-//        {
-//            if (counter < pickUpIndexes.Count() && j == pickUpIndexes[counter])
-//            {
-//                evaluationLabels.Add(images[j].Item2());
-//                counter++;
-//            }
-//            else
-//                trainingLabels.Add(images[j].Item2());
-//        }
-//
-//        KNN<EdgeMatching::Info> knn;
-//        pair<double, map<pair<int, int>, double>> precisions = knn.Evaluate(
-//            trainingSet, trainingLabels, evaluationSet, evaluationLabels, 
-//            EdgeMatching::GetDistance, KNN<EdgeMatching::Info>::HARD_VOTING);
-//
-//        passResult.Add(precisions.first);
-//        printf("Fold %d Accuracy: %f\n", i + 1, precisions.first);
-//
-//#ifdef SAVE_ROC
-//        pair<ArrayList<ArrayList<double>>, ArrayList<ArrayList<bool>>> matrix = GetDistanceMatrix(
-//            trainingSet, trainingLabels, evaluationSet, evaluationLabels, EdgeMatching::GetDistance);
-//        ArrayList<ArrayList<double>>& distances = matrix.first;
-//        ArrayList<ArrayList<bool>>& relevants = matrix.second;
-//        for (int j = 0; j < pickUpIndexes.Count(); j++)
-//        {
-//            int index = pickUpIndexes[j];
-//            auto roc = roc(distances[j], relevants[j]);
-//            DRs[index] = roc.Item1();
-//            FPRs[index] = roc.Item2();
-//        }
-//#endif
-//    }
-//
-//#ifdef SAVE_ROC
-//    {
-//        TurboCV::System::TString savePath = matching.GetName() + "_" + imageSetPath + "_roc";
-//        FILE* file = fopen(savePath, "w");
-//        for (int i = 0; i < DRs.Count(); i++)
-//        {
-//            for (int j = 0; j < DRs[i].Count(); j++)
-//                fprintf(file, "%f ", DRs[i][j]);
-//            fprintf(file, "\n");
-//
-//            for (int j = 0; j < FPRs[i].Count(); j++)
-//                fprintf(file, "%f ", FPRs[i][j]);
-//            fprintf(file, "\n");
-//        }
-//        fclose(file);
-//    }
-//#endif
-//
-//    TurboCV::System::TString savePath = matching.GetName() + "_" + imageSetPath + "_knn.out";
-//    FILE* file = fopen(savePath, "w");
-//    for (int i = 0; i < passResult.Count(); i++)
-//        fprintf(file, "Fold %d Accuracy: %f\n", i + 1, passResult[i]);
-//    fprintf(file, "Average: %f, Standard Deviation: %f\n", Math::Mean(passResult), 
-//        Math::StandardDeviation(passResult));
-//    printf("\nAverage: %f, Standard Deviation: %f\n", Math::Mean(passResult), 
-//        Math::StandardDeviation(passResult));
-//    fclose(file);
-//}
+template<typename EdgeMatching>
+void EdgeMatchingCrossValidation(const TurboCV::System::TString& imageSetPath, int fold = 3)
+{
+    srand(1);
+    auto result = Solver::LoadDataset(imageSetPath);
+    ArrayList<TString> paths = result.Item1();
+    ArrayList<int> labels = result.Item2();
+    int nImage = paths.Count();
+
+    ArrayList<EdgeMatching::Info> transforms(nImage);
+    printf("Compute " + EdgeMatching().GetName() + "...\n");
+
+    #pragma omp parallel for
+    for (int i = 0; i < nImage; i++)
+    {
+        Mat image = sketchPreprocess(imread(paths[i], CV_LOAD_IMAGE_GRAYSCALE));
+        transforms[i] = EdgeMatching().GetFeature(image);
+    }
+
+    ArrayList<ArrayList<size_t>> pass = SplitDatasetEqually(labels, fold);
+
+    FILE* file = fopen("ap_ocm.txt", "w");
+    fprintf(file, "%d\n", fold);
+
+    ArrayList<double> passResult;
+    for (int i = 0; i < fold; i++)
+    {
+        printf("\nBegin Fold %d...\n", i + 1);
+        ArrayList<size_t>& pickUpIndexes = pass[i];
+        auto divideResult = Divide(transforms, pickUpIndexes);
+        ArrayList<EdgeMatching::Info>& evaluationSet = divideResult.Item1();
+        ArrayList<EdgeMatching::Info>& trainingSet = divideResult.Item2();
+        ArrayList<int> evaluationLabels = Divide(labels, pickUpIndexes).Item1();
+        ArrayList<int> trainingLabels = Divide(labels, pickUpIndexes).Item2();
+
+        KNN<EdgeMatching::Info> knn;
+        pair<double, map<pair<int, int>, double>> precisions = knn.Evaluate(
+            trainingSet, trainingLabels, evaluationSet, evaluationLabels, 
+            EdgeMatching::GetDistance, HARD_VOTING);
+
+        ArrayList<ArrayList<double>> distanceMatrix(evaluationSet.Count());
+        #pragma omp parallel for
+        for (int i = 0; i < evaluationSet.Count(); i++)
+        {
+            ArrayList<double> distances(trainingSet.Count());
+            for (int j = 0; j < trainingLabels.Count(); j++)
+                distances[j] = EdgeMatching::GetDistance(evaluationSet[i], trainingSet[j]);
+
+            distanceMatrix[i] = distances;
+        }
+
+        auto result = MAP().Evaluate(distanceMatrix, trainingLabels, evaluationLabels);
+        ArrayList<double> map = result.Item1();
+        ArrayList<ArrayList<int>> idx = result.Item2();
+
+        fprintf(file, "%d\n", map.Count());
+        for (int i = 0; i < map.Count(); i++)
+            fprintf(file, "%f ", map[i]);
+        fprintf(file, "\n");
+
+        fprintf(file, "%d\n", idx.Count());
+        for (int i = 0; i < idx.Count(); i++)
+        {
+            fprintf(file, "%d", idx[i].Count());
+            for (int j = 0; j < idx[i].Count(); j++)
+                fprintf(file, " %d", idx[i][j]);
+            fprintf(file, "\n");
+        }
+
+        passResult.Add(precisions.first);
+        printf("Fold %d Accuracy: %f\n", i + 1, precisions.first);
+    }
+
+    fclose(file);
+
+    TurboCV::System::TString savePath = EdgeMatching().GetName() + "_" + imageSetPath + "_knn.out";
+    file = fopen(savePath, "w");
+    for (int i = 0; i < passResult.Count(); i++)
+        fprintf(file, "Fold %d Accuracy: %f\n", i + 1, passResult[i]);
+    fprintf(file, "Average: %f, Standard Deviation: %f\n", Math::Mean(passResult), 
+        Math::StandardDeviation(passResult));
+    printf("\nAverage: %f, Standard Deviation: %f\n", Math::Mean(passResult), 
+        Math::StandardDeviation(passResult));
+    fclose(file);
+}
 
 //ArrayList<double> Boosting(const ArrayList<Histogram>& data, const ArrayList<int>& labels)
 //{
@@ -439,8 +393,41 @@ Group<ArrayList<Word_f>, ArrayList<Histogram>, ArrayList<int>> LoadLocalFeatureD
     return CreateGroup(words, histograms, labels);
 }
 
+ArrayList<ArrayList<size_t>> SplitDatasetEqually(const ArrayList<int> labels, int nFold)
+{
+    int nItem = labels.Count();
+    ArrayList<ArrayList<size_t>> result(nFold);
+
+    ArrayList<Group<int, int>> labelAndIdx(nItem);
+    for (int i = 0; i < nItem; i++)
+        labelAndIdx[i] = CreateGroup(labels[i], i);
+    sort(labelAndIdx.begin(), labelAndIdx.end());
+
+    int begin = 0, end = 0;
+    while (end <= nItem)
+    {
+        if (end == nItem || labelAndIdx[end].Item1() != labelAndIdx[begin].Item1())
+        {
+            int nCategory = end - begin;
+
+            ArrayList<ArrayList<size_t>> pass = RandomSplit(nCategory, nFold);
+            for (int i = 0; i < nFold; i++)
+                for (int j = 0; j < pass[i].Count(); j++)
+                    result[i].Add(labelAndIdx[begin + pass[i][j]].Item2());
+
+            begin = end;
+        }
+
+        end++;
+    }
+
+    return result;
+}
+
 int main()
 {
+    //EdgeMatchingCrossValidation<Hitmap>("sketches");
+
     /*auto result = LoadLocalFeatureData("hog_sketches_data");
     ArrayList<int> labels = result.Item3();
     ArrayList<Histogram> samples = result.Item2();
@@ -449,28 +436,16 @@ int main()
     FILE* file = fopen("ap.txt", "w");
 
     fprintf(file, "%d\n", fold);
-    ArrayList<Group<ArrayList<Histogram>, ArrayList<Histogram>, ArrayList<size_t>>> pass = 
-        RandomSplit(samples, fold);
+    ArrayList<ArrayList<size_t>> pass = SplitDatasetEqually(labels, fold);
 
     for (int i = 0; i < fold; i++)
     {
         printf("Begin Fold %d...\n", i + 1);
-        ArrayList<Histogram>& evaluationSet = pass[i].Item1();
-        ArrayList<Histogram>& trainingSet = pass[i].Item2();
-        ArrayList<size_t>& pickUpIndexes = pass[i].Item3();
-
-        ArrayList<int> trainingLabels, evaluationLabels;
-        int counter = 0;
-        for (int k = 0; k < samples.Count(); k++)
-        {
-            if (counter < pickUpIndexes.Count() && k == pickUpIndexes[counter])
-            {
-                evaluationLabels.Add(labels[k]);
-                counter++;
-            }
-            else
-                trainingLabels.Add(labels[k]);
-        }
+        ArrayList<size_t>& pickUpIndexes = pass[i];
+        ArrayList<Histogram> evaluationSet = Divide(samples, pickUpIndexes).Item1();
+        ArrayList<Histogram> trainingSet =  Divide(samples, pickUpIndexes).Item2();
+        ArrayList<int> evaluationLabels = Divide(labels, pickUpIndexes).Item1();
+        ArrayList<int> trainingLabels = Divide(labels, pickUpIndexes).Item2();
 
         auto result = MAP().Evaluate(trainingSet, trainingLabels, evaluationSet, evaluationLabels);
         ArrayList<double> map = result.Item1();
@@ -493,7 +468,7 @@ int main()
 
     fclose(file);*/
 
-
+    //LocalFeatureCrossValidation<HOG>(sketchPreprocess, "sketches");
 
     //ArrayList<TString> paths = Solver::LoadDataset("subset").Item1();
     //ArrayList<int> labels = Solver::LoadDataset("subset").Item2();
@@ -505,6 +480,43 @@ int main()
     //CrossValidation(features, labels);
 
 
+    ArrayList<TString> paths = Solver::LoadDataset("subset").Item1();
+    ArrayList<int> labels = Solver::LoadDataset("subset").Item2();
+    int nFold = 3, nImage = paths.Count(), nSample = 1000000, nWord = 1500;
+
+    printf("ImageNum: %d, SampleNum: %d, WordNum: %d\n", nImage, nSample, nWord);
+
+    ArrayList<LocalFeatureVec_f> features(nImage);
+
+    #pragma omp parallel for
+    for (int i = 0; i < nImage; i++)
+    {
+        cv::Mat image = cv::imread(paths[i], CV_LOAD_IMAGE_GRAYSCALE); 
+        Convert(RGabor()(sketchPreprocess(image)), features[i]);
+    }
+
+    printf("Compute Visual Words...\n");
+    ArrayList<Word_f> words = BOV(SampleDescriptors(features, nSample), nWord).GetVisualWords();
+
+    printf("Compute Frequency Histograms...\n");
+    ArrayList<Histogram> histograms = FreqHist(features, words).GetFrequencyHistograms();
+
+    ArrayList<ArrayList<size_t>> pass = RandomSplit(nImage, nFold);
+    for (int i = 0; i < nFold; i++)
+    {
+        printf("\nBegin Fold %d...\n", i + 1);
+        ArrayList<size_t>& pickUpIndexes = pass[i];
+        ArrayList<LocalFeatureVec_f> trainingSet = Divide(features, pickUpIndexes).Item2();
+        ArrayList<int> trainingLabels = Divide(labels, pickUpIndexes).Item2();
+        ArrayList<int> evaluationLabels = Divide(labels, pickUpIndexes).Item1();
+        ArrayList<Histogram> trainingHistograms = Divide(histograms, pickUpIndexes).Item2();
+        ArrayList<Histogram> evaluationHistograms = Divide(histograms, pickUpIndexes).Item1();
+
+        double precision = KNN<Histogram>().
+            Evaluate(trainingHistograms, trainingLabels, evaluationHistograms, evaluationLabels).first;
+
+        printf("Fold %d Accuracy: %f\n", i + 1, precision);
+    }
 
 
     //Mat img = imread("00002.png", CV_LOAD_IMAGE_GRAYSCALE);

@@ -50,6 +50,9 @@ namespace System
         protected:
             cv::Mat (*Preprocess)(const cv::Mat&);
 
+            ArrayList<ArrayList<size_t>> SplitDatasetRandomly(int nFold);
+            ArrayList<ArrayList<size_t>> SplitDatasetEqually(int nFold);
+
         private:
             TString datasetPath;
             TString configFilePath;
@@ -111,7 +114,7 @@ namespace System
                 Convert(machine(Preprocess(image)), features[i]);
             }
 
-            ArrayList<ArrayList<size_t>> pass = RandomSplit(nImage, nFold);
+            ArrayList<ArrayList<size_t>> pass = SplitDatasetEqually(nFold);
             double maxPrecision = -1;
             this->precisions.Clear();
             for (int i = 0; i < nFold; i++)
@@ -196,7 +199,7 @@ namespace System
 
             this->features = features;
 
-            ArrayList<ArrayList<size_t>> pass = RandomSplit(nImage, nFold);
+            ArrayList<ArrayList<size_t>> pass = SplitDatasetEqually(nFold);
             double maxPrecision = -1;
             this->precisions.Clear();
             for (int i = 0; i < nFold; i++)
