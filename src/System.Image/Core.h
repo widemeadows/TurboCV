@@ -145,9 +145,10 @@ namespace System
         class BOV
         {
         public:
-            BOV(const ArrayList<Descriptor_f>& descriptors, size_t clusterNum)
+            BOV(const ArrayList<Descriptor_f>& descriptors, size_t clusterNum,
+                size_t maxIter = 500, double epsilon = 1e-6)
             {
-                words = GetVisualWords(descriptors, clusterNum);
+                words = GetVisualWords(descriptors, clusterNum, maxIter, epsilon);
             }
 
             ArrayList<Word_f> GetVisualWords() const { return words; }
@@ -155,19 +156,27 @@ namespace System
         protected:
             ArrayList<Word_f> GetVisualWords(
                 const ArrayList<Descriptor_f>& descriptors, 
-                size_t clusterNum);
+                size_t clusterNum, size_t maxIter, double epsilon);
 
         private:
             ArrayList<Word_f> words;
         };
 
+
+        static inline double GetGaussianDistance(const Descriptor_f& desc, const Word_f& word)
+        {
+            return Math::GaussianDistance(desc, word, 0.1);
+        }
+
         class FreqHist
         {
         public:
-            FreqHist(const ArrayList<LocalFeatureVec_f>& features, const ArrayList<Word_f>& words)
+            FreqHist(const ArrayList<LocalFeatureVec_f>& features, const ArrayList<Word_f>& words,
+                     double (*getDistance)(const Descriptor_f&, const Word_f&) = GetGaussianDistance)
             {
                 this->features = features;
                 this->words = words;
+                this->getDistance = getDistance;
             }
 
             ArrayList<Histogram> GetFrequencyHistograms()
@@ -187,29 +196,30 @@ namespace System
             }
 
         protected:
-            static ArrayList<Histogram> GetFrequencyHistograms(
+            ArrayList<Histogram> GetFrequencyHistograms(
                 const ArrayList<LocalFeatureVec_f>& features, 
                 const ArrayList<Word_f>& words);
 
-            static Histogram GetFrequencyHistogram(
+            Histogram GetFrequencyHistogram(
                 const LocalFeatureVec_f& feature, 
                 const ArrayList<Word_f>& words);
 
-            static ArrayList<LocalFeatureVec> GetPoolingFeatures(
+            ArrayList<LocalFeatureVec> GetPoolingFeatures(
                 const ArrayList<LocalFeatureVec_f>& features, 
                 const ArrayList<Word_f>& words,
                 int nPool);
 
-            static LocalFeatureVec GetPoolingFeature(
+            LocalFeatureVec GetPoolingFeature(
                 const LocalFeatureVec_f& features, 
                 const ArrayList<Word_f>& words,
                 int nPool);
 
-            static ArrayList<double> GetDistancesToVisualWords(
+            ArrayList<double> GetDistancesToVisualWords(
                 const Descriptor_f& descriptor, 
                 const ArrayList<Word_f>& words);
 
         private:
+            double (*getDistance)(const Descriptor_f&, const Word_f&);
             ArrayList<LocalFeatureVec_f> features;
             ArrayList<Word_f> words;
             ArrayList<Histogram> histograms;

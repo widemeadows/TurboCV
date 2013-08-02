@@ -424,6 +424,46 @@ ArrayList<ArrayList<size_t>> SplitDatasetEqually(const ArrayList<int> labels, in
     return result;
 }
 
+ArrayList<Word_f> GetWordLevel2s(
+    const ArrayList<Descriptor_f>& descriptors, 
+    size_t clusterNum)
+{
+    assert(descriptors.Count() > 0);
+    size_t descriptorNum = descriptors.Count(), 
+        descriptorSize = descriptors[0].Count();
+    printf("Descriptor Num: %d, Descriptor Size: %d.\n", 
+        (int)descriptorNum, (int)descriptorSize);
+
+    Mat samples(descriptorNum, descriptorSize, CV_32F);
+    for (size_t i = 0; i < descriptorNum; i++)
+        for (size_t j = 0; j < descriptorSize; j++)
+            samples.at<float>(i, j) = descriptors[i][j];
+
+    Mat labels(descriptorNum, 1, CV_32S);
+    for (size_t i = 0; i < descriptorNum; i++)
+        labels.at<int>(i, 0) = 0;
+
+    Mat centers(clusterNum, descriptorSize, CV_32F);
+    printf("K-Means Begin...\n");
+    Kmeans(samples, clusterNum, labels, TermCriteria(CV_TERMCRIT_ITER, 30, 1e-3), 
+        1, KMEANS_PP_CENTERS, centers);
+
+    ArrayList<Word_f> words(clusterNum);
+    for (size_t i = 0; i < clusterNum; i++)
+        for (size_t j = 0; j < descriptorSize; j++)
+            words[i].Add(centers.at<float>(i, j));
+
+    return words;
+}
+
+double GetNorm1GuassDistance(const Descriptor_f& u, const Word_f& v)
+{
+    double norm1 = Math::NormOneDistance(u, v);
+    double sigma = 0.1;
+
+    return std::exp(-norm1 / (2 * sigma * sigma));
+}
+
 int main()
 {
     //EdgeMatchingCrossValidation<Hitmap>("sketches");
@@ -468,38 +508,88 @@ int main()
 
     fclose(file);*/
 
-    //LocalFeatureCrossValidation<HOG>(sketchPreprocess, "sketches");
-
-    //ArrayList<TString> paths = Solver::LoadDataset("subset").Item1();
-    //ArrayList<int> labels = Solver::LoadDataset("subset").Item2();
-    //int nImage = paths.Count();
-
-    //ArrayList<Histogram> features = test("subset");
-
-    //printf("%d\n", (int)features[0].Count());
-    //CrossValidation(features, labels);
-
-
     ArrayList<TString> paths = Solver::LoadDataset("subset").Item1();
     ArrayList<int> labels = Solver::LoadDataset("subset").Item2();
-    int nFold = 3, nImage = paths.Count(), nSample = 1000000, nWord = 1500;
+    int nFold = 3, nImage = labels.Count(), nSample = 1000000, nWord = 1500;
 
     printf("ImageNum: %d, SampleNum: %d, WordNum: %d\n", nImage, nSample, nWord);
 
-    ArrayList<LocalFeatureVec_f> features(nImage);
+//    ArrayList<LocalFeatureVec_f> features(nImage);
+//
+//#pragma omp parallel for
+//    for (int i = 0; i < nImage; i++)
+//    {
+//        cv::Mat image = cv::imread(paths[i], CV_LOAD_IMAGE_GRAYSCALE); 
+//        Convert(RGabor()(sketchPreprocess(image)), features[i]);
+//    }
+//
+//    printf("Compute Visual Words...\n");
+//    ArrayList<Word_f> wordLevel1s = BOV(SampleDescriptors(features, nSample), nWord, 100, 1e-3).GetVisualWords();
 
-    #pragma omp parallel for
+    FILE* file = fopen("level1.txt", "r");
+
+    /*fprintf(file, "%d\n", nImage);
     for (int i = 0; i < nImage; i++)
     {
-        cv::Mat image = cv::imread(paths[i], CV_LOAD_IMAGE_GRAYSCALE); 
-        Convert(RGabor()(sketchPreprocess(image)), features[i]);
+        fprintf(file, "%d\n", features[i].Count());
+        for (int j = 0; j < features[i].Count(); j++)
+        {
+            fprintf(file, "%d", features[i][j].Count());
+            for (int k = 0; k < features[i][j].Count(); k++)
+                fprintf(file, " %f", features[i][j][k]);
+            fprintf(file, "\n");
+        }
     }
 
-    printf("Compute Visual Words...\n");
-    ArrayList<Word_f> wordLevel1s = BOV(SampleDescriptors(features, nSample), nWord).GetVisualWords();
+    fprintf(file, "%d\n", nWord);
+    for (int i = 0; i < nWord; i++)
+    {
+        fprintf(file, "%d", wordLevel1s[i].Count());
+        for (int j = 0; j < wordLevel1s[i].Count(); j++)
+            fprintf(file, " %f", wordLevel1s[i][j]);
+        fprintf(file, "\n");
+    }*/
 
-    printf("Compute Frequency Histograms...\n");
-    //ArrayList<Histogram> histograms = FreqHist(features, words).GetFrequencyHistograms();
+    fscanf(file, "%d", &nImage);
+    ArrayList<LocalFeatureVec_f> features(nImage);
+
+    for (int i = 0; i < nImage; i++)
+    {
+        int descNum;
+        fscanf(file, "%d", &descNum);
+
+        for (int j = 0; j < descNum; j++)
+        {
+            int descSize;
+            fscanf(file, "%d", &descSize);
+
+            Descriptor_f desc(descSize);
+            for (int k = 0; k < descSize; k++)
+                fscanf(file, "%f", &desc[k]);
+
+            features[i].Add(desc);
+        }
+    }
+
+    fscanf(file, "%d", &nWord);
+    ArrayList<Word_f> wordLevel1s(nWord);
+
+    for (int i = 0; i < nWord; i++)
+    {
+        int wordSize;
+        fscanf(file, "%d", &wordSize);
+
+        Word_f word(wordSize);
+        for (int j = 0; j < wordSize; j++)
+            fscanf(file, "%f", &word[j]);
+
+        wordLevel1s[i] = word;
+    }
+
+    fclose(file);
+
+    //printf("Compute Frequency Histograms...\n");
+    ////ArrayList<Histogram> histograms = FreqHist(features, wordLevel1s).GetFrequencyHistograms();
     ArrayList<LocalFeatureVec_f> poolFeatures;
     for (LocalFeatureVec feature : FreqHist(features, wordLevel1s).GetPoolingFeatures(7))
     {
@@ -509,7 +599,7 @@ int main()
     }
 
     printf("Compute Visual Words...\n");
-    ArrayList<Word_f> wordLevel2s = BOV(SampleDescriptors(poolFeatures, nSample), nWord).GetVisualWords();
+    ArrayList<Word_f> wordLevel2s = GetWordLevel2s(SampleDescriptors(poolFeatures, nSample), nWord);
 
     printf("Compute Frequency Histograms...\n");
     ArrayList<Histogram> histograms = FreqHist(poolFeatures, wordLevel2s).GetFrequencyHistograms();
@@ -519,7 +609,6 @@ int main()
     {
         printf("\nBegin Fold %d...\n", i + 1);
         ArrayList<size_t>& pickUpIndexes = pass[i];
-        ArrayList<LocalFeatureVec_f> trainingSet = Divide(features, pickUpIndexes).Item2();
         ArrayList<int> trainingLabels = Divide(labels, pickUpIndexes).Item2();
         ArrayList<int> evaluationLabels = Divide(labels, pickUpIndexes).Item1();
         ArrayList<Histogram> trainingHistograms = Divide(histograms, pickUpIndexes).Item2();

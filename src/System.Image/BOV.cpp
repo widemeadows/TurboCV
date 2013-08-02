@@ -15,7 +15,7 @@ namespace System
 
         ArrayList<Word_f> BOV::GetVisualWords(
             const ArrayList<Descriptor_f>& descriptors, 
-            size_t clusterNum)
+            size_t clusterNum, size_t maxIter, double epsilon)
         {
             assert(descriptors.Count() > 0);
             size_t descriptorNum = descriptors.Count(), 
@@ -34,7 +34,7 @@ namespace System
 
             Mat centers(clusterNum, descriptorSize, CV_32F);
             printf("K-Means Begin...\n");
-            kmeans(samples, clusterNum, labels, TermCriteria(CV_TERMCRIT_ITER, 500, 1e-6), 
+            kmeans(samples, clusterNum, labels, TermCriteria(CV_TERMCRIT_ITER, maxIter, epsilon), 
                 1, KMEANS_PP_CENTERS, centers);
 
             ArrayList<Word_f> words(clusterNum);
@@ -143,7 +143,7 @@ namespace System
             ArrayList<double> distances;
 
             for (size_t i = 0; i < wordNum; i++)
-                distances.Add(Math::GaussianDistance(descriptor, words[i], 0.1));
+                distances.Add(getDistance(descriptor, words[i]));
 
             NormOneNormalize(distances.begin(), distances.end());
             return distances;
