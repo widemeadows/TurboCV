@@ -19,7 +19,6 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="kmeans.cpp" />
     <ClCompile Include="Reduction.cpp" />
   </ItemGroup>
   <ItemGroup>

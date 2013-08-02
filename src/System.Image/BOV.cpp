@@ -15,11 +15,13 @@ namespace System
 
         ArrayList<Word_f> BOV::GetVisualWords(
             const ArrayList<Descriptor_f>& descriptors, 
-            size_t clusterNum, size_t maxIter, double epsilon)
+            size_t clusterNum,
+            cv::TermCriteria termCriteria)
         {
-            assert(descriptors.Count() > 0);
+            assert(descriptors.Count() > 0 && descriptors[0].Count() > 0);
+
             size_t descriptorNum = descriptors.Count(), 
-                descriptorSize = descriptors[0].Count();
+                   descriptorSize = descriptors[0].Count();
             printf("Descriptor Num: %d, Descriptor Size: %d.\n", 
                 (int)descriptorNum, (int)descriptorSize);
 
@@ -34,8 +36,7 @@ namespace System
 
             Mat centers(clusterNum, descriptorSize, CV_32F);
             printf("K-Means Begin...\n");
-            kmeans(samples, clusterNum, labels, TermCriteria(CV_TERMCRIT_ITER, maxIter, epsilon), 
-                1, KMEANS_PP_CENTERS, centers);
+            kmeans(samples, clusterNum, labels, termCriteria, 1, KMEANS_PP_CENTERS, centers);
 
             ArrayList<Word_f> words(clusterNum);
             for (size_t i = 0; i < clusterNum; i++)
@@ -43,6 +44,74 @@ namespace System
                     words[i].Add(centers.at<float>(i, j));
 
             return words;
+        }
+
+        ArrayList<double> BOV::GetSigmas(
+            const ArrayList<Descriptor_f>& descriptors,
+            const ArrayList<Word_f>& words,
+            double perplexity)
+        {
+            assert(descriptors.Count() > 0 && words.Count() > 0);
+
+            size_t descriptorNum = descriptors.Count();
+            size_t wordNum = words.Count();
+            const double logU = std::log(perplexity);
+            const double INF = 1e12;
+            const double EPS = 1e-5;
+            ArrayList<double> sigmas(wordNum);
+            Mat D(wordNum, descriptorNum, CV_64F);
+
+            #pragma omp parallel for
+            for (int i = 0; i < wordNum; i++)
+                for (int j = 0; j < descriptorNum; j++)
+                    D.at<double>(i, j) = Math::NormTwoDistance(words[i], descriptors[j]);
+
+            #pragma omp parallel for
+            for (int i = 0; i < wordNum; i++)
+            {
+                double lowerBound = -INF;
+                double upperBound = INF;
+
+                Mat Di = D.row(i).clone(); // square of L2 distance
+                Mat GDi(Di.size(), CV_64F); // gaussian distance
+                double Si = 1.0;
+                double sumGDi = 0, H = 0, Hdiff = 0;
+
+                for (int tries = 0; tries < 50; tries++) 
+                {
+                    exp(Di / -Si, GDi);
+                    sumGDi = sum(GDi)[0];
+
+                    H = Di.dot(GDi) / (sumGDi * Si) + std::log(sumGDi);
+                    Hdiff = logU - H;
+
+                    if (Hdiff > 0)
+                    {
+                        lowerBound = Si;
+
+                        if (upperBound == INF)
+                            Si *= 2;
+                        else
+                            Si = (Si + upperBound) / 2;
+                    }
+                    else
+                    {
+                        upperBound = Si;
+
+                        if (lowerBound == -INF)
+                            Si /= 2;
+                        else
+                            Si = (Si + lowerBound) / 2;
+                    }
+
+                    if (std::abs(Hdiff) < EPS)
+                        break;
+                }
+
+                sigmas[i] = std::sqrt(Si / 2);
+            }
+
+            return sigmas;
         }
 
 

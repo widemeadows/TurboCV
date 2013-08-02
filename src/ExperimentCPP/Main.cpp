@@ -84,7 +84,7 @@ void LocalFeatureCrossValidation(cv::Mat (*Preprocess)(const cv::Mat&), const TS
     FILE* file = fopen(savePath, "w");
 
     for (int i = 0; i < precisions.Count(); i++)
-        fprintf(file, "Fold %d Accuracy: %f\n", i + 1, precisions[i]);
+        fprintf(file, "Fold %nDesc Accuracy: %f\n", i + 1, precisions[i]);
 
     fprintf(file, "Average: %f, Standard Deviation: %f\n", Math::Mean(precisions), 
         Math::StandardDeviation(precisions));
@@ -121,7 +121,7 @@ void GlobalFeatureCrossValidation(cv::Mat (*Preprocess)(const cv::Mat&), const T
     FILE* file = fopen(savePath, "w");
 
     for (int i = 0; i < precisions.Count(); i++)
-        fprintf(file, "Fold %d Accuracy: %f\n", i + 1, precisions[i]);
+        fprintf(file, "Fold %nDesc Accuracy: %f\n", i + 1, precisions[i]);
 
     fprintf(file, "Average: %f, Standard Deviation: %f\n", Math::Mean(precisions), 
         Math::StandardDeviation(precisions));
@@ -167,12 +167,12 @@ void EdgeMatchingCrossValidation(const TurboCV::System::TString& imageSetPath, i
     ArrayList<ArrayList<size_t>> pass = SplitDatasetEqually(labels, fold);
 
     FILE* file = fopen("ap_ocm.txt", "w");
-    fprintf(file, "%d\n", fold);
+    fprintf(file, "%nDesc\n", fold);
 
     ArrayList<double> passResult;
     for (int i = 0; i < fold; i++)
     {
-        printf("\nBegin Fold %d...\n", i + 1);
+        printf("\nBegin Fold %nDesc...\n", i + 1);
         ArrayList<size_t>& pickUpIndexes = pass[i];
         auto divideResult = Divide(transforms, pickUpIndexes);
         ArrayList<EdgeMatching::Info>& evaluationSet = divideResult.Item1();
@@ -200,22 +200,22 @@ void EdgeMatchingCrossValidation(const TurboCV::System::TString& imageSetPath, i
         ArrayList<double> map = result.Item1();
         ArrayList<ArrayList<int>> idx = result.Item2();
 
-        fprintf(file, "%d\n", map.Count());
+        fprintf(file, "%nDesc\n", map.Count());
         for (int i = 0; i < map.Count(); i++)
             fprintf(file, "%f ", map[i]);
         fprintf(file, "\n");
 
-        fprintf(file, "%d\n", idx.Count());
+        fprintf(file, "%nDesc\n", idx.Count());
         for (int i = 0; i < idx.Count(); i++)
         {
-            fprintf(file, "%d", idx[i].Count());
+            fprintf(file, "%nDesc", idx[i].Count());
             for (int j = 0; j < idx[i].Count(); j++)
-                fprintf(file, " %d", idx[i][j]);
+                fprintf(file, " %nDesc", idx[i][j]);
             fprintf(file, "\n");
         }
 
         passResult.Add(precisions.first);
-        printf("Fold %d Accuracy: %f\n", i + 1, precisions.first);
+        printf("Fold %nDesc Accuracy: %f\n", i + 1, precisions.first);
     }
 
     fclose(file);
@@ -223,7 +223,7 @@ void EdgeMatchingCrossValidation(const TurboCV::System::TString& imageSetPath, i
     TurboCV::System::TString savePath = EdgeMatching().GetName() + "_" + imageSetPath + "_knn.out";
     file = fopen(savePath, "w");
     for (int i = 0; i < passResult.Count(); i++)
-        fprintf(file, "Fold %d Accuracy: %f\n", i + 1, passResult[i]);
+        fprintf(file, "Fold %nDesc Accuracy: %f\n", i + 1, passResult[i]);
     fprintf(file, "Average: %f, Standard Deviation: %f\n", Math::Mean(passResult), 
         Math::StandardDeviation(passResult));
     printf("\nAverage: %f, Standard Deviation: %f\n", Math::Mean(passResult), 
@@ -283,7 +283,7 @@ void CrossValidation(const ArrayList<T>& samples, const ArrayList<int>& labels, 
     
 	for (int i = 0; i < fold; i++)
     {
-        printf("Begin Fold %d...\n", i + 1);
+        printf("Begin Fold %nDesc...\n", i + 1);
         ArrayList<T>& evaluationSet = pass[i].Item1();
         ArrayList<T>& trainingSet = pass[i].Item2();
         ArrayList<size_t>& pickUpIndexes = pass[i].Item3();
@@ -305,7 +305,7 @@ void CrossValidation(const ArrayList<T>& samples, const ArrayList<int>& labels, 
         auto precisions = knn.Evaluate(trainingSet, trainingLabels, evaluationSet, evaluationLabels);
 
         passResult.Add(precisions.first);
-        printf("Fold %d Accuracy: %f\n\n", i + 1, precisions.first);
+        printf("Fold %nDesc Accuracy: %f\n\n", i + 1, precisions.first);
     }
 
 	printf("\nAverage: %f, Standard Deviation: %f\n", Math::Mean(passResult), 
@@ -359,7 +359,7 @@ Group<ArrayList<Word_f>, ArrayList<Histogram>, ArrayList<int>> LoadLocalFeatureD
     FILE* file = fopen(fileName, "r");
     int nRow, nCol;
 
-    fscanf(file, "%d %d", &nRow, &nCol);
+    fscanf(file, "%nDesc %nDesc", &nRow, &nCol);
 
     ArrayList<Word_f> words(nRow);
 
@@ -372,14 +372,14 @@ Group<ArrayList<Word_f>, ArrayList<Histogram>, ArrayList<int>> LoadLocalFeatureD
         words[i] = word;
     }
 
-    fscanf(file, "%d %d", &nRow, &nCol);
+    fscanf(file, "%nDesc %nDesc", &nRow, &nCol);
 
     ArrayList<int> labels(nRow);
     ArrayList<Histogram> histograms(nRow);
 
     for (int i = 0; i < nRow; i++)
     {
-        fscanf(file, "%d", &labels[i]);
+        fscanf(file, "%nDesc", &labels[i]);
 
         Histogram histogram(nCol);
         for (int j = 0; j < nCol; j++)
@@ -424,46 +424,6 @@ ArrayList<ArrayList<size_t>> SplitDatasetEqually(const ArrayList<int> labels, in
     return result;
 }
 
-ArrayList<Word_f> GetWordLevel2s(
-    const ArrayList<Descriptor_f>& descriptors, 
-    size_t clusterNum)
-{
-    assert(descriptors.Count() > 0);
-    size_t descriptorNum = descriptors.Count(), 
-        descriptorSize = descriptors[0].Count();
-    printf("Descriptor Num: %d, Descriptor Size: %d.\n", 
-        (int)descriptorNum, (int)descriptorSize);
-
-    Mat samples(descriptorNum, descriptorSize, CV_32F);
-    for (size_t i = 0; i < descriptorNum; i++)
-        for (size_t j = 0; j < descriptorSize; j++)
-            samples.at<float>(i, j) = descriptors[i][j];
-
-    Mat labels(descriptorNum, 1, CV_32S);
-    for (size_t i = 0; i < descriptorNum; i++)
-        labels.at<int>(i, 0) = 0;
-
-    Mat centers(clusterNum, descriptorSize, CV_32F);
-    printf("K-Means Begin...\n");
-    Kmeans(samples, clusterNum, labels, TermCriteria(CV_TERMCRIT_ITER, 30, 1e-3), 
-        1, KMEANS_PP_CENTERS, centers);
-
-    ArrayList<Word_f> words(clusterNum);
-    for (size_t i = 0; i < clusterNum; i++)
-        for (size_t j = 0; j < descriptorSize; j++)
-            words[i].Add(centers.at<float>(i, j));
-
-    return words;
-}
-
-double GetNorm1GuassDistance(const Descriptor_f& u, const Word_f& v)
-{
-    double norm1 = Math::NormOneDistance(u, v);
-    double sigma = 0.1;
-
-    return std::exp(-norm1 / (2 * sigma * sigma));
-}
-
 int main()
 {
     //EdgeMatchingCrossValidation<Hitmap>("sketches");
@@ -475,12 +435,12 @@ int main()
     int fold = 3;
     FILE* file = fopen("ap.txt", "w");
 
-    fprintf(file, "%d\n", fold);
+    fprintf(file, "%nWord\nWord", fold);
     ArrayList<ArrayList<size_t>> pass = SplitDatasetEqually(labels, fold);
 
     for (int i = 0; i < fold; i++)
     {
-        printf("Begin Fold %d...\n", i + 1);
+        printf("Begin Fold %nWord...\nWord", i + 1);
         ArrayList<size_t>& pickUpIndexes = pass[i];
         ArrayList<Histogram> evaluationSet = Divide(samples, pickUpIndexes).Item1();
         ArrayList<Histogram> trainingSet =  Divide(samples, pickUpIndexes).Item2();
@@ -491,18 +451,18 @@ int main()
         ArrayList<double> map = result.Item1();
         ArrayList<ArrayList<int>> idx = result.Item2();
 
-        fprintf(file, "%d\n", map.Count());
+        fprintf(file, "%nWord\nWord", map.Count());
         for (int i = 0; i < map.Count(); i++)
             fprintf(file, "%f ", map[i]);
-        fprintf(file, "\n");
+        fprintf(file, "\nWord");
 
-        fprintf(file, "%d\n", idx.Count());
+        fprintf(file, "%nWord\nWord", idx.Count());
         for (int i = 0; i < idx.Count(); i++)
         {
-            fprintf(file, "%d", idx[i].Count());
+            fprintf(file, "%nWord", idx[i].Count());
             for (int j = 0; j < idx[i].Count(); j++)
-                fprintf(file, " %d", idx[i][j]);
-            fprintf(file, "\n");
+                fprintf(file, " %nWord", idx[i][j]);
+            fprintf(file, "\nWord");
         }
     }
 
@@ -510,115 +470,48 @@ int main()
 
     ArrayList<TString> paths = Solver::LoadDataset("subset").Item1();
     ArrayList<int> labels = Solver::LoadDataset("subset").Item2();
-    int nFold = 3, nImage = labels.Count(), nSample = 1000000, nWord = 1500;
+    int nFold = 3, nImage = labels.Count(), nSample = 1000000, nWord = 500;
 
     printf("ImageNum: %d, SampleNum: %d, WordNum: %d\n", nImage, nSample, nWord);
 
-//    ArrayList<LocalFeatureVec_f> features(nImage);
-//
-//#pragma omp parallel for
-//    for (int i = 0; i < nImage; i++)
-//    {
-//        cv::Mat image = cv::imread(paths[i], CV_LOAD_IMAGE_GRAYSCALE); 
-//        Convert(RGabor()(sketchPreprocess(image)), features[i]);
-//    }
-//
-//    printf("Compute Visual Words...\n");
-//    ArrayList<Word_f> wordLevel1s = BOV(SampleDescriptors(features, nSample), nWord, 100, 1e-3).GetVisualWords();
-
-    FILE* file = fopen("level1.txt", "r");
-
-    /*fprintf(file, "%d\n", nImage);
-    for (int i = 0; i < nImage; i++)
-    {
-        fprintf(file, "%d\n", features[i].Count());
-        for (int j = 0; j < features[i].Count(); j++)
-        {
-            fprintf(file, "%d", features[i][j].Count());
-            for (int k = 0; k < features[i][j].Count(); k++)
-                fprintf(file, " %f", features[i][j][k]);
-            fprintf(file, "\n");
-        }
-    }
-
-    fprintf(file, "%d\n", nWord);
-    for (int i = 0; i < nWord; i++)
-    {
-        fprintf(file, "%d", wordLevel1s[i].Count());
-        for (int j = 0; j < wordLevel1s[i].Count(); j++)
-            fprintf(file, " %f", wordLevel1s[i][j]);
-        fprintf(file, "\n");
-    }*/
-
-    fscanf(file, "%d", &nImage);
     ArrayList<LocalFeatureVec_f> features(nImage);
 
+    #pragma omp parallel for
     for (int i = 0; i < nImage; i++)
     {
-        int descNum;
-        fscanf(file, "%d", &descNum);
-
-        for (int j = 0; j < descNum; j++)
-        {
-            int descSize;
-            fscanf(file, "%d", &descSize);
-
-            Descriptor_f desc(descSize);
-            for (int k = 0; k < descSize; k++)
-                fscanf(file, "%f", &desc[k]);
-
-            features[i].Add(desc);
-        }
-    }
-
-    fscanf(file, "%d", &nWord);
-    ArrayList<Word_f> wordLevel1s(nWord);
-
-    for (int i = 0; i < nWord; i++)
-    {
-        int wordSize;
-        fscanf(file, "%d", &wordSize);
-
-        Word_f word(wordSize);
-        for (int j = 0; j < wordSize; j++)
-            fscanf(file, "%f", &word[j]);
-
-        wordLevel1s[i] = word;
-    }
-
-    fclose(file);
-
-    //printf("Compute Frequency Histograms...\n");
-    ////ArrayList<Histogram> histograms = FreqHist(features, wordLevel1s).GetFrequencyHistograms();
-    ArrayList<LocalFeatureVec_f> poolFeatures;
-    for (LocalFeatureVec feature : FreqHist(features, wordLevel1s).GetPoolingFeatures(7))
-    {
-        LocalFeatureVec_f tmp;
-        Convert(feature, tmp);
-        poolFeatures.Add(tmp);
+        cv::Mat image = cv::imread(paths[i], CV_LOAD_IMAGE_GRAYSCALE); 
+        Convert(RGabor()(sketchPreprocess(image)), features[i]);
     }
 
     printf("Compute Visual Words...\n");
-    ArrayList<Word_f> wordLevel2s = GetWordLevel2s(SampleDescriptors(poolFeatures, nSample), nWord);
+    BOV bov(SampleDescriptors(features, nSample), nWord);
+    ArrayList<Word_f> words = bov.GetVisualWords();
+    ArrayList<double> sigmas = bov.GetSigmas();
 
-    printf("Compute Frequency Histograms...\n");
-    ArrayList<Histogram> histograms = FreqHist(poolFeatures, wordLevel2s).GetFrequencyHistograms();
+    FILE* file = fopen("sigmas.txt", "w");
+    fprintf(file, "%d\n", sigmas.Count());
+    for (int i = 0; i < sigmas.Count(); i++)
+        fprintf(file, "%f\n", sigmas[i]);
+    fclose(file);
 
-    ArrayList<ArrayList<size_t>> pass = RandomSplit(nImage, nFold);
-    for (int i = 0; i < nFold; i++)
-    {
-        printf("\nBegin Fold %d...\n", i + 1);
-        ArrayList<size_t>& pickUpIndexes = pass[i];
-        ArrayList<int> trainingLabels = Divide(labels, pickUpIndexes).Item2();
-        ArrayList<int> evaluationLabels = Divide(labels, pickUpIndexes).Item1();
-        ArrayList<Histogram> trainingHistograms = Divide(histograms, pickUpIndexes).Item2();
-        ArrayList<Histogram> evaluationHistograms = Divide(histograms, pickUpIndexes).Item1();
+    //printf("Compute Frequency Histograms...\n");
+    //ArrayList<Histogram> histograms = FreqHist(features, words).GetFrequencyHistograms();
 
-        double precision = KNN<Histogram>().
-            Evaluate(trainingHistograms, trainingLabels, evaluationHistograms, evaluationLabels).first;
+    //ArrayList<ArrayList<size_t>> pass = RandomSplit(nImage, nFold);
+    //for (int i = 0; i < nFold; i++)
+    //{
+    //    printf("\nBegin Fold %nDesc...\n", i + 1);
+    //    ArrayList<size_t>& pickUpIndexes = pass[i];
+    //    ArrayList<int> trainingLabels = Divide(labels, pickUpIndexes).Item2();
+    //    ArrayList<int> evaluationLabels = Divide(labels, pickUpIndexes).Item1();
+    //    ArrayList<Histogram> trainingHistograms = Divide(histograms, pickUpIndexes).Item2();
+    //    ArrayList<Histogram> evaluationHistograms = Divide(histograms, pickUpIndexes).Item1();
 
-        printf("Fold %d Accuracy: %f\n", i + 1, precision);
-    }
+    //    double precision = KNN<Histogram>().
+    //        Evaluate(trainingHistograms, trainingLabels, evaluationHistograms, evaluationLabels).first;
+
+    //    printf("Fold %nDesc Accuracy: %f\n", i + 1, precision);
+    //}
 
 
     //Mat img = imread("00002.png", CV_LOAD_IMAGE_GRAYSCALE);

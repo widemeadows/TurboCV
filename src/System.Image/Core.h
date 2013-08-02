@@ -148,18 +148,45 @@ namespace System
             BOV(const ArrayList<Descriptor_f>& descriptors, size_t clusterNum,
                 size_t maxIter = 500, double epsilon = 1e-6)
             {
-                words = GetVisualWords(descriptors, clusterNum, maxIter, epsilon);
+                this->descriptors = descriptors;
+                this->clusterNum = clusterNum;
+                this->termCriteria = cv::TermCriteria(CV_TERMCRIT_ITER, maxIter, epsilon);
             }
 
-            ArrayList<Word_f> GetVisualWords() const { return words; }
+            ArrayList<Word_f> GetVisualWords()
+            { 
+                if (words.Count() != 0)
+                    return words; 
+                else
+                    return words = GetVisualWords(descriptors, clusterNum, termCriteria);
+            }
+
+            ArrayList<double> GetSigmas()
+            { 
+                if (sigmas.Count() != 0)
+                    return sigmas;
+                else
+                    return sigmas = GetSigmas(descriptors, words);
+            }
 
         protected:
-            ArrayList<Word_f> GetVisualWords(
+            static ArrayList<Word_f> GetVisualWords(
                 const ArrayList<Descriptor_f>& descriptors, 
-                size_t clusterNum, size_t maxIter, double epsilon);
+                size_t clusterNum, 
+                cv::TermCriteria termCriteria);
+
+            static ArrayList<double> GetSigmas(
+                const ArrayList<Descriptor_f>& descriptors,
+                const ArrayList<Word_f>& words,
+                double perplexity = 30);
 
         private:
+            ArrayList<Descriptor_f> descriptors;
+            size_t clusterNum;
+            cv::TermCriteria termCriteria;
+
             ArrayList<Word_f> words;
+            ArrayList<double> sigmas;
         };
 
 
@@ -171,7 +198,8 @@ namespace System
         class FreqHist
         {
         public:
-            FreqHist(const ArrayList<LocalFeatureVec_f>& features, const ArrayList<Word_f>& words,
+            FreqHist(const ArrayList<LocalFeatureVec_f>& features, 
+                     const ArrayList<Word_f>& words,
                      double (*getDistance)(const Descriptor_f&, const Word_f&) = GetGaussianDistance)
             {
                 this->features = features;
@@ -219,9 +247,10 @@ namespace System
                 const ArrayList<Word_f>& words);
 
         private:
-            double (*getDistance)(const Descriptor_f&, const Word_f&);
             ArrayList<LocalFeatureVec_f> features;
             ArrayList<Word_f> words;
+            double (*getDistance)(const Descriptor_f&, const Word_f&);
+
             ArrayList<Histogram> histograms;
             ArrayList<LocalFeatureVec> pollFeatures;
         };

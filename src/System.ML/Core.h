@@ -73,9 +73,6 @@ namespace System
             }
             return result;
         }
-
-        double Kmeans(cv::InputArray _data, int K, cv::InputOutputArray _bestLabels,
-            cv::TermCriteria criteria, int attempts, int flags, cv::OutputArray _centers);
     }
 }
 }
