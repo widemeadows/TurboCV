@@ -178,7 +178,7 @@ namespace System
             static ArrayList<double> GetSigmas(
                 const ArrayList<Descriptor_f>& descriptors,
                 const ArrayList<Word_f>& words,
-                double perplexity = 30);
+                double perplexity = 20);
 
         private:
             ArrayList<Descriptor_f> descriptors;
@@ -190,21 +190,26 @@ namespace System
         };
 
 
-        static inline double GetGaussianDistance(const Descriptor_f& desc, const Word_f& word)
-        {
-            return Math::GaussianDistance(desc, word, 0.1);
-        }
-
         class FreqHist
         {
         public:
             FreqHist(const ArrayList<LocalFeatureVec_f>& features, 
                      const ArrayList<Word_f>& words,
-                     double (*getDistance)(const Descriptor_f&, const Word_f&) = GetGaussianDistance)
+                     const ArrayList<double>& sigmas = ArrayList<double>())
             {
                 this->features = features;
                 this->words = words;
-                this->getDistance = getDistance;
+
+                if (sigmas.Count() != words.Count())
+                {
+                    ArrayList<double> initSigmas(words.Count());
+                    for (int i = words.Count() - 1; i >= 0; i--)
+                        initSigmas[i] = 0.1;
+
+                    this->sigmas = initSigmas;
+                }
+                else
+                    this->sigmas = sigmas;
             }
 
             ArrayList<Histogram> GetFrequencyHistograms()
@@ -215,12 +220,12 @@ namespace System
                     return histograms = GetFrequencyHistograms(features, words); 
             }
             
-            ArrayList<LocalFeatureVec> GetPoolingFeatures(int nPool)
+            ArrayList<LocalFeatureVec> GetPoolingHistograms(int nPool)
             {
                 if (pollFeatures.Count() != 0)
                     return pollFeatures;
                 else
-                    return pollFeatures = GetPoolingFeatures(features, words, nPool);
+                    return pollFeatures = GetPoolingHistograms(features, words, nPool);
             }
 
         protected:
@@ -232,7 +237,7 @@ namespace System
                 const LocalFeatureVec_f& feature, 
                 const ArrayList<Word_f>& words);
 
-            ArrayList<LocalFeatureVec> GetPoolingFeatures(
+            ArrayList<LocalFeatureVec> GetPoolingHistograms(
                 const ArrayList<LocalFeatureVec_f>& features, 
                 const ArrayList<Word_f>& words,
                 int nPool);
@@ -249,7 +254,7 @@ namespace System
         private:
             ArrayList<LocalFeatureVec_f> features;
             ArrayList<Word_f> words;
-            double (*getDistance)(const Descriptor_f&, const Word_f&);
+            ArrayList<double> sigmas;
 
             ArrayList<Histogram> histograms;
             ArrayList<LocalFeatureVec> pollFeatures;

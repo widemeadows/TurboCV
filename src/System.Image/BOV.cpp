@@ -59,12 +59,6 @@ namespace System
             const double INF = 1e12;
             const double EPS = 1e-5;
             ArrayList<double> sigmas(wordNum);
-            Mat D(wordNum, descriptorNum, CV_64F);
-
-            #pragma omp parallel for
-            for (int i = 0; i < wordNum; i++)
-                for (int j = 0; j < descriptorNum; j++)
-                    D.at<double>(i, j) = Math::NormTwoDistance(words[i], descriptors[j]);
 
             #pragma omp parallel for
             for (int i = 0; i < wordNum; i++)
@@ -72,10 +66,13 @@ namespace System
                 double lowerBound = -INF;
                 double upperBound = INF;
 
-                Mat Di = D.row(i).clone(); // square of L2 distance
-                Mat GDi(Di.size(), CV_64F); // gaussian distance
+                Mat Di(1, descriptorNum, CV_64F); // square of L2 distance
+                Mat GDi(1, descriptorNum, CV_64F); // gaussian distance
                 double Si = 1.0;
                 double sumGDi = 0, H = 0, Hdiff = 0;
+
+                for (int j = 0; j < descriptorNum; j++)
+                    Di.at<double>(0, j) = Math::NormTwoDistance(words[i], descriptors[j]);
 
                 for (int tries = 0; tries < 50; tries++) 
                 {
@@ -154,7 +151,7 @@ namespace System
             return freqHistogram;
         }
 
-        ArrayList<LocalFeatureVec> FreqHist::GetPoolingFeatures(
+        ArrayList<LocalFeatureVec> FreqHist::GetPoolingHistograms(
             const ArrayList<LocalFeatureVec_f>& features, 
             const ArrayList<Word_f>& words,
             int nPool)
@@ -212,7 +209,7 @@ namespace System
             ArrayList<double> distances;
 
             for (size_t i = 0; i < wordNum; i++)
-                distances.Add(getDistance(descriptor, words[i]));
+                distances.Add(Math::GaussianDistance(descriptor, words[i], sigmas[i]));
 
             NormOneNormalize(distances.begin(), distances.end());
             return distances;

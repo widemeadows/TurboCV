@@ -468,9 +468,9 @@ int main()
 
     fclose(file);*/
 
-    ArrayList<TString> paths = Solver::LoadDataset("subset").Item1();
-    ArrayList<int> labels = Solver::LoadDataset("subset").Item2();
-    int nFold = 3, nImage = labels.Count(), nSample = 1000000, nWord = 500;
+    ArrayList<TString> paths = Solver::LoadDataset("sketches").Item1();
+    ArrayList<int> labels = Solver::LoadDataset("sketches").Item2();
+    int nFold = 3, nImage = labels.Count(), nSample = 1000000, nWord = 1500;
 
     printf("ImageNum: %d, SampleNum: %d, WordNum: %d\n", nImage, nSample, nWord);
 
@@ -488,30 +488,33 @@ int main()
     ArrayList<Word_f> words = bov.GetVisualWords();
     ArrayList<double> sigmas = bov.GetSigmas();
 
-    FILE* file = fopen("sigmas.txt", "w");
-    fprintf(file, "%d\n", sigmas.Count());
-    for (int i = 0; i < sigmas.Count(); i++)
-        fprintf(file, "%f\n", sigmas[i]);
-    fclose(file);
+    printf("Compute Frequency Histograms...\n");
+    ArrayList<Histogram> histograms;
+    for (LocalFeatureVec vec : FreqHist(features, words, sigmas).GetPoolingHistograms(2))
+    {
+        Histogram histogram;
+        for (Descriptor desc : vec)
+            for (double item : desc)
+                histogram.Add(item);
 
-    //printf("Compute Frequency Histograms...\n");
-    //ArrayList<Histogram> histograms = FreqHist(features, words).GetFrequencyHistograms();
+        histograms.Add(histogram);
+    }
 
-    //ArrayList<ArrayList<size_t>> pass = RandomSplit(nImage, nFold);
-    //for (int i = 0; i < nFold; i++)
-    //{
-    //    printf("\nBegin Fold %nDesc...\n", i + 1);
-    //    ArrayList<size_t>& pickUpIndexes = pass[i];
-    //    ArrayList<int> trainingLabels = Divide(labels, pickUpIndexes).Item2();
-    //    ArrayList<int> evaluationLabels = Divide(labels, pickUpIndexes).Item1();
-    //    ArrayList<Histogram> trainingHistograms = Divide(histograms, pickUpIndexes).Item2();
-    //    ArrayList<Histogram> evaluationHistograms = Divide(histograms, pickUpIndexes).Item1();
+    ArrayList<ArrayList<size_t>> pass = RandomSplit(nImage, nFold);
+    for (int i = 0; i < nFold; i++)
+    {
+        printf("Begin Fold %d...\n", i + 1);
+        ArrayList<size_t>& pickUpIndexes = pass[i];
+        ArrayList<int> trainingLabels = Divide(labels, pickUpIndexes).Item2();
+        ArrayList<int> evaluationLabels = Divide(labels, pickUpIndexes).Item1();
+        ArrayList<Histogram> trainingHistograms = Divide(histograms, pickUpIndexes).Item2();
+        ArrayList<Histogram> evaluationHistograms = Divide(histograms, pickUpIndexes).Item1();
 
-    //    double precision = KNN<Histogram>().
-    //        Evaluate(trainingHistograms, trainingLabels, evaluationHistograms, evaluationLabels).first;
+        double precision = KNN<Histogram>().
+            Evaluate(trainingHistograms, trainingLabels, evaluationHistograms, evaluationLabels).first;
 
-    //    printf("Fold %nDesc Accuracy: %f\n", i + 1, precision);
-    //}
+        printf("Fold %d Accuracy: %f\n", i + 1, precision);
+    }
 
 
     //Mat img = imread("00002.png", CV_LOAD_IMAGE_GRAYSCALE);
