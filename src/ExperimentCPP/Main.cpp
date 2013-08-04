@@ -495,10 +495,11 @@ int main()
         Histogram histogram;
         for (Descriptor desc : vec)
             for (double item : desc)
-                histogram.Add(item);
+                histogram.Add(item / vec.Count());
 
         histograms.Add(histogram);
     }
+    printf("%d %d\n", histograms.Count(), histograms[0].Count());
 
     ArrayList<ArrayList<size_t>> pass = RandomSplit(nImage, nFold);
     for (int i = 0; i < nFold; i++)

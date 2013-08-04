@@ -116,23 +116,19 @@ namespace System
         // FrequencyHistogram
         //////////////////////////////////////////////////////////////////////////
 
-        ArrayList<Histogram> FreqHist::GetFrequencyHistograms(
-            const ArrayList<LocalFeatureVec_f>& features, 
-            const ArrayList<Word_f>& words)
+        ArrayList<Histogram> FreqHist::ComputeFrequencyHistograms()
         {
             size_t imageNum = features.Count();
             ArrayList<Histogram> freqHistograms(imageNum);
 
             #pragma omp parallel for schedule(dynamic)
             for (int i = 0; i < imageNum; i++)
-                freqHistograms[i] = GetFrequencyHistogram(features[i], words);
+                freqHistograms[i] = ComputeFrequencyHistogram(features[i]);
 
             return freqHistograms;
         }
 
-        Histogram FreqHist::GetFrequencyHistogram(
-            const LocalFeatureVec_f& feature, 
-            const ArrayList<Word_f>& words)
+        Histogram FreqHist::ComputeFrequencyHistogram(const LocalFeatureVec_f& feature)
         {    
             size_t wordNum = words.Count();
             size_t descriptorNum = feature.Count();
@@ -140,7 +136,7 @@ namespace System
 
             for (size_t i = 0; i < descriptorNum; i++)
             {
-                ArrayList<double> distances = GetDistancesToVisualWords(feature[i], words);
+                ArrayList<double> distances = GetDistancesToVisualWords(feature[i]);
                 for (size_t j = 0; j < wordNum; j++)
                     freqHistogram[j] += distances[j];
             }
@@ -151,25 +147,19 @@ namespace System
             return freqHistogram;
         }
 
-        ArrayList<LocalFeatureVec> FreqHist::GetPoolingHistograms(
-            const ArrayList<LocalFeatureVec_f>& features, 
-            const ArrayList<Word_f>& words,
-            int nPool)
+        ArrayList<LocalFeatureVec> FreqHist::ComputePoolingHistograms(int nPool)
         {
             size_t imageNum = features.Count();
             ArrayList<LocalFeatureVec> poolFeatures(imageNum);
 
             #pragma omp parallel for schedule(dynamic)
             for (int i = 0; i < imageNum; i++)
-                poolFeatures[i] = GetPoolingFeature(features[i], words, nPool);
+                poolFeatures[i] = ComputePoolingHistogram(features[i], nPool);
 
             return poolFeatures;
         }
 
-        LocalFeatureVec FreqHist::GetPoolingFeature(
-            const LocalFeatureVec_f& feature, 
-            const ArrayList<Word_f>& words, 
-            int nPool)
+        LocalFeatureVec FreqHist::ComputePoolingHistogram(const LocalFeatureVec_f& feature, int nPool)
         {
             size_t wordNum = words.Count();
             size_t descriptorNum = feature.Count();
@@ -178,18 +168,20 @@ namespace System
             LocalFeatureVec poolFeature(nPool * nPool);
             assert(descriptorNumPerSize * descriptorNumPerSize == descriptorNum);
 
+            for (size_t i = 0; i < poolFeature.Count(); i++)
+            {
+                poolFeature[i] = Histogram(wordNum);
+            }
+
             for (size_t i = 0; i < descriptorNum; i++)
             {
-                Histogram histogram(wordNum);
-
-                ArrayList<double> distances = GetDistancesToVisualWords(feature[i], words);
-                for (size_t j = 0; j < wordNum; j++)
-                    histogram[j] += distances[j];
-
                 int row = i / descriptorNumPerSize, col = i % descriptorNumPerSize;
                 int poolIdx = (row / poolStep) * nPool + (col / poolStep);
                 assert(0 <= poolIdx && poolIdx < poolFeature.Count());
-                poolFeature[poolIdx] = histogram;
+
+                ArrayList<double> distances = GetDistancesToVisualWords(feature[i]);
+                for (size_t j = 0; j < wordNum; j++)
+                    poolFeature[poolIdx][j] += distances[j];
             }
 
             for (size_t i = 0; i < poolFeature.Count(); i++)
@@ -199,9 +191,7 @@ namespace System
             return poolFeature;
         }
 
-        ArrayList<double> FreqHist::GetDistancesToVisualWords(
-            const Descriptor_f& descriptor, 
-            const ArrayList<Word_f>& words)
+        ArrayList<double> FreqHist::GetDistancesToVisualWords(const Descriptor_f& descriptor)
         {
             assert(words.Count() > 0 && descriptor.Count() == words[0].Count());
 

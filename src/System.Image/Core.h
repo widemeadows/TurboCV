@@ -217,7 +217,7 @@ namespace System
                 if (histograms.Count() != 0)
                     return histograms;
                 else
-                    return histograms = GetFrequencyHistograms(features, words); 
+                    return histograms = ComputeFrequencyHistograms(); 
             }
             
             ArrayList<LocalFeatureVec> GetPoolingHistograms(int nPool)
@@ -225,31 +225,19 @@ namespace System
                 if (pollFeatures.Count() != 0)
                     return pollFeatures;
                 else
-                    return pollFeatures = GetPoolingHistograms(features, words, nPool);
+                    return pollFeatures = ComputePoolingHistograms(nPool);
             }
 
         protected:
-            ArrayList<Histogram> GetFrequencyHistograms(
-                const ArrayList<LocalFeatureVec_f>& features, 
-                const ArrayList<Word_f>& words);
+            ArrayList<Histogram> ComputeFrequencyHistograms();
 
-            Histogram GetFrequencyHistogram(
-                const LocalFeatureVec_f& feature, 
-                const ArrayList<Word_f>& words);
+            Histogram ComputeFrequencyHistogram(const LocalFeatureVec_f& feature);
 
-            ArrayList<LocalFeatureVec> GetPoolingHistograms(
-                const ArrayList<LocalFeatureVec_f>& features, 
-                const ArrayList<Word_f>& words,
-                int nPool);
+            ArrayList<LocalFeatureVec> ComputePoolingHistograms(int nPool);
 
-            LocalFeatureVec GetPoolingFeature(
-                const LocalFeatureVec_f& features, 
-                const ArrayList<Word_f>& words,
-                int nPool);
+            LocalFeatureVec ComputePoolingHistogram(const LocalFeatureVec_f& feature, int nPool);
 
-            ArrayList<double> GetDistancesToVisualWords(
-                const Descriptor_f& descriptor, 
-                const ArrayList<Word_f>& words);
+            ArrayList<double> GetDistancesToVisualWords(const Descriptor_f& descriptor);
 
         private:
             ArrayList<LocalFeatureVec_f> features;
