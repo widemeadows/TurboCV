@@ -28,6 +28,12 @@ namespace System
         template<typename T>
         static double StandardDeviation(const ArrayList<T>& vec);
 
+        template<typename T>
+        static double NormOne(const ArrayList<T>& vec);
+
+        template<typename T>
+        static double NormTwo(const ArrayList<T>& vec);
+
         static double Gauss(double x, double sigma);
 
         static double GaussDeriv(double x, double sigma);
@@ -97,6 +103,31 @@ namespace System
             squareSum += (double)item * (double)item;
 
         return std::sqrt((squareSum - vec.Count() * mean * mean) / vec.Count());
+    }
+
+    template<typename T>
+    inline double Math::NormOne(const ArrayList<T>& vec)
+    {
+        double result = 0;
+
+        for (auto item : vec)
+            result += std::abs(item);
+
+        return result;
+    }
+
+    template<typename T>
+    inline double Math::NormTwo(const ArrayList<T>& vec)
+    {
+        double result = 0;
+
+        for (auto item : vec)
+            result += item * item;
+
+        if (result)
+            result = std::sqrt(result);
+
+        return result;
     }
 
     inline double Math::Gauss(double x, double sigma)

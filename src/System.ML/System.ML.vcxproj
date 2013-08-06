@@ -19,6 +19,7 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="Kmeans.cpp" />
     <ClCompile Include="Reduction.cpp" />
   </ItemGroup>
   <ItemGroup>
