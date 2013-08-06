@@ -503,24 +503,24 @@ int main()
 
     fclose(file);*/
 
-   /* ArrayList<TString> paths = Solver::LoadDataset("sketches").Item1();
-    ArrayList<int> labels = Solver::LoadDataset("sketches").Item2();
-    int nFold = 3, nImage = labels.Count(), nSample = 1000000, nWord = 1500;
+    //ArrayList<TString> paths = Solver::LoadDataset("subset").Item1();
+    //ArrayList<int> labels = Solver::LoadDataset("subset").Item2();
+    //int nFold = 3, nImage = labels.Count(), nSample = 1000000, nWord = 1500;
 
-    printf("ImageNum: %d, SampleNum: %d, WordNum: %d\n", nImage, nSample, nWord);
+    //printf("ImageNum: %d, SampleNum: %d, WordNum: %d\n", nImage, nSample, nWord);
 
-    ArrayList<LocalFeatureVec_f> features(nImage);
+    //ArrayList<LocalFeatureVec_f> features(nImage);
 
-    #pragma omp parallel for
-    for (int i = 0; i < nImage; i++)
-    {
-        cv::Mat image = cv::imread(paths[i], CV_LOAD_IMAGE_GRAYSCALE); 
-        Convert(RGabor()(sketchPreprocess(image)), features[i]);
-    }
+    //#pragma omp parallel for
+    //for (int i = 0; i < nImage; i++)
+    //{
+    //    cv::Mat image = cv::imread(paths[i], CV_LOAD_IMAGE_GRAYSCALE); 
+    //    Convert(RGabor()(sketchPreprocess(image)), features[i]);
+    //}
 
-    printf("Compute Visual Words...\n");
-    BOV bov(SampleDescriptors(features, nSample), nWord);
-    ArrayList<Word_f> words = bov.GetVisualWords();*/
+    //printf("Compute Visual Words...\n");
+    //BOV bov(SampleDescriptors(features, nSample), nWord);
+    //ArrayList<Word_f> words = bov.GetVisualWords();
 
     //FILE* file = fopen("tmp.txt", "w");
 
@@ -582,18 +582,18 @@ int main()
 
     fclose(file);*/
 
-    /*printf("Compute Frequency Histograms...\n");
-    ArrayList<Histogram> histograms = FreqHist(features, words).GetFrequencyHistograms();
+    //printf("Compute Frequency Histograms...\n");
+    //ArrayList<Histogram> histograms = FreqHist(features, words).GetFrequencyHistograms();
 
-    FILE* file = fopen("histograms.txt","w");
-    for (int i = 0; i < nImage; i++)
-    {
-        fprintf(file, "%d", labels[i]);
-        for (int j = 0; j < histograms[i].Count(); j++)
-            fprintf(file, " %f", histograms[i][j]);
-        fprintf(file, "\n");
-    }
-    fclose(file);*/
+    //FILE* file = fopen("histograms.txt","w");
+    //for (int i = 0; i < nImage; i++)
+    //{
+    //    fprintf(file, "%d", labels[i]);
+    //    for (int j = 0; j < histograms[i].Count(); j++)
+    //        fprintf(file, " %f", histograms[i][j]);
+    //    fprintf(file, "\n");
+    //}
+    //fclose(file);
 
     //ArrayList<LocalFeatureVec_f> level2Features;
     //for (auto vec: FreqHist(features, words).GetPoolingHistograms(4))
