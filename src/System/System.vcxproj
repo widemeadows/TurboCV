@@ -19,16 +19,14 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="Collection.h" />
-    <ClInclude Include="Exception.h" />
-    <ClInclude Include="FileSystem.h" />
+    <ClInclude Include="Core.h" />
     <ClInclude Include="Math.h" />
     <ClInclude Include="System.h" />
-    <ClInclude Include="Type.h" />
-    <ClInclude Include="Util.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="FileSystem.cpp" />
     <ClCompile Include="Math.cpp" />
+    <ClCompile Include="TString.cpp" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{EE56D2FC-E726-4F90-B09B-B2DFC21CAE7D}</ProjectGuid>

@@ -15,30 +15,24 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="Collection.h">
-      <Filter>头文件</Filter>
-    </ClInclude>
-    <ClInclude Include="Exception.h">
-      <Filter>头文件</Filter>
-    </ClInclude>
-    <ClInclude Include="FileSystem.h">
-      <Filter>头文件</Filter>
-    </ClInclude>
     <ClInclude Include="Math.h">
       <Filter>头文件</Filter>
     </ClInclude>
     <ClInclude Include="System.h">
       <Filter>头文件</Filter>
     </ClInclude>
-    <ClInclude Include="Type.h">
-      <Filter>头文件</Filter>
-    </ClInclude>
-    <ClInclude Include="Util.h">
+    <ClInclude Include="Core.h">
       <Filter>头文件</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Math.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="FileSystem.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="TString.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
   </ItemGroup>

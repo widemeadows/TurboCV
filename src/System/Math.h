@@ -2,7 +2,7 @@
 
 #include <cassert>
 #include <cmath>
-#include "Collection.h"
+#include "Core.h"
 
 namespace TurboCV
 {
@@ -12,6 +12,10 @@ namespace System
     {
     public:
         static const double PI;
+
+        static double Gauss(double x, double sigma);
+
+        static double GaussDeriv(double x, double sigma);
 
         template<typename T>
         static T Min(const ArrayList<T>& vec);
@@ -34,9 +38,14 @@ namespace System
         template<typename T>
         static double NormTwo(const ArrayList<T>& vec);
 
-        static double Gauss(double x, double sigma);
+        template<typename T>
+        static T Dot(const ArrayList<T>& u, const ArrayList<T>& v);
 
-        static double GaussDeriv(double x, double sigma);
+        template<typename T>
+        static ArrayList<T> Mul(const ArrayList<T>& u, double scalar);
+
+        template<typename T>
+        static ArrayList<T> Mul(double scalar, const ArrayList<T>& u);
   
         template<typename T>
         static double NormOneDistance(const ArrayList<T>& u, const ArrayList<T>& v);
@@ -47,6 +56,16 @@ namespace System
         template<typename T>
         static double GaussianDistance(const ArrayList<T>& u, const ArrayList<T>& v, double sigma);
     };
+
+    inline double Math::Gauss(double x, double sigma)
+    {
+        return std::exp(-std::pow(x, 2.0) / (2 * std::pow(sigma, 2.0))) / (sigma * std::sqrt(2 * PI));
+    }
+
+    inline double Math::GaussDeriv(double x, double sigma)
+    {
+        return -x * Gauss(x, sigma) / std::pow(sigma, 2);
+    }
 
     template<typename T>
     inline T Math::Min(const ArrayList<T>& vec)
@@ -130,14 +149,33 @@ namespace System
         return result;
     }
 
-    inline double Math::Gauss(double x, double sigma)
+    template<typename T>
+    inline T Math::Dot(const ArrayList<T>& u, const ArrayList<T>& v)
     {
-        return std::exp(-std::pow(x, 2.0) / (2 * std::pow(sigma, 2.0))) / (sigma * std::sqrt(2 * PI));
+        assert(u.Count() == v.Count());
+        T result = 0;
+
+        for (int i = u.Count() - 1; i >= 0; i--)
+            result += u[i] * v[i];
+
+        return result;
     }
 
-    inline double Math::GaussDeriv(double x, double sigma)
+    template<typename T>
+    inline ArrayList<T> Math::Mul(const ArrayList<T>& u, double scalar)
     {
-        return -x * Gauss(x, sigma) / std::pow(sigma, 2);
+        ArrayList<T> result(u.Count());
+
+        for (int i = u.Count() - 1; i >= 0; i--)
+            result[i] = u[i] * scalar;
+
+        return result;
+    }
+
+    template<typename T>
+    inline ArrayList<T> Math::Mul(double scalar, const ArrayList<T>& u)
+    {
+        return Mul(u, scalar);
     }
 
     template<typename T>

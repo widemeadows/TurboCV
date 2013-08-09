@@ -3,8 +3,6 @@
 #include "../System.ML/System.ML.h"
 #include "../System.XML/System.XML.h"
 #include "Util.h"
-#include "Test.h"
-#include "MNIST.h"
 #include <cv.h>
 #include <highgui.h>
 using namespace TurboCV::System;
@@ -424,41 +422,6 @@ ArrayList<ArrayList<size_t>> SplitDatasetEqually(const ArrayList<int> labels, in
     return result;
 }
 
-ArrayList<Word_f> GetLevel2Words(
-    const ArrayList<Descriptor_f>& descriptors, 
-    size_t clusterNum,
-    int maxIter,
-    double epsilon)
-{
-    assert(descriptors.Count() > 0 && descriptors[0].Count() > 0);
-
-    size_t descriptorNum = descriptors.Count(), 
-        descriptorSize = descriptors[0].Count();
-    printf("Descriptor Num: %d, Descriptor Size: %d.\n", 
-        (int)descriptorNum, (int)descriptorSize);
-
-    Mat samples(descriptorNum, descriptorSize, CV_32F);
-    for (size_t i = 0; i < descriptorNum; i++)
-        for (size_t j = 0; j < descriptorSize; j++)
-            samples.at<float>(i, j) = descriptors[i][j];
-
-    Mat labels(descriptorNum, 1, CV_32S);
-    for (size_t i = 0; i < descriptorNum; i++)
-        labels.at<int>(i, 0) = 0;
-
-    Mat centers(clusterNum, descriptorSize, CV_32F);
-    printf("K-Means Begin...\n");
-    Kmeans(samples, clusterNum, labels, TermCriteria(CV_TERMCRIT_ITER, maxIter, epsilon), 
-        1, KMEANS_PP_CENTERS, centers);
-
-    ArrayList<Word_f> words(clusterNum);
-    for (size_t i = 0; i < clusterNum; i++)
-        for (size_t j = 0; j < descriptorSize; j++)
-            words[i].Add(centers.at<float>(i, j));
-
-    return words;
-}
-
 int main()
 {
     //EdgeMatchingCrossValidation<Hitmap>("sketches");
@@ -468,7 +431,7 @@ int main()
     ArrayList<Histogram> samples = result.Item2();
 
     int fold = 3;
-    FILE* file = fopen("ap.txt", "w");
+    FILE* file = fopen("map.txt", "w");
 
     fprintf(file, "%nWord\nWord", fold);
     ArrayList<ArrayList<size_t>> pass = SplitDatasetEqually(labels, fold);
@@ -503,11 +466,11 @@ int main()
 
     fclose(file);*/
 
-    //ArrayList<TString> paths = Solver::LoadDataset("subset").Item1();
-    //ArrayList<int> labels = Solver::LoadDataset("subset").Item2();
-    //int nFold = 3, nImage = labels.Count(), nSample = 1000000, nWord = 1500;
+    ArrayList<TString> paths = Solver::LoadDataset("subset").Item1();
+    ArrayList<int> labels = Solver::LoadDataset("subset").Item2();
+    int nFold = 3, nImage = labels.Count(), nSample = 1000000, nWord = 1500;
 
-    //printf("ImageNum: %d, SampleNum: %d, WordNum: %d\n", nImage, nSample, nWord);
+    printf("ImageNum: %d, SampleNum: %d, WordNum: %d\n", nImage, nSample, nWord);
 
     //ArrayList<LocalFeatureVec_f> features(nImage);
 
@@ -546,7 +509,7 @@ int main()
 
     // fclose(file);
 
-    /*FILE* file = fopen("tmp.txt", "r");
+    FILE* file = fopen("tmp.txt", "r");
     ArrayList<LocalFeatureVec_f> features(nImage);
     ArrayList<Word_f> words(nWord);
 
@@ -580,89 +543,22 @@ int main()
         words[i] = word;
     }
 
-    fclose(file);*/
+    fclose(file);
 
-    //printf("Compute Frequency Histograms...\n");
-    //ArrayList<Histogram> histograms = FreqHist(features, words).GetFrequencyHistograms();
-
-    //FILE* file = fopen("histograms.txt","w");
-    //for (int i = 0; i < nImage; i++)
-    //{
-    //    fprintf(file, "%d", labels[i]);
-    //    for (int j = 0; j < histograms[i].Count(); j++)
-    //        fprintf(file, " %f", histograms[i][j]);
-    //    fprintf(file, "\n");
-    //}
-    //fclose(file);
-
-    //ArrayList<LocalFeatureVec_f> level2Features;
-    //for (auto vec: FreqHist(features, words).GetPoolingHistograms(4))
-    //{
-    //    LocalFeatureVec_f vec_f;
-    //    Convert(vec, vec_f);
-
-    //    level2Features.Add(vec_f);
-    //}
-    //    
-    //ArrayList<Word_f> level2Words = GetLevel2Words(
-    //    SampleDescriptors(level2Features, 1000000), 1500, 100, 1e-3);
-
-    //printf("Compute Frequency Histograms...\n");
-    //ArrayList<Histogram> histograms = FreqHist(level2Features, level2Words).GetFrequencyHistograms();
-
-    /*ArrayList<double> sigmas = bov.GetSigmas();
+    //ArrayList<double> sigmas = bov.GetSigmas();
 
     printf("Compute Frequency Histograms...\n");
-    ArrayList<Histogram> histograms;
-    for (LocalFeatureVec vec : FreqHist(features, words, sigmas).GetPoolingHistograms(2))
-    {
-        Histogram histogram;
-        for (Descriptor desc : vec)
-            for (double item : desc)
-                histogram.Add(item / vec.Count());
+    ArrayList<Histogram> histograms = FreqHist(features, words).GetFrequencyHistograms();
+    //for (LocalFeatureVec vec : FreqHist(features, words, sigmas).GetPoolingHistograms(2))
+    //{
+    //    Histogram histogram;
+    //    for (Descriptor desc : vec)
+    //        for (double item : desc)
+    //            histogram.Add(item / vec.Count());
 
-        histograms.Add(histogram);
-    }
-    printf("%d %d\n", histograms.Count(), histograms[0].Count());*/
-
-    int nImage = 0, nFold = 3;
-
-    FILE* file = fopen("output.txt", "r");
-    int histSize = 0;
-    fscanf(file, "%d %d", &nImage, &histSize);
-    
-    ArrayList<Histogram> histograms(nImage);
-    double maxNorm = 0;
-    for (int i = 0; i < nImage; i++)
-    {
-        Histogram hist(histSize);
-        for (int j = 0; j < histSize; j++)
-            fscanf(file, "%lf", &hist[j]);
-
-        double norm = Math::NormOne(hist);
-        if (norm > maxNorm)
-            maxNorm = norm;
-
-        histograms[i] = hist;
-    }
-
-    if (maxNorm)
-    {
-        for (int i = 0; i < nImage; i++)
-            for (int j = 0; j < histograms[i].Count(); j++)
-                histograms[i][j] /= maxNorm;
-    }
-
-    fclose(file);
-
-    file = fopen("label.txt", "r");
-    fscanf(file, "%d", &nImage);
-
-    ArrayList<int> labels(nImage);
-    for (int i = 0; i < nImage; i++)
-        fscanf(file, "%d", &labels[i]);
-
-    fclose(file);
+    //    histograms.Add(histogram);
+    //}
+    //printf("%d %d\n", histograms.Count(), histograms[0].Count());
 
     ArrayList<ArrayList<size_t>> pass = RandomSplit(nImage, nFold);
     for (int i = 0; i < nFold; i++)
