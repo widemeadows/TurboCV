@@ -191,15 +191,52 @@ namespace System
             return poolFeature;
         }
 
+        ArrayList<LocalFeatureVec_f> FreqHist::ComputeReconstructedInputs()
+        {
+            size_t imageNum = features.Count();
+            ArrayList<LocalFeatureVec_f> reconstructed(imageNum);
+
+            #pragma omp parallel for schedule(dynamic)
+            for (int i = 0; i < imageNum; i++)
+                reconstructed[i] = ComputeReconstructedInput(features[i]);
+
+            return reconstructed;
+        }
+
+        LocalFeatureVec_f FreqHist::ComputeReconstructedInput(const LocalFeatureVec_f& feature)
+        {
+            size_t wordNum = words.Count();
+            size_t descriptorNum = feature.Count();
+            size_t descriptorSize = feature[0].Count();
+            LocalFeatureVec reconstructed;
+
+            for (size_t i = 0; i < descriptorNum; i++)
+            {
+                ArrayList<double> distances = GetDistancesToVisualWords(feature[i]);
+
+                Descriptor reDescriptor(descriptorSize);
+                for (size_t j = 0; j < descriptorSize; i++)
+                    for (size_t k = 0; k < wordNum; k++)
+                        reDescriptor[j] += distances[k] * words[k][j];
+                
+                reconstructed.Add(reDescriptor);
+            }
+
+            LocalFeatureVec_f result;
+            Convert(reconstructed, result);
+            return result;
+        }
+
         ArrayList<double> FreqHist::GetDistancesToVisualWords(const Descriptor_f& descriptor)
         {
-            assert(words.Count() > 0 && descriptor.Count() == words[0].Count());
+            assert(words.Count() > 0 && words.Count() == sigmas.Count() &&
+                descriptor.Count() == words[0].Count());
 
             size_t wordNum = words.Count();
-            ArrayList<double> distances;
+            ArrayList<double> distances(wordNum);
 
             for (size_t i = 0; i < wordNum; i++)
-                distances.Add(Math::GaussianDistance(descriptor, words[i], sigmas[i]));
+                distances[i] = Math::GaussianDistance(descriptor, words[i], sigmas[i]);
 
             NormOneNormalize(distances.begin(), distances.end());
             return distances;

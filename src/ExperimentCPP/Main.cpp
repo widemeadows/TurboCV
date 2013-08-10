@@ -472,44 +472,44 @@ int main()
 
     printf("ImageNum: %d, SampleNum: %d, WordNum: %d\n", nImage, nSample, nWord);
 
-    //ArrayList<LocalFeatureVec_f> features(nImage);
+    ArrayList<LocalFeatureVec_f> features(nImage);
 
-    //#pragma omp parallel for
-    //for (int i = 0; i < nImage; i++)
-    //{
-    //    cv::Mat image = cv::imread(paths[i], CV_LOAD_IMAGE_GRAYSCALE); 
-    //    Convert(RGabor()(sketchPreprocess(image)), features[i]);
-    //}
+    #pragma omp parallel for
+    for (int i = 0; i < nImage; i++)
+    {
+        cv::Mat image = cv::imread(paths[i], CV_LOAD_IMAGE_GRAYSCALE); 
+        Convert(RGabor()(sketchPreprocess(image)), features[i]);
+    }
 
-    //printf("Compute Visual Words...\n");
-    //BOV bov(SampleDescriptors(features, nSample), nWord);
-    //ArrayList<Word_f> words = bov.GetVisualWords();
+    printf("Compute Visual Words...\n");
+    BOV bov(SampleDescriptors(features, nSample), nWord);
+    ArrayList<Word_f> words = bov.GetVisualWords();
 
-    //FILE* file = fopen("tmp.txt", "w");
+    /*FILE* file = fopen("tmp.txt", "w");
 
-    //for (int i = 0; i < nImage; i++)
-    //{
-    //    fprintf(file, "%d\n", features[i].Count());
-    //    for (int j = 0; j < features[i].Count(); j++)
-    //    {
-    //        fprintf(file, "%d", features[i][j].Count());
-    //        for (int k = 0; k < features[i][j].Count(); k++)
-    //            fprintf(file, " %f", features[i][j][k]);
-    //        fprintf(file, "\n");
-    //    }
-    //}
+    for (int i = 0; i < nImage; i++)
+    {
+        fprintf(file, "%d\n", features[i].Count());
+        for (int j = 0; j < features[i].Count(); j++)
+        {
+            fprintf(file, "%d", features[i][j].Count());
+            for (int k = 0; k < features[i][j].Count(); k++)
+                fprintf(file, " %f", features[i][j][k]);
+            fprintf(file, "\n");
+        }
+    }
 
-    //for (int i = 0; i < nWord; i++)
-    //{
-    //    fprintf(file, "%d", words[i].Count());
-    //    for (int j = 0; j < words[i].Count(); j++)
-    //        fprintf(file, " %f", words[i][j]);
-    //    fprintf(file, "\n");
-    //}
+    for (int i = 0; i < nWord; i++)
+    {
+        fprintf(file, "%d", words[i].Count());
+        for (int j = 0; j < words[i].Count(); j++)
+            fprintf(file, " %f", words[i][j]);
+        fprintf(file, "\n");
+    }
 
-    // fclose(file);
+    fclose(file);*/
 
-    FILE* file = fopen("tmp.txt", "r");
+    /*FILE* file = fopen("tmp.txt", "r");
     ArrayList<LocalFeatureVec_f> features(nImage);
     ArrayList<Word_f> words(nWord);
 
@@ -543,12 +543,12 @@ int main()
         words[i] = word;
     }
 
-    fclose(file);
+    fclose(file);*/
 
-    //ArrayList<double> sigmas = bov.GetSigmas();
+    ArrayList<double> sigmas = bov.GetSigmas();
 
     printf("Compute Frequency Histograms...\n");
-    ArrayList<Histogram> histograms = FreqHist(features, words).GetFrequencyHistograms();
+    ArrayList<Histogram> histograms = FreqHist(features, words, sigmas).GetFrequencyHistograms();
     //for (LocalFeatureVec vec : FreqHist(features, words, sigmas).GetPoolingHistograms(2))
     //{
     //    Histogram histogram;

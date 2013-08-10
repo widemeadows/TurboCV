@@ -219,13 +219,36 @@ namespace System
                 else
                     return histograms = ComputeFrequencyHistograms(); 
             }
+
+            void ReleaseFrequencyHistograms()
+            {
+                histograms = ArrayList<Histogram>();
+            }
             
             ArrayList<LocalFeatureVec> GetPoolingHistograms(int nPool)
             {
-                if (pollFeatures.Count() != 0)
-                    return pollFeatures;
+                if (pools.Count() != 0)
+                    return pools;
                 else
-                    return pollFeatures = ComputePoolingHistograms(nPool);
+                    return pools = ComputePoolingHistograms(nPool);
+            }
+
+            void ReleasePoolingHistograms()
+            {
+                pools = ArrayList<LocalFeatureVec>();
+            }
+
+            ArrayList<LocalFeatureVec_f> GetReconstructedInputs()
+            {
+                if (reconstructed.Count() != 0)
+                    return reconstructed;
+                else
+                    return reconstructed = ComputeReconstructedInputs();
+            }
+
+            void ReleaseReconstructedInputs()
+            {
+                reconstructed = ArrayList<LocalFeatureVec_f>();
             }
 
         protected:
@@ -237,6 +260,10 @@ namespace System
 
             LocalFeatureVec ComputePoolingHistogram(const LocalFeatureVec_f& feature, int nPool);
 
+            ArrayList<LocalFeatureVec_f> ComputeReconstructedInputs();
+
+            LocalFeatureVec_f ComputeReconstructedInput(const LocalFeatureVec_f& feature);
+
             ArrayList<double> GetDistancesToVisualWords(const Descriptor_f& descriptor);
 
         private:
@@ -245,7 +272,8 @@ namespace System
             ArrayList<double> sigmas;
 
             ArrayList<Histogram> histograms;
-            ArrayList<LocalFeatureVec> pollFeatures;
+            ArrayList<LocalFeatureVec> pools;
+            ArrayList<LocalFeatureVec_f> reconstructed;
         };
 
         inline ArrayList<Descriptor_f> SampleDescriptors(const ArrayList<LocalFeatureVec_f>& features, 
