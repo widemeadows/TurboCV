@@ -466,8 +466,8 @@ int main()
 
     fclose(file);*/
 
-    ArrayList<TString> paths = Solver::LoadDataset("subset").Item1();
-    ArrayList<int> labels = Solver::LoadDataset("subset").Item2();
+    ArrayList<TString> paths = Solver::LoadDataset("sketches").Item1();
+    ArrayList<int> labels = Solver::LoadDataset("sketches").Item2();
     int nFold = 3, nImage = labels.Count(), nSample = 1000000, nWord = 1500;
 
     printf("ImageNum: %d, SampleNum: %d, WordNum: %d\n", nImage, nSample, nWord);
@@ -545,10 +545,28 @@ int main()
 
     fclose(file);*/
 
+
     ArrayList<double> sigmas = bov.GetSigmas();
 
     printf("Compute Frequency Histograms...\n");
+    //ArrayList<Histogram> histLevel1 = FreqHist(features, words).GetFrequencyHistograms();
+
+    //ArrayList<LocalFeatureVec_f> re = FreqHist(features, words).GetReconstructedInputs();
+    //ArrayList<Word_f> wordLevel2 = BOV(SampleDescriptors(re), 1500).GetVisualWords();
+    //ArrayList<Histogram> histLevel2 = FreqHist(re, wordLevel2).GetFrequencyHistograms();
+
+    //ArrayList<Histogram> histograms(nImage);
+    //for (int i = 0; i < nImage; i++)
+    //{
+    //    histograms[i].Add(histLevel1[i].begin(), histLevel1[i].end());
+    //    histograms[i].Add(histLevel2[i].begin(), histLevel2[i].end());
+
+    //    for (int j = histograms[i].Count() - 1; j >= 0; j--)
+    //        histograms[i][j] /= 2;
+    //}
+
     ArrayList<Histogram> histograms = FreqHist(features, words, sigmas).GetFrequencyHistograms();
+
     //for (LocalFeatureVec vec : FreqHist(features, words, sigmas).GetPoolingHistograms(2))
     //{
     //    Histogram histogram;

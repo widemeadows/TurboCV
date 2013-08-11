@@ -13,7 +13,7 @@ namespace System
         // BOV
         //////////////////////////////////////////////////////////////////////////
 
-        ArrayList<Word_f> BOV::GetVisualWords(
+        Group<ArrayList<Word_f>, ArrayList<size_t>> BOV::GetVisualWords(
             const ArrayList<Descriptor_f>& descriptors, 
             size_t clusterNum,
             cv::TermCriteria termCriteria)
@@ -30,23 +30,27 @@ namespace System
                 for (size_t j = 0; j < descriptorSize; j++)
                     samples.at<float>(i, j) = descriptors[i][j];
 
-            Mat labels(descriptorNum, 1, CV_32S);
+            Mat clusterIds(descriptorNum, 1, CV_32S);
             for (size_t i = 0; i < descriptorNum; i++)
-                labels.at<int>(i, 0) = 0;
+                clusterIds.at<int>(i, 0) = 0;
 
             Mat centers(clusterNum, descriptorSize, CV_32F);
             printf("K-Means Begin...\n");
-            kmeans(samples, clusterNum, labels, termCriteria, 1, KMEANS_PP_CENTERS, centers);
+            kmeans(samples, clusterNum, clusterIds, termCriteria, 1, KMEANS_PP_CENTERS, centers);
 
             ArrayList<Word_f> words(clusterNum);
             for (size_t i = 0; i < clusterNum; i++)
                 for (size_t j = 0; j < descriptorSize; j++)
                     words[i].Add(centers.at<float>(i, j));
 
-            return words;
+            ArrayList<size_t> labels(descriptorNum);
+            for (size_t i = 0; i < descriptorNum; i++)
+                labels[i] = clusterIds.at<int>(i, 0);
+
+            return CreateGroup(words, labels);
         }
 
-        ArrayList<double> BOV::GetSigmas(
+        ArrayList<double> BOV::GetEntropySigmas(
             const ArrayList<Descriptor_f>& descriptors,
             const ArrayList<Word_f>& words,
             double perplexity)
@@ -72,7 +76,7 @@ namespace System
                 double sumGDi = 0, H = 0, Hdiff = 0;
 
                 for (int j = 0; j < descriptorNum; j++)
-                    Di.at<double>(0, j) = Math::NormTwoDistance(words[i], descriptors[j]);
+                    Di.at<double>(0, j) = Math::NormTwoDistanceSqr(words[i], descriptors[j]);
 
                 for (int tries = 0; tries < 50; tries++) 
                 {
@@ -106,6 +110,36 @@ namespace System
                 }
 
                 sigmas[i] = std::sqrt(Si / 2);
+            }
+
+            return sigmas;
+        }
+
+        ArrayList<double> BOV::GetVarianceSigmas(
+            const ArrayList<Descriptor_f>& descriptors,
+            const ArrayList<size_t>& labels,
+            const ArrayList<Word_f>& words)
+        {
+            assert(descriptors.Count() > 0 && words.Count() > 0 && 
+                descriptors.Count() == labels.Count());
+
+            size_t descriptorNum = descriptors.Count();
+            size_t wordNum = words.Count();
+            ArrayList<double> sigmas(wordNum);
+
+            #pragma omp parallel for
+            for (int i = 0; i < wordNum; i++)
+            {
+                ArrayList<double> Di; // square of L2 distance
+
+                for (int j = 0; j < descriptorNum; j++)
+                {
+                    if (labels[j] == i)
+                        Di.Add(Math::NormTwoDistanceSqr(words[i], descriptors[j]));
+                }
+                
+                double std = sqrt(Math::Sum(Di) / Di.Count());
+                sigmas[i] = std / 3;
             }
 
             return sigmas;

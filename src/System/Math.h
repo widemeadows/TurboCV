@@ -51,6 +51,9 @@ namespace System
         static double NormOneDistance(const ArrayList<T>& u, const ArrayList<T>& v);
 
         template<typename T>
+        static double NormTwoDistanceSqr(const ArrayList<T>& u, const ArrayList<T>& v);
+
+        template<typename T>
         static double NormTwoDistance(const ArrayList<T>& u, const ArrayList<T>& v);
 
         template<typename T>
@@ -191,15 +194,21 @@ namespace System
     }
 
     template<typename T>
-    inline double Math::NormTwoDistance(const ArrayList<T>& u, const ArrayList<T>& v)
+    inline double Math::NormTwoDistanceSqr(const ArrayList<T>& u, const ArrayList<T>& v)
     {
         assert(u.Count() == v.Count());
 
-        double distance = 0;
+        double distanceSqr = 0;
         for (size_t i = 0; i < u.Count(); i++)
-            distance += (u[i] - v[i]) * (u[i] - v[i]);
+            distanceSqr += (u[i] - v[i]) * (u[i] - v[i]);
 
-        return std::sqrt(distance);
+        return distanceSqr;
+    }
+
+    template<typename T>
+    inline double Math::NormTwoDistance(const ArrayList<T>& u, const ArrayList<T>& v)
+    {
+        return std::sqrt(Math::NormTwoDistanceSqr(u, v));
     }
 
     template<typename T>

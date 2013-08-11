@@ -158,7 +158,27 @@ namespace System
                 if (words.Count() != 0)
                     return words; 
                 else
-                    return words = GetVisualWords(descriptors, clusterNum, termCriteria);
+                {
+                    auto result = GetVisualWords(descriptors, clusterNum, termCriteria);
+                    words = result.Item1();
+                    labels = result.Item2();
+
+                    return words;
+                }
+            }
+
+            ArrayList<size_t> GetWordLabels()
+            {
+                if (labels.Count() != 0)
+                    return labels;
+                else
+                {
+                    auto result = GetVisualWords(descriptors, clusterNum, termCriteria);
+                    words = result.Item1();
+                    labels = result.Item2();
+
+                    return labels;
+                }
             }
 
             ArrayList<double> GetSigmas()
@@ -166,19 +186,33 @@ namespace System
                 if (sigmas.Count() != 0)
                     return sigmas;
                 else
-                    return sigmas = GetSigmas(descriptors, words);
+                {
+                    if (words.Count() == 0)
+                    {
+                        auto result = GetVisualWords(descriptors, clusterNum, termCriteria);
+                        words = result.Item1();
+                        labels = result.Item2();
+                    }
+
+                    return sigmas = GetEntropySigmas(descriptors, words);
+                }
             }
 
         protected:
-            static ArrayList<Word_f> GetVisualWords(
+            static Group<ArrayList<Word_f>, ArrayList<size_t>> GetVisualWords(
                 const ArrayList<Descriptor_f>& descriptors, 
                 size_t clusterNum, 
                 cv::TermCriteria termCriteria);
 
-            static ArrayList<double> GetSigmas(
+            static ArrayList<double> GetEntropySigmas(
                 const ArrayList<Descriptor_f>& descriptors,
                 const ArrayList<Word_f>& words,
                 double perplexity = 20);
+
+            static ArrayList<double> GetVarianceSigmas(
+                const ArrayList<Descriptor_f>& descriptors,
+                const ArrayList<size_t>& labels,
+                const ArrayList<Word_f>& words);
 
         private:
             ArrayList<Descriptor_f> descriptors;
@@ -186,6 +220,7 @@ namespace System
             cv::TermCriteria termCriteria;
 
             ArrayList<Word_f> words;
+            ArrayList<size_t> labels;
             ArrayList<double> sigmas;
         };
 
