@@ -108,7 +108,7 @@ namespace System
                     double sum = 0;
                     for (int k = 0; k < d; k++)
                         sum += (mat.at<double>(i, k) - mat.at<double>(j, k)) *
-                        (mat.at<double>(i, k) - mat.at<double>(j, k));
+                            (mat.at<double>(i, k) - mat.at<double>(j, k));
 
                     D.at<double>(i, j) = D.at<double>(j, i) = sum;
                 }
@@ -304,7 +304,7 @@ namespace System
                     double sum = 0;
                     for (int k = 0; k < d; k++)
                         sum += (mat.at<double>(i, k) - mat.at<double>(j, k)) *
-                        (mat.at<double>(i, k) - mat.at<double>(j, k));
+                            (mat.at<double>(i, k) - mat.at<double>(j, k));
 
                     D.at<double>(i, j) = D.at<double>(j, i) = sum;
                 }

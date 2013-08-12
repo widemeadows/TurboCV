@@ -194,7 +194,7 @@ namespace System
                         labels = result.Item2();
                     }
 
-                    return sigmas = GetEntropySigmas(descriptors, words);
+                    return sigmas = GetVarianceSigmas(descriptors, labels, words);
                 }
             }
 
@@ -207,7 +207,7 @@ namespace System
             static ArrayList<double> GetEntropySigmas(
                 const ArrayList<Descriptor_f>& descriptors,
                 const ArrayList<Word_f>& words,
-                double perplexity = 20);
+                double perplexity = 60);
 
             static ArrayList<double> GetVarianceSigmas(
                 const ArrayList<Descriptor_f>& descriptors,

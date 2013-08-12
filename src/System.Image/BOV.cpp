@@ -242,7 +242,7 @@ namespace System
             size_t wordNum = words.Count();
             size_t descriptorNum = feature.Count();
             size_t descriptorSize = feature[0].Count();
-            LocalFeatureVec reconstructed;
+            LocalFeatureVec reconstructed(descriptorNum);
 
             for (size_t i = 0; i < descriptorNum; i++)
             {
@@ -253,7 +253,7 @@ namespace System
                     for (size_t k = 0; k < wordNum; k++)
                         reDescriptor[j] += distances[k] * words[k][j];
                 
-                reconstructed.Add(reDescriptor);
+                reconstructed[i] = reDescriptor;
             }
 
             LocalFeatureVec_f result;

@@ -39,6 +39,12 @@ namespace System
         static double NormTwo(const ArrayList<T>& vec);
 
         template<typename T>
+        static ArrayList<T> Add(const ArrayList<T>& u, const ArrayList<T>& v);
+
+        template<typename T>
+        static ArrayList<T> Sub(const ArrayList<T>& u, const ArrayList<T>& v);
+
+        template<typename T>
         static T Dot(const ArrayList<T>& u, const ArrayList<T>& v);
 
         template<typename T>
@@ -148,6 +154,30 @@ namespace System
 
         if (result)
             result = std::sqrt(result);
+
+        return result;
+    }
+
+    template<typename T>
+    inline ArrayList<T> Math::Add(const ArrayList<T>& u, const ArrayList<T>& v)
+    {
+        assert(u.Count() == v.Count());
+        ArrayList<T> result(u.Count());
+
+        for (int i = u.Count() - 1; i >= 0; i--)
+            result[i] = u[i] + v[i];
+
+        return result;
+    }
+
+    template<typename T>
+    inline ArrayList<T> Math::Sub(const ArrayList<T>& u, const ArrayList<T>& v)
+    {
+        assert(u.Count() == v.Count());
+        ArrayList<T> result(u.Count());
+
+        for (int i = u.Count() - 1; i >= 0; i--)
+            result[i] = u[i] - v[i];
 
         return result;
     }
