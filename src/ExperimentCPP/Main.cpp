@@ -466,8 +466,8 @@ int main()
 
     fclose(file);*/
 
-    ArrayList<TString> paths = Solver::LoadDataset("subset").Item1();
-    ArrayList<int> labels = Solver::LoadDataset("subset").Item2();
+    ArrayList<TString> paths = Solver::LoadDataset("sketches").Item1();
+    ArrayList<int> labels = Solver::LoadDataset("sketches").Item2();
     int nFold = 3, nImage = labels.Count(), nSample = 1000000, nWord = 1500;
 
     printf("ImageNum: %d, SampleNum: %d, WordNum: %d\n", nImage, nSample, nWord);
@@ -553,7 +553,7 @@ int main()
 
     printf("Compute Reconstructed...\n");
     ArrayList<LocalFeatureVec_f> re = FreqHist(features, words).GetReconstructedInputs();
-    
+
     printf("Compute Error...\n");
     ArrayList<LocalFeatureVec_f> newFeatures(nImage);
     #pragma omp parallel for
@@ -561,16 +561,25 @@ int main()
     {
         LocalFeatureVec_f newFeature;
         for (int j = 0; j < re[i].Count(); j++)
-            newFeature.Add(Math::Sub(features[i][j], re[i][j]));
+        {
+            double projLen = Math::Dot(features[i][j], re[i][j]) / Math::NormTwo(re[i][j]);
+            Descriptor_f proj = Math::Mul(re[i][j], projLen / Math::NormTwo(re[i][j]));
+            Descriptor_f orth = Math::Sub(features[i][j], proj);
+
+            NormTwoNormalize(orth.begin(), orth.end());
+            newFeature.Add(Math::Sub(features[i][j], orth));
+        }
 
         newFeatures[i] = newFeature;
     }
 
     printf("Compute Visual Words...\n");
-    ArrayList<Word_f> wordLevel2 = BOV(SampleDescriptors(newFeatures), 1500).GetVisualWords();
+    ArrayList<Word_f> wordLevel2 = BOV(SampleDescriptors(newFeatures, 1000000), 1500, 200, 1e-4).GetVisualWords();
 
     printf("Compute Frequency Histograms...\n");
-    ArrayList<Histogram> histLevel2 = FreqHist(re, wordLevel2).GetFrequencyHistograms();
+    ArrayList<Histogram> histLevel2 = FreqHist(newFeatures, wordLevel2).GetFrequencyHistograms();
+    //for (int i = 0; i < nImage; i++)
+    //    histLevel2[i] = Math::Mul(histLevel2[i], 0.4);
 
     ArrayList<Histogram> histograms(nImage);
     for (int i = 0; i < nImage; i++)
@@ -578,11 +587,11 @@ int main()
         histograms[i].Add(histLevel1[i].begin(), histLevel1[i].end());
         histograms[i].Add(histLevel2[i].begin(), histLevel2[i].end());
 
-        for (int j = histograms[i].Count() - 1; j >= 0; j--)
+        for (int j = histograms[i].Count(); j >= 0; j--)
             histograms[i][j] /= 2;
     }
 
-    //ArrayList<Histogram> histograms = FreqHist(features, words, sigmas).GetFrequencyHistograms();
+    //ArrayList<Histogram> histograms = FreqHist(features, words).GetFrequencyHistograms();
 
     //for (LocalFeatureVec vec : FreqHist(features, words, sigmas).GetPoolingHistograms(2))
     //{

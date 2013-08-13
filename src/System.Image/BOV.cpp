@@ -249,7 +249,7 @@ namespace System
                 ArrayList<double> distances = GetDistancesToVisualWords(feature[i]);
 
                 Descriptor reDescriptor(descriptorSize);
-                for (size_t j = 0; j < descriptorSize; i++)
+                for (size_t j = 0; j < descriptorSize; j++)
                     for (size_t k = 0; k < wordNum; k++)
                         reDescriptor[j] += distances[k] * words[k][j];
                 
