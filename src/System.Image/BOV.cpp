@@ -260,6 +260,33 @@ namespace System
             Convert(reconstructed, result);
             return result;
         }
+        
+        ArrayList<LocalFeatureVec_f> FreqHist::ComputeReconstructErrors()
+        {
+            size_t imageNum = features.Count();
+            ArrayList<LocalFeatureVec_f> reconstructed(imageNum);
+
+            #pragma omp parallel for schedule(dynamic)
+            for (int i = 0; i < imageNum; i++)
+                reconstructed[i] = ComputeReconstructError(features[i]);
+
+            return reconstructed;
+        }
+
+        LocalFeatureVec_f FreqHist::ComputeReconstructError(const LocalFeatureVec_f& feature)
+        {
+            size_t descriptorNum = feature.Count();
+            LocalFeatureVec_f re = ComputeReconstructedInput(feature);
+            LocalFeatureVec_f error(descriptorNum);
+
+            for (size_t i = 0; i < descriptorNum; i++)
+            {
+                error[i] = Math::Sub(feature[i], re[i]);
+                NormTwoNormalize(error[i].begin(), error[i].end());
+            }
+
+            return error;
+        }
 
         ArrayList<double> FreqHist::GetDistancesToVisualWords(const Descriptor_f& descriptor)
         {

@@ -275,29 +275,42 @@ namespace System
 
             ArrayList<LocalFeatureVec_f> GetReconstructedInputs()
             {
-                if (reconstructed.Count() != 0)
-                    return reconstructed;
+                if (reconstructeds.Count() != 0)
+                    return reconstructeds;
                 else
-                    return reconstructed = ComputeReconstructedInputs();
+                    return reconstructeds = ComputeReconstructedInputs();
             }
 
             void ReleaseReconstructedInputs()
             {
-                reconstructed = ArrayList<LocalFeatureVec_f>();
+                reconstructeds = ArrayList<LocalFeatureVec_f>();
+            }
+
+            ArrayList<LocalFeatureVec_f> GetReconstructErrors()
+            {
+                if (errors.Count() != 0)
+                    return errors;
+                else
+                    return errors = ComputeReconstructErrors();
+            }
+
+            void ReleaseReconstructErrors()
+            {
+                errors = ArrayList<LocalFeatureVec_f>();
             }
 
         protected:
             ArrayList<Histogram> ComputeFrequencyHistograms();
-
             Histogram ComputeFrequencyHistogram(const LocalFeatureVec_f& feature);
 
             ArrayList<LocalFeatureVec> ComputePoolingHistograms(int nPool);
-
             LocalFeatureVec ComputePoolingHistogram(const LocalFeatureVec_f& feature, int nPool);
 
             ArrayList<LocalFeatureVec_f> ComputeReconstructedInputs();
-
             LocalFeatureVec_f ComputeReconstructedInput(const LocalFeatureVec_f& feature);
+
+            ArrayList<LocalFeatureVec_f> ComputeReconstructErrors();
+            LocalFeatureVec_f ComputeReconstructError(const LocalFeatureVec_f& feature);
 
             ArrayList<double> GetDistancesToVisualWords(const Descriptor_f& descriptor);
 
@@ -308,7 +321,8 @@ namespace System
 
             ArrayList<Histogram> histograms;
             ArrayList<LocalFeatureVec> pools;
-            ArrayList<LocalFeatureVec_f> reconstructed;
+            ArrayList<LocalFeatureVec_f> reconstructeds;
+            ArrayList<LocalFeatureVec_f> errors;
         };
 
         inline ArrayList<Descriptor_f> SampleDescriptors(const ArrayList<LocalFeatureVec_f>& features, 

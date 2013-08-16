@@ -466,35 +466,35 @@ int main()
 
     fclose(file);*/
 
-    ArrayList<TString> paths = Solver::LoadDataset("sketches").Item1();
-    ArrayList<int> labels = Solver::LoadDataset("sketches").Item2();
+    ArrayList<TString> paths = Solver::LoadDataset("subset").Item1();
+    ArrayList<int> labels = Solver::LoadDataset("subset").Item2();
     int nFold = 3, nImage = labels.Count(), nSample = 1000000, nWord = 1500;
 
     printf("ImageNum: %d, SampleNum: %d, WordNum: %d\n", nImage, nSample, nWord);
 
-    ArrayList<LocalFeatureVec_f> features(nImage);
+    //ArrayList<LocalFeatureVec_f> feaLevel1(nImage);
 
-    #pragma omp parallel for
-    for (int i = 0; i < nImage; i++)
-    {
-        cv::Mat image = cv::imread(paths[i], CV_LOAD_IMAGE_GRAYSCALE); 
-        Convert(RGabor()(sketchPreprocess(image)), features[i]);
-    }
+    //#pragma omp parallel for
+    //for (int i = 0; i < nImage; i++)
+    //{
+    //    cv::Mat image = cv::imread(paths[i], CV_LOAD_IMAGE_GRAYSCALE); 
+    //    Convert(RGabor()(sketchPreprocess(image)), feaLevel1[i]);
+    //}
 
-    printf("Compute Visual Words...\n");
-    BOV bov(SampleDescriptors(features, nSample), nWord);
-    ArrayList<Word_f> words = bov.GetVisualWords();
+    //printf("Compute Visual Words...\n");
+    //BOV bov(SampleDescriptors(feaLevel1, nSample), nWord);
+    //ArrayList<Word_f> words = bov.GetVisualWords();
 
     /*FILE* file = fopen("tmp.txt", "w");
 
     for (int i = 0; i < nImage; i++)
     {
-        fprintf(file, "%d\n", features[i].Count());
-        for (int j = 0; j < features[i].Count(); j++)
+        fprintf(file, "%d\n", feaLevel1[i].Count());
+        for (int j = 0; j < feaLevel1[i].Count(); j++)
         {
-            fprintf(file, "%d", features[i][j].Count());
-            for (int k = 0; k < features[i][j].Count(); k++)
-                fprintf(file, " %f", features[i][j][k]);
+            fprintf(file, "%d", feaLevel1[i][j].Count());
+            for (int k = 0; k < feaLevel1[i][j].Count(); k++)
+                fprintf(file, " %f", feaLevel1[i][j][k]);
             fprintf(file, "\n");
         }
     }
@@ -509,8 +509,8 @@ int main()
 
     fclose(file);*/
 
-    /*FILE* file = fopen("tmp.txt", "r");
-    ArrayList<LocalFeatureVec_f> features(nImage);
+    FILE* file = fopen("tmp.txt", "r");
+    ArrayList<LocalFeatureVec_f> feaLevel1(nImage);
     ArrayList<Word_f> words(nWord);
 
     for (int i = 0; i < nImage; i++)
@@ -527,7 +527,7 @@ int main()
             for (int k = 0; k < descSize; k++)
                 fscanf(file, "%f", &desc[k]);
 
-            features[i].Add(desc);
+            feaLevel1[i].Add(desc);
         }
     }
 
@@ -543,43 +543,22 @@ int main()
         words[i] = word;
     }
 
-    fclose(file);*/
+    fclose(file);
 
 
     //ArrayList<double> sigmas = bov.GetSigmas();
 
     printf("Compute Frequency Histograms...\n");
-    ArrayList<Histogram> histLevel1 = FreqHist(features, words).GetFrequencyHistograms();
-
-    printf("Compute Reconstructed...\n");
-    ArrayList<LocalFeatureVec_f> re = FreqHist(features, words).GetReconstructedInputs();
+    ArrayList<Histogram> histLevel1 = FreqHist(feaLevel1, words).GetFrequencyHistograms();
 
     printf("Compute Error...\n");
-    ArrayList<LocalFeatureVec_f> newFeatures(nImage);
-    #pragma omp parallel for
-    for (int i = 0; i < nImage; i++)
-    {
-        LocalFeatureVec_f newFeature;
-        for (int j = 0; j < re[i].Count(); j++)
-        {
-            double projLen = Math::Dot(features[i][j], re[i][j]) / Math::NormTwo(re[i][j]);
-            Descriptor_f proj = Math::Mul(re[i][j], projLen / Math::NormTwo(re[i][j]));
-            Descriptor_f orth = Math::Sub(features[i][j], proj);
-
-            NormTwoNormalize(orth.begin(), orth.end());
-            newFeature.Add(Math::Sub(features[i][j], orth));
-        }
-
-        newFeatures[i] = newFeature;
-    }
+    ArrayList<LocalFeatureVec_f> feaLevel2 = FreqHist(feaLevel1, words).GetReconstructErrors();
 
     printf("Compute Visual Words...\n");
-    ArrayList<Word_f> wordLevel2 = BOV(SampleDescriptors(newFeatures, 1000000), 1500, 200, 1e-4).GetVisualWords();
+    ArrayList<Word_f> wordLevel2 = BOV(SampleDescriptors(feaLevel2, nSample), nWord, 200, 1e-4).GetVisualWords();
 
     printf("Compute Frequency Histograms...\n");
-    ArrayList<Histogram> histLevel2 = FreqHist(newFeatures, wordLevel2).GetFrequencyHistograms();
-    //for (int i = 0; i < nImage; i++)
-    //    histLevel2[i] = Math::Mul(histLevel2[i], 0.4);
+    ArrayList<Histogram> histLevel2 = FreqHist(feaLevel2, wordLevel2).GetFrequencyHistograms();
 
     ArrayList<Histogram> histograms(nImage);
     for (int i = 0; i < nImage; i++)
@@ -590,19 +569,6 @@ int main()
         for (int j = histograms[i].Count(); j >= 0; j--)
             histograms[i][j] /= 2;
     }
-
-    //ArrayList<Histogram> histograms = FreqHist(features, words).GetFrequencyHistograms();
-
-    //for (LocalFeatureVec vec : FreqHist(features, words, sigmas).GetPoolingHistograms(2))
-    //{
-    //    Histogram histogram;
-    //    for (Descriptor desc : vec)
-    //        for (double item : desc)
-    //            histogram.Add(item / vec.Count());
-
-    //    histograms.Add(histogram);
-    //}
-    //printf("%d %d\n", histograms.Count(), histograms[0].Count());
 
     ArrayList<ArrayList<size_t>> pass = RandomSplit(nImage, nFold);
     for (int i = 0; i < nFold; i++)
