@@ -29,37 +29,46 @@ namespace System
                 this->Preprocess = preprocess;
             }
 
-            void LoadData()
+            void CrossValidation(int nFold = 3)
             {
-                doc = LoadConfiguration(configFilePath);
-
+                srand(1);
+                
                 auto dataset = LoadDataset(datasetPath);
                 paths = dataset.Item1();
                 labels = dataset.Item2();
+
+                params = LoadConfiguration(configFilePath, FeatureName());
+
+                trainingIdxes = SplitDatasetRandomly(labels, nFold);
+
+                InnerCrossValidation(paths, labels, params, trainingIdxes);
             }
 
-            static System::XML::TiXmlDocument LoadConfiguration(const TString& configFilePath);
-            static Group<ArrayList<TString>, ArrayList<int>> LoadDataset(const TString& datasetPath);
-
-            std::map<TString, TString> GetConfiguration(const TString& featureName);
             ArrayList<TString> GetPaths() { return paths; }
             ArrayList<int> GetLabels() { return labels; }
-
-            virtual void CrossValidation(int nFold = 3) = 0;
+            std::map<TString, TString> GetConfigParams() { return params; }
+            ArrayList<ArrayList<size_t>> GetTrainingIdxes() { return trainingIdxes; }
 
         protected:
             cv::Mat (*Preprocess)(const cv::Mat&);
 
-            ArrayList<ArrayList<size_t>> SplitDatasetRandomly(int nFold);
-            ArrayList<ArrayList<size_t>> SplitDatasetEqually(int nFold);
+            virtual void InnerCrossValidation(
+                const ArrayList<TString>& paths,
+                const ArrayList<int>& labels,
+                const std::map<TString, TString>& params,
+                const ArrayList<ArrayList<size_t>>& trainingIdxes) = 0;
 
-        private:
+            virtual TString FeatureName() = 0;
+
             TString datasetPath;
             TString configFilePath;
 
-            System::XML::TiXmlDocument doc;
             ArrayList<TString> paths;
             ArrayList<int> labels;
+
+            std::map<TString, TString> params;
+
+            ArrayList<ArrayList<size_t>> trainingIdxes;
         };
 
 
@@ -77,25 +86,34 @@ namespace System
                 const TString& configFilePath = "config.xml"):
                 Solver(preprocess, datasetPath, configFilePath) {}
 
-            virtual void CrossValidation(int nFold = 3);
             ArrayList<double> GetPrecisions() { return precisions; }
             ArrayList<Word_f> GetWords() { return words; }
             ArrayList<Histogram> GetHistograms() { return histograms; }
 
-        private:
+        protected:
+            virtual void InnerCrossValidation(
+                const ArrayList<TString>& paths,
+                const ArrayList<int>& labels,
+                const std::map<TString, TString>& params,
+                const ArrayList<ArrayList<size_t>>& trainingIdxes);
+
+            virtual TString FeatureName()
+            {
+                return LocalFeature().GetName();
+            }
+
             ArrayList<double> precisions;
             ArrayList<Word_f> words;
             ArrayList<Histogram> histograms;
         };
 
         template<typename LocalFeature>
-        void LocalFeatureSolver<LocalFeature>::CrossValidation(int nFold)
+        void LocalFeatureSolver<LocalFeature>::InnerCrossValidation(
+            const ArrayList<TString>& paths,
+            const ArrayList<int>& labels,
+            const std::map<TString, TString>& params,
+            const ArrayList<ArrayList<size_t>>& trainingIdxes)
         {
-            srand(1);
-            LoadData();
-            ArrayList<TString> paths = GetPaths();
-            ArrayList<int> labels = GetLabels();
-            std::map<TString, TString> params = GetConfiguration(LocalFeature().GetName());
             int nImage = paths.Count(), 
                 nSample = GetDoubleValue(params, "inputNum", 1000000),
                 nWord = GetDoubleValue(params, "wordNum", 500);
@@ -111,16 +129,15 @@ namespace System
             {
                 LocalFeature machine(params);
                 cv::Mat image = cv::imread(paths[i], CV_LOAD_IMAGE_GRAYSCALE); 
-                Convert(machine(Preprocess(image)), features[i]);
+                Convert(machine(Preprocess != NULL ? Preprocess(image) : image), features[i]);
             }
 
-            ArrayList<ArrayList<size_t>> pass = SplitDatasetEqually(nFold);
             double maxPrecision = -1;
             this->precisions.Clear();
-            for (int i = 0; i < nFold; i++)
+            for (int i = 0; i < trainingIdxes.Count(); i++)
             {
                 printf("\nBegin Fold %d...\n", i + 1);
-                ArrayList<size_t>& pickUpIndexes = pass[i];
+                const ArrayList<size_t>& pickUpIndexes = trainingIdxes[i];
                 ArrayList<LocalFeatureVec_f> trainingSet = Divide(features, pickUpIndexes).Item2();
                 ArrayList<int> trainingLabels = Divide(labels, pickUpIndexes).Item2();
                 ArrayList<int> evaluationLabels = Divide(labels, pickUpIndexes).Item1();
@@ -146,7 +163,8 @@ namespace System
                 printf("Fold %d Accuracy: %f\n", i + 1, this->precisions[i]);
             }
 
-            printf("\nAverage: %f, Standard Deviation: %f\n", Math::Mean(precisions), Math::StandardDeviation(precisions));
+            printf("\nAverage: %f, Standard Deviation: %f\n", Math::Mean(precisions), 
+                Math::StandardDeviation(precisions));
         }
 
 
@@ -164,9 +182,20 @@ namespace System
                 const TString& configFilePath = "config.xml"):
                 Solver(preprocess, datasetPath, configFilePath) {}
 
-            virtual void CrossValidation(int nFold = 3);
             ArrayList<double> GetPrecisions() { return precisions; }
             ArrayList<GlobalFeatureVec_f> GetFeatures() { return features; }
+
+        protected:
+            virtual void InnerCrossValidation(
+                const ArrayList<TString>& paths,
+                const ArrayList<int>& labels,
+                const std::map<TString, TString>& params,
+                const ArrayList<ArrayList<size_t>>& trainingIdxes);
+
+            virtual TString FeatureName()
+            {
+                return GlobalFeature().GetName();
+            }
 
         private:
             ArrayList<double> precisions;
@@ -174,13 +203,12 @@ namespace System
         };
 
         template<typename GlobalFeature>
-        void GlobalFeatureSolver<GlobalFeature>::CrossValidation(int nFold)
+        void GlobalFeatureSolver<GlobalFeature>::InnerCrossValidation(
+            const ArrayList<TString>& paths,
+            const ArrayList<int>& labels,
+            const std::map<TString, TString>& params,
+            const ArrayList<ArrayList<size_t>>& trainingIdxes)
         {
-            srand(1);
-            LoadData();
-            ArrayList<TString> paths = GetPaths();
-            ArrayList<int> labels = GetLabels();
-            std::map<TString, TString> params = GetConfiguration(GlobalFeature().GetName());
             int nImage = paths.Count();
 
             printf("ImageNum: %d\n", nImage);
@@ -194,18 +222,17 @@ namespace System
             {
                 GlobalFeature machine(params);
                 cv::Mat image = cv::imread(paths[i], CV_LOAD_IMAGE_GRAYSCALE); 
-                Convert(machine(Preprocess(image)), features[i]);
+                Convert(machine(Preprocess != NULL ? Preprocess(image) : image), features[i]);
             }
 
             this->features = features;
 
-            ArrayList<ArrayList<size_t>> pass = SplitDatasetEqually(nFold);
             double maxPrecision = -1;
             this->precisions.Clear();
-            for (int i = 0; i < nFold; i++)
+            for (int i = 0; i < trainingIdxes.Count(); i++)
             {
                 printf("\nBegin Fold %d...\n", i + 1);
-                ArrayList<size_t>& pickUpIndexes = pass[i];
+                const ArrayList<size_t>& pickUpIndexes = trainingIdxes[i];
                 ArrayList<GlobalFeatureVec_f> trainingSet = Divide(features, pickUpIndexes).Item2();
                 ArrayList<GlobalFeatureVec_f> evaluationSet = Divide(features, pickUpIndexes).Item1();
                 ArrayList<int> trainingLabels = Divide(labels, pickUpIndexes).Item2();
@@ -217,7 +244,8 @@ namespace System
                 printf("Fold %d Accuracy: %f\n", i + 1, this->precisions[i]);
             }
 
-            printf("\nAverage: %f, Standard Deviation: %f\n", Math::Mean(precisions), Math::StandardDeviation(precisions));
+            printf("\nAverage: %f, Standard Deviation: %f\n", Math::Mean(precisions), 
+                Math::StandardDeviation(precisions));
         }
     }
 }

@@ -24,7 +24,7 @@
     <ClCompile Include="Feature.cpp" />
     <ClCompile Include="Geometry.cpp" />
     <ClCompile Include="GrayImage.cpp" />
-    <ClCompile Include="Solver.cpp" />
+    <ClCompile Include="ConfigAndData.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="EdgeMatching.h" />

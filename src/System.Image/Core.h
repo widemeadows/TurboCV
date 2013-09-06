@@ -1,6 +1,7 @@
 #pragma once
 
 #include "../System/System.h"
+#include "../System.XML/System.XML.h"
 #include <cv.h>
 
 namespace TurboCV
@@ -60,8 +61,10 @@ namespace System
 
 		ArrayList<Edge> EdgeLink(const cv::Mat& binaryImage, int minLength = 10);
 
-        ArrayList<cv::Point> GetEdgels(const cv::Mat& binaryImage);
         cv::Mat GetBoundingBox(const cv::Mat& binaryImage);
+        ArrayList<cv::Point> GetEdgels(const cv::Mat& binaryImage);
+        ArrayList<ArrayList<cv::Point>> GetEdgelChannels(const cv::Mat& binaryImage, 
+            int orientNum, int sigma = 9, int lambda = 24);
         ArrayList<cv::Point> SampleOnShape(const cv::Mat& binaryImage, size_t samplingNum);
 
 
@@ -71,13 +74,12 @@ namespace System
 
 		cv::Mat reverse(cv::Mat image);
         cv::Mat FFTShift(const cv::Mat& image);
-        void ConvolveDFT(cv::InputArray src, cv::OutputArray dst, int ddepth, cv::InputArray kernel);
+        void ConvolveFFT(cv::InputArray src, cv::OutputArray dst, int ddepth, cv::InputArray kernel);
         cv::Mat imshow(const cv::Mat& image, bool scale = true);
 
         Group<cv::Mat, cv::Mat> GetGradientKernel(double sigma, double epsilon);
         Group<cv::Mat, cv::Mat> GetGradient(const cv::Mat& image, double sigma = 1.0);
         ArrayList<cv::Mat> GetOrientChannels(const cv::Mat& image, int orientNum);
-
         ArrayList<cv::Mat> GetGaborChannels(const cv::Mat& image, int orientNum, int sigma = 4, int lambda = 10);
 
         cv::Mat GetLoGKernel(int ksize, double sigma, int ktype = CV_64F);
@@ -136,6 +138,33 @@ namespace System
 				} while (++curr != end);
 			}
 		}
+
+
+        //////////////////////////////////////////////////////////////////////////
+        // APIs for Configurations
+        //////////////////////////////////////////////////////////////////////////
+
+        std::map<TString, TString> LoadConfiguration(const TString& configFilePath, const TString& featureName);
+
+        double GetDoubleValue(
+            const std::map<TString, TString>& params, 
+            const TString& paramName, 
+            const double defaultValue);
+
+        ArrayList<double> GetDoubleList(
+            const std::map<TString, TString>& params, 
+            const TString& paramName, 
+            const ArrayList<double>& defaultValue);
+
+
+        //////////////////////////////////////////////////////////////////////////
+        // APIs for Datasets
+        //////////////////////////////////////////////////////////////////////////
+
+        Group<ArrayList<TString>, ArrayList<int>> LoadDataset(const TString& datasetPath);
+
+        ArrayList<ArrayList<size_t>> SplitDatasetRandomly(const ArrayList<int> labels, int nFold);
+        ArrayList<ArrayList<size_t>> SplitDatasetEqually(const ArrayList<int> labels, int nFold);
 
 
         //////////////////////////////////////////////////////////////////////////

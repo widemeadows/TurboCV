@@ -3,7 +3,6 @@
 #include "../System/System.h"
 #include "Core.h"
 #include <cv.h>
-#include <map>
 
 namespace TurboCV
 {
@@ -11,45 +10,6 @@ namespace System
 {
     namespace Image
     {
-        //////////////////////////////////////////////////////////////////////////
-        // APIs for Helper Functions
-        //////////////////////////////////////////////////////////////////////////
-
-        inline double GetDoubleValue(
-            const std::map<TString, TString>& params, 
-            const TString& paramName, 
-            const double defaultValue)
-        {
-            std::map<TString, TString>::const_iterator itr = params.find(paramName);
-
-            if (itr == params.end())
-                return defaultValue;
-            else
-                return Double::Parse(itr->second);
-        }
-
-        inline ArrayList<double> GetDoubleList(
-            const std::map<TString, TString>& params, 
-            const TString& paramName, 
-            const ArrayList<double>& defaultValue)
-        {
-            std::map<TString, TString>::const_iterator itr = params.find(paramName);
-
-            if (itr == params.end())
-                return defaultValue;
-            else
-            {
-                ArrayList<TString> tokens = itr->second.Split(" ,");
-                ArrayList<double> values(tokens.Count());
-
-                for (int i = tokens.Count() - 1; i >= 0; i--)
-                    values[i] = Double::Parse(tokens[i]);
-
-                return values;
-            }
-        }
-
-
         //////////////////////////////////////////////////////////////////////////
         // APIs for Save Features
         //////////////////////////////////////////////////////////////////////////

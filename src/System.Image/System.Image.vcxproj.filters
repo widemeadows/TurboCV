@@ -30,7 +30,7 @@
     <ClCompile Include="GrayImage.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
-    <ClCompile Include="Solver.cpp">
+    <ClCompile Include="ConfigAndData.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
   </ItemGroup>

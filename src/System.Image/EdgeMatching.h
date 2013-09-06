@@ -243,15 +243,15 @@ namespace System
         ///////////////////////////////////////////////////////////////////////
 
         // Hitmap Matching
-        class Hitmap
+        /*class Hitmap
         {
         public:
             typedef ArrayList<Group<ArrayList<cv::Point>, cv::Mat>> Info;
 
             Info GetFeature(const cv::Mat& sketchImage);
 
+            ArrayList<ArrayList<Point>> GetChannels(int orientNum, )
             static double GetDistance(const Info& u, const Info& v);
-            static ArrayList<ArrayList<cv::Point>> GetChannels(const cv::Mat& sketchImage, int orientNum);
 
             virtual TString GetName() const { return "hit"; };
 
@@ -293,48 +293,10 @@ namespace System
             else
                 return 1 - sqrt((uToV / uPointNum) * (vToU / vPointNum));
         }
-
-        inline ArrayList<ArrayList<cv::Point>> Hitmap::GetChannels(const cv::Mat& sketchImage, int orientNum)
-        {
-            int sigma = 9, lambda = 24, ksize = sigma * 6 + 1;
-            ArrayList<cv::Mat> tmp(orientNum);
-
-            for (int i = 0; i < orientNum; i++)
-            {
-                cv::Mat kernel = getGaborKernel(cv::Size(ksize, ksize), sigma, 
-                    CV_PI / orientNum * i, lambda, 1, 0);
-
-                filter2D(sketchImage, tmp[i], CV_64F, kernel);
-                tmp[i] = abs(tmp[i]);
-            }
-
-            ArrayList<cv::Point> points = GetEdgels(sketchImage);
-
-            ArrayList<ArrayList<cv::Point>> channels(orientNum);
-            for (int i = 0; i < points.Count(); i++)
-            {
-                double maxResponse = -INF;
-                int index = -1;
-
-                for (int j = 0; j < orientNum; j++)
-                {
-                    if (tmp[j].at<double>(points[i].y, points[i].x) > maxResponse)
-                    {
-                        maxResponse = tmp[j].at<double>(points[i].y, points[i].x);
-                        index = j;
-                    }
-                }
-
-                assert(index >= 0 && index < orientNum);
-                channels[index].Add(points[i]);
-            }
-
-            return channels;
-        }
-
+        
         inline Hitmap::Info Hitmap::Transform(const cv::Mat& sketchImage, double maxDistance)
         {
-            ArrayList<ArrayList<cv::Point>> channels = GetChannels(sketchImage, 6);
+            ArrayList<ArrayList<cv::Point>> channels = GetEdgelChannels(sketchImage, 6);
             Info result(channels.Count());
 
             for (size_t i = 0; i < channels.Count(); i++)
@@ -370,7 +332,7 @@ namespace System
             }
 
             return result;
-        }
+        }*/
     }
 }
 }

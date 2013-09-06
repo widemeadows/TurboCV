@@ -55,7 +55,7 @@ namespace System
             return result;
         }
 
-        void ConvolveDFT(InputArray src, OutputArray dst, int ddepth, InputArray kernel)
+        void ConvolveFFT(InputArray src, OutputArray dst, int ddepth, InputArray kernel)
         {
             Mat A = src.getMat(), B = kernel.getMat();
             if (ddepth != -1)

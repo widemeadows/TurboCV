@@ -417,18 +417,6 @@ namespace System
 		// Others
 		//////////////////////////////////////////////////////////////////////////
 
-		ArrayList<Point> GetEdgels(const Mat& binaryImage)
-		{
-			ArrayList<Point> points;
-
-			for (int i = 0; i < binaryImage.rows; i++)
-				for (int j = 0; j < binaryImage.cols; j++)
-					if (binaryImage.at<uchar>(i, j))
-						points.Add(Point(j, i));
-
-			return points;
-		}
-
         Mat GetBoundingBox(const Mat& binaryImage)
         {
             int minX = binaryImage.cols - 1, maxX = 0,
@@ -446,7 +434,46 @@ namespace System
                     }
                 }
 
-            return Mat(binaryImage, Range(minY, maxY + 1), Range(minX, maxX + 1));
+                return Mat(binaryImage, Range(minY, maxY + 1), Range(minX, maxX + 1));
+        }
+
+		ArrayList<Point> GetEdgels(const Mat& binaryImage)
+		{
+			ArrayList<Point> points;
+
+			for (int i = 0; i < binaryImage.rows; i++)
+				for (int j = 0; j < binaryImage.cols; j++)
+					if (binaryImage.at<uchar>(i, j))
+						points.Add(Point(j, i));
+
+			return points;
+		}
+
+        ArrayList<ArrayList<cv::Point>> GetEdgelChannels(const Mat& binaryImage, int orientNum, int sigma, int lambda)
+        {
+            ArrayList<cv::Point> points = GetEdgels(binaryImage);
+            ArrayList<cv::Mat> gaborChannel = GetGaborChannels(binaryImage, orientNum, sigma, lambda);
+
+            ArrayList<ArrayList<cv::Point>> edgelChannels(orientNum);
+            for (int i = 0; i < points.Count(); i++)
+            {
+                double maxResponse = gaborChannel[0].at<double>(points[i].y, points[i].x);
+                int index = 0;
+
+                for (int j = 1; j < orientNum; j++)
+                {
+                    if (gaborChannel[j].at<double>(points[i].y, points[i].x) > maxResponse)
+                    {
+                        maxResponse = gaborChannel[j].at<double>(points[i].y, points[i].x);
+                        index = j;
+                    }
+                }
+
+                assert(index >= 0 && index < orientNum);
+                edgelChannels[index].Add(points[i]);
+            }
+
+            return edgelChannels;
         }
 
         ArrayList<Point> SampleOnShape(const Mat& binaryImage, size_t samplingNum)
