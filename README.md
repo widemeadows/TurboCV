@@ -25,7 +25,7 @@ Currently TurboCV has modules as follow.
     (h) Geometry.h provides routines to calculate Euler Distance and Angle. Routines to sample points from sketches are provided in this file as well.  
     (i) Util.h provides some help functions, such as normalization.  
 
-3. **System.ML** 
+3. **System.ML**  
     This module provides the implementation for KNN, MQDF, SNE and t-SNE.  
 
 4. **ExperimentCPP**  
