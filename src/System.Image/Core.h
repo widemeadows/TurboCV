@@ -20,8 +20,12 @@ namespace System
 		typedef ArrayList<float> Descriptor_f;
 		typedef ArrayList<Descriptor> LocalFeatureVec;
 		typedef ArrayList<Descriptor_f> LocalFeatureVec_f;
+
 		typedef ArrayList<double> GlobalFeatureVec;
 		typedef ArrayList<float> GlobalFeatureVec_f;
+
+        typedef ArrayList<cv::Point> PointList;
+        typedef Group<ArrayList<PointList>, ArrayList<cv::Mat>> EdgeMatchInfo;
 
 		typedef ArrayList<double> Word;
 		typedef ArrayList<float> Word_f;
@@ -63,8 +67,8 @@ namespace System
 
         cv::Mat GetBoundingBox(const cv::Mat& binaryImage);
         ArrayList<cv::Point> GetEdgels(const cv::Mat& binaryImage);
-        ArrayList<ArrayList<cv::Point>> GetEdgelChannels(const cv::Mat& binaryImage, 
-            int orientNum, int sigma = 9, int lambda = 24);
+        ArrayList<ArrayList<cv::Point>> GetEdgelChannels(const cv::Mat& binaryImage, int orientNum, 
+            double sigma = 9, double lambda = 24);
         ArrayList<cv::Point> SampleOnShape(const cv::Mat& binaryImage, size_t samplingNum);
 
 
@@ -79,8 +83,10 @@ namespace System
 
         Group<cv::Mat, cv::Mat> GetGradientKernel(double sigma, double epsilon);
         Group<cv::Mat, cv::Mat> GetGradient(const cv::Mat& image, double sigma = 1.0);
-        ArrayList<cv::Mat> GetOrientChannels(const cv::Mat& image, int orientNum);
-        ArrayList<cv::Mat> GetGaborChannels(const cv::Mat& image, int orientNum, int sigma = 4, int lambda = 10);
+        ArrayList<cv::Mat> GetOrientChannels(const cv::Mat& image, int orientNum,
+            double sigma = 1.0);
+        ArrayList<cv::Mat> GetGaborChannels(const cv::Mat& image, int orientNum, 
+            double sigma = 4, double lambda = 10);
 
         cv::Mat GetLoGKernel(int ksize, double sigma, int ktype = CV_64F);
         ArrayList<cv::Mat> GetLoGPyramid(const cv::Mat& image, const ArrayList<double>& sigmas);

@@ -21,6 +21,7 @@
   <ItemGroup>
     <ClCompile Include="BinaryImage.cpp" />
     <ClCompile Include="BOV.cpp" />
+    <ClCompile Include="EdgeMatch.cpp" />
     <ClCompile Include="Feature.cpp" />
     <ClCompile Include="Geometry.cpp" />
     <ClCompile Include="GrayImage.cpp" />

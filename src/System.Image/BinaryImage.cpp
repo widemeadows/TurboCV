@@ -449,7 +449,8 @@ namespace System
 			return points;
 		}
 
-        ArrayList<ArrayList<cv::Point>> GetEdgelChannels(const Mat& binaryImage, int orientNum, int sigma, int lambda)
+        ArrayList<ArrayList<cv::Point>> GetEdgelChannels(const Mat& binaryImage, int orientNum, 
+            double sigma, double lambda)
         {
             ArrayList<cv::Point> points = GetEdgels(binaryImage);
             ArrayList<cv::Mat> gaborChannel = GetGaborChannels(binaryImage, orientNum, sigma, lambda);

@@ -43,22 +43,15 @@ namespace System
                 for (int j = 0; j < nVec; j++)
                     distanceMatrix.at<double>(i, j) = getDistance(vecs[i], vecs[j]);
             
-            FILE* file = fopen(fileName, "w");
-
-            fprintf(file, "%d\n", nVec);
-
-            for (int i = 0; i < nVec; i++)
-            {
-                fprintf(file, "%d", labels[i]);
-                for (int j = 0; j < nVec; j++)
-                    fprintf(file, " %f", distanceMatrix.at<double>(i, j));
-                fprintf(file, "\n");
-            }
-
-            fclose(file);
-
+            SaveDistanceMatrix(fileName, distanceMatrix, labels);
             return distanceMatrix;
         }
+
+        void SaveDistanceMatrix(
+            const TString& fileName,
+            const cv::Mat& distanceMatrix,
+            const ArrayList<int>& labels
+            );
 
 
         //////////////////////////////////////////////////////////////////////////

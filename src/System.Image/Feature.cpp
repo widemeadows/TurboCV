@@ -78,6 +78,26 @@ namespace System
             fclose(file);
         }
 
+        void SaveDistanceMatrix(
+            const TString& fileName,
+            const cv::Mat& distanceMatrix,
+            const ArrayList<int>& labels
+            )
+        {
+            FILE* file = fopen(fileName, "w");
+
+            fprintf(file, "%d\n", distanceMatrix.rows);
+            for (int i = 0; i < distanceMatrix.rows; i++)
+            {
+                fprintf(file, "%d", labels[i]);
+                for (int j = 0; j < distanceMatrix.cols; j++)
+                    fprintf(file, " %f", distanceMatrix.at<double>(i, j));
+                fprintf(file, "\n");
+            }
+
+            fclose(file);
+        }
+
 
         //////////////////////////////////////////////////////////////////////////
         // HOG

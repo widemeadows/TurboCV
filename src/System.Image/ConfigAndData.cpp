@@ -23,20 +23,16 @@ namespace System
 
             map<TString, TString> params;
 
-            try
-            {
-                const TiXmlNode* configs = doc.RootElement()->FirstChild();
-                const TiXmlElement* config = configs->FirstChild((const char*)featureName)->ToElement();
+            const TiXmlNode* configs = doc.RootElement()->FirstChild();
+            const TiXmlElement* config = configs->FirstChild((const char*)featureName)->ToElement();
 
+            if (config != NULL)
+            {
                 const TiXmlAttribute* attr = config->FirstAttribute();
                 params[attr->Name()] = attr->Value();
 
                 while ((attr = attr->Next()) != NULL)
                     params[attr->Name()] = attr->Value();
-            }
-            catch (string&) 
-            {
-                return map<TString, TString>();
             }
 
             return params;

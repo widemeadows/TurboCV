@@ -220,9 +220,9 @@ namespace System
             return CreateGroup(powerImage, orientImage);
         }
 
-        ArrayList<Mat> GetOrientChannels(const Mat& image, int orientNum)
+        ArrayList<Mat> GetOrientChannels(const Mat& image, int orientNum, double sigma)
         {
-            Group<Mat, Mat> gradient = GetGradient(image);
+            Group<Mat, Mat> gradient = GetGradient(image, sigma);
             Mat& powerImage = gradient.Item1();
             Mat& orientImage = gradient.Item2();
             int height = image.rows, width = image.cols;
@@ -264,7 +264,7 @@ namespace System
             return orientChannels;
         }
 
-        ArrayList<Mat> GetGaborChannels(const Mat& image, int orientNum, int sigma, int lambda)
+        ArrayList<Mat> GetGaborChannels(const Mat& image, int orientNum, double sigma, double lambda)
         {
             int ksize = sigma * 6 + 1;
             ArrayList<Mat> gaborChannels(orientNum);

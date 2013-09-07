@@ -178,8 +178,11 @@ namespace System
             return *this;
         }
 
-        T* operator->() const { return instance; }
-        T& operator*() const { return *instance; }
+        T* operator->() { return instance; }
+        const T* operator->() const { return instance; }
+
+        T& operator*() { return *instance; }
+        const T& operator*() const { return *instance; }
 
     private:
         T* instance;
@@ -228,8 +231,11 @@ namespace System
         T& Back() { return ptr->back(); }
         const T& Back() const { return ptr->back(); }
 
-        typename std::vector<T>::iterator begin() const { return ptr->begin(); }
-        typename std::vector<T>::iterator end() const { return ptr->end(); }
+        typename std::vector<T>::iterator begin() { return ptr->begin(); }
+        typename std::vector<T>::const_iterator begin() const { return ptr->begin(); }
+
+        typename std::vector<T>::iterator end() { return ptr->end(); }
+        typename std::vector<T>::const_iterator end() const { return ptr->end(); }
 
         void Add(const T& item) { ptr->push_back(item); }
 
@@ -246,9 +252,9 @@ namespace System
 
         bool Contains(const T& item) const
         {
-            typename std::vector<T>::iterator begin = ptr->begin();
-            typename std::vector<T>::iterator end = ptr->end();
-            typename std::vector<T>::iterator itr = begin;
+            typename std::vector<T>::const_iterator begin = ptr->begin();
+            typename std::vector<T>::const_iterator end = ptr->end();
+            typename std::vector<T>::const_iterator itr = begin;
 
             while (itr != end)
             {
@@ -654,17 +660,16 @@ namespace System
     //////////////////////////////////////////////////////////////////////////
 
     template<typename T>
-    inline ArrayList<T> PickUp(const ArrayList<T>& vec, const ArrayList<size_t>& pickUpIndexes)
+    inline ArrayList<T> PickUp(const ArrayList<T>& vec, ArrayList<size_t> pickUpIndexes)
     {
-        ArrayList<size_t> indexes = pickUpIndexes;
-        std::sort(indexes.begin(), indexes.end());
+        std::sort(pickUpIndexes.begin(), pickUpIndexes.end());
 
         ArrayList<T> pickUps;
         size_t cardNum = vec.Count(), counter = 0;
 
         for (size_t i = 0; i < cardNum; i++)
         {
-            if (counter < indexes.Count() && indexes[counter] == i)
+            if (counter < pickUpIndexes.Count() && pickUpIndexes[counter] == i)
             {
                 counter++;
                 pickUps.Add(vec[i]);
@@ -675,17 +680,16 @@ namespace System
     }
 
     template<typename T>
-    inline Group<ArrayList<T>, ArrayList<T>> Divide(const ArrayList<T>& vec, const ArrayList<size_t>& pickUpIndexes)
+    inline Group<ArrayList<T>, ArrayList<T>> Divide(const ArrayList<T>& vec, ArrayList<size_t> pickUpIndexes)
     {
-        ArrayList<size_t> indexes = pickUpIndexes;
-        std::sort(indexes.begin(), indexes.end());
+        std::sort(pickUpIndexes.begin(), pickUpIndexes.end());
 
         ArrayList<T> pickUps, others;
         size_t cardNum = vec.Count(), counter = 0;
 
         for (size_t i = 0; i < cardNum; i++)
         {
-            if (counter < indexes.Count() && indexes[counter] == i)
+            if (counter < pickUpIndexes.Count() && pickUpIndexes[counter] == i)
             {
                 counter++;
                 pickUps.Add(vec[i]);
@@ -695,6 +699,24 @@ namespace System
         }
 
         return CreateGroup(pickUps, others);
+    }
+
+    inline ArrayList<size_t> Rest(size_t cardNum, ArrayList<size_t> pickUpIndexes)
+    {
+        std::sort(pickUpIndexes.begin(), pickUpIndexes.end());
+        ArrayList<size_t> restIndexes;
+
+        int counter = 0;
+
+        for (size_t i = 0; i < cardNum; i++)
+        {
+            if (counter < pickUpIndexes.Count() && pickUpIndexes[counter] == i)
+                counter++;
+            else
+                restIndexes.Add(i);
+        }
+
+        return restIndexes;
     }
 
     inline ArrayList<size_t> RandomPermutate(size_t cardNum, size_t pickUpNum)

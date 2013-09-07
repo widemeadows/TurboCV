@@ -6,6 +6,7 @@
 #include <map>
 #include <unordered_map>
 #include <algorithm>
+#include <cv.h>
 
 namespace TurboCV
 {
@@ -23,7 +24,23 @@ namespace System
         class KNN
         {
         public:
-            std::pair<double, std::map<std::pair<int, int>, double>> Evaluate(
+            Group<double, std::map<Group<int, int>, double>> Evaluate(
+                const cv::Mat& distanceMatrix,
+                const ArrayList<int>& trainingLabels,
+                const ArrayList<int>& evaluationLabels,
+                double sigma = 0.4,
+                int K = 4)
+            {
+                assert(distanceMatrix.rows == trainingLabels.Count());
+                assert(distanceMatrix.cols == evaluationSet.Count());
+
+                Train(distanceMatrix, trainingLabels);
+                ArrayList<int> predict = Predict(sigma, K);
+
+                return ComputePrecision(evaluationLabels, predict);
+            }
+
+            Group<double, std::map<Group<int, int>, double>> Evaluate(
                 const ArrayList<T>& trainingSet,
                 const ArrayList<int>& trainingLabels,
                 const ArrayList<T>& evaluationSet,
@@ -35,55 +52,89 @@ namespace System
                 assert(trainingSet.Count() == trainingLabels.Count());
                 assert(evaluationSet.Count() == evaluationSet.Count());
 
-                Train(trainingSet, trainingLabels);
-                ArrayList<int> predict = Predict(evaluationSet, GetDistance, sigma, K);
+                Train(trainingSet, trainingLabels, evaluationSet, GetDistance);
+                ArrayList<int> predict = Predict(sigma, K);
 
-                size_t evaluationNum = evaluationSet.Count(), correctNum = 0;
+                return ComputePrecision(evaluationLabels, predict);
+            }
+
+            Group<double, std::map<Group<int, int>, double>> ComputePrecision(
+                const ArrayList<int>& evaluationLabels, 
+                const ArrayList<int>& predict) 
+            {
+                size_t evaluationNum = evaluationLabels.Count(), correctNum = 0;
                 std::unordered_map<int, int> evaluationNumPerClass;
-                std::map<std::pair<int, int>, double> confusionMatrix;
+                std::map<Group<int, int>, double> confusionMatrix;
+
                 for (size_t i = 0; i < evaluationNum; i++)
                 {
                     evaluationNumPerClass[evaluationLabels[i]]++;
-                    confusionMatrix[std::make_pair(evaluationLabels[i], predict[i])]++;
+                    confusionMatrix[CreateGroup(evaluationLabels[i], predict[i])]++;
                     if (predict[i] == evaluationLabels[i])
                         correctNum++;
                 }
 
-                std::map<std::pair<int, int>, double>::iterator itr = confusionMatrix.begin();
+                std::map<Group<int, int>, double>::iterator itr = confusionMatrix.begin();
                 while (itr != confusionMatrix.end())
                 {
-                    itr->second /= evaluationNumPerClass[(itr->first).first];
+                    itr->second /= evaluationNumPerClass[(itr->first).Item1()];
                     itr++;
                 }
 
-                return std::make_pair((double)correctNum / evaluationNum, confusionMatrix);
+                return CreateGroup((double)correctNum / evaluationNum, confusionMatrix);
             }
 
-            void Train(const ArrayList<T>& data, const ArrayList<int>& labels)
+            void Train(const cv::Mat& distanceMatrix, const ArrayList<int>& trainingLabels)
             {
-                assert(data.Count() == labels.Count() && data.Count() > 0);
-                int dataNum = (int)data.Count();
+                assert(distanceMatrix.cols == trainingLabels.Count() && distanceMatrix.cols > 0);
+                assert(distanceMatrix.rows > 0);
+                int trainingNum = trainingLabels.Count();
 
-                _labels = labels;
-                _data = data;
+                _labels = trainingLabels;
+
+                _distanceMatrix = distanceMatrix;
+
                 _dataNumPerClass.clear();
-                for (int i = 0; i < dataNum; i++)
-                    _dataNumPerClass[_labels[i]]++;
+                for (int i = 0; i < trainingNum; i++)
+                    _dataNumPerClass[trainingLabels[i]]++;
             }
 
-            ArrayList<int> Predict(
-                const ArrayList<T>& samples, 
-                double (*GetDistance)(const T&, const T&) = Math::NormOneDistance, 
-                double sigma = 0.4, 
-                int K = 4)
+            void Train(
+                const ArrayList<T>& trainingSet,
+                const ArrayList<int>& trainingLabels,
+                const ArrayList<T>& evaluationSet,
+                double (*GetDistance)(const T&, const T&))
             {
-                int sampleNum = samples.Count();
-                ArrayList<int> results(sampleNum);
+                assert(trainingSet.Count() == trainingLabels.Count() && trainingSet.Count() > 0);
+                assert(evaluationSet.Count() > 0);
+                int trainingNum = trainingSet.Count(), evaluationNum = evaluationSet.Count();
+
+                _labels = trainingLabels;
+
+                _distanceMatrix = cv::Mat::zeros(evaluationNum, trainingNum, CV_64F);
+                #pragma omp parallel for
+                for (int i = 0; i < evaluationNum; i++)
+                    for (int j = 0; j < trainingNum; j++)
+                        _distanceMatrix.at<double>(i, j) = GetDistance(evaluationSet[i], trainingSet[j]);
+
+                _dataNumPerClass.clear();
+                for (int i = 0; i < trainingNum; i++)
+                    _dataNumPerClass[trainingLabels[i]]++;
+            }
+
+            ArrayList<int> Predict(double sigma = 0.4, int K = 4)
+            {
+                int evaluationNum = _distanceMatrix.rows, trainingNum = _distanceMatrix.cols;
+                ArrayList<int> results(evaluationNum);
 
                 #pragma omp parallel for
-                for (int i = 0; i < sampleNum; i++)
+                for (int i = 0; i < evaluationNum; i++)
                 {
-                    results[i] = predictOneSample(samples[i], GetDistance, sigma, K);
+                    ArrayList<Group<double, int>> distAndLabels(trainingNum);
+                    for (int j = 0; j < trainingNum; j++)
+                        distAndLabels[j] = CreateGroup(_distanceMatrix.at<double>(i, j), _labels[j]);
+
+                    results[i] = predictOneSample(distAndLabels, sigma, K);
                 }
 
                 return results;
@@ -91,19 +142,11 @@ namespace System
 
         private:
             int predictOneSample(
-                const T& sample, 
-                double (*GetDistance)(const T&, const T&) = Math::NormOneDistance, 
+                ArrayList<Group<double, int>> distAndLabels,
                 double sigma = 0.4, 
                 int K = 4)
             {
-                size_t dataNum = _data.Count();
-
-                ArrayList<std::pair<double, int>> distances(dataNum);
-                for (size_t i = 0; i < dataNum; i++)
-                {
-                    distances[i] = make_pair(GetDistance(sample, _data[i]), _labels[i]);
-                }
-                std::partial_sort(distances.begin(), distances.begin() + K, distances.end());
+                std::partial_sort(distAndLabels.begin(), distAndLabels.begin() + K, distAndLabels.end());
 
                 std::unordered_map<int, double> votes;
                 bool softVoting = sigma > 0;
@@ -111,8 +154,8 @@ namespace System
                 {
                     for (int i = 0; i < K; i++)
                     {
-                        double& distance = distances[i].first;
-                        int& label = distances[i].second;
+                        double& distance = distAndLabels[i].Item1();
+                        int& label = distAndLabels[i].Item2();
                         votes[label] += Math::Gauss(distance, sigma);
                     }          
                 }
@@ -120,7 +163,7 @@ namespace System
                 {
                     for (int i = 0; i < K; i++)
                     {
-                        int& label = distances[i].second;
+                        int& label = distAndLabels[i].Item2();
                         votes[label]++;
                     } 
                 }
@@ -141,7 +184,7 @@ namespace System
             }
 
             ArrayList<int> _labels;
-            ArrayList<T> _data;
+            cv::Mat _distanceMatrix;
             std::unordered_map<int, int> _dataNumPerClass;
         };
     }

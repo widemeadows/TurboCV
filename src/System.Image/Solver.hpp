@@ -58,7 +58,7 @@ namespace System
                 const std::map<TString, TString>& params,
                 const ArrayList<ArrayList<size_t>>& trainingIdxes) = 0;
 
-            virtual TString FeatureName() = 0;
+            virtual TString FeatureName() const = 0;
 
             TString datasetPath;
             TString configFilePath;
@@ -97,7 +97,7 @@ namespace System
                 const std::map<TString, TString>& params,
                 const ArrayList<ArrayList<size_t>>& trainingIdxes);
 
-            virtual TString FeatureName()
+            virtual TString FeatureName() const
             {
                 return LocalFeature().GetName();
             }
@@ -151,7 +151,7 @@ namespace System
                 ArrayList<Histogram> evaluationHistograms = Divide(histograms, pickUpIndexes).Item1();
 
                 this->precisions.Add(KNN<Histogram>().
-                    Evaluate(trainingHistograms, trainingLabels, evaluationHistograms, evaluationLabels).first);
+                    Evaluate(trainingHistograms, trainingLabels, evaluationHistograms, evaluationLabels).Item1());
 
                 if (this->precisions[i] > maxPrecision)
                 {
@@ -192,7 +192,7 @@ namespace System
                 const std::map<TString, TString>& params,
                 const ArrayList<ArrayList<size_t>>& trainingIdxes);
 
-            virtual TString FeatureName()
+            virtual TString FeatureName() const
             {
                 return GlobalFeature().GetName();
             }
@@ -239,7 +239,127 @@ namespace System
                 ArrayList<int> evaluationLabels = Divide(labels, pickUpIndexes).Item1();
 
                 this->precisions.Add(KNN<GlobalFeatureVec_f>().
-                    Evaluate(trainingSet, trainingLabels, evaluationSet, evaluationLabels).first);
+                    Evaluate(trainingSet, trainingLabels, evaluationSet, evaluationLabels).Item1());
+
+                printf("Fold %d Accuracy: %f\n", i + 1, this->precisions[i]);
+            }
+
+            printf("\nAverage: %f, Standard Deviation: %f\n", Math::Mean(precisions), 
+                Math::StandardDeviation(precisions));
+        }
+
+
+        //////////////////////////////////////////////////////////////////////////
+        // APIs for EdgeMatchSolver
+        //////////////////////////////////////////////////////////////////////////
+
+        template<typename EdgeMatch>
+        class EdgeMatchSolver : public Solver
+        {
+        public:
+            EdgeMatchSolver(
+                cv::Mat (*preprocess)(const cv::Mat&), 
+                const TString& datasetPath, 
+                const TString& configFilePath = "config.xml"):
+                Solver(preprocess, datasetPath, configFilePath) {}
+
+            ArrayList<double> GetPrecisions() { return precisions; }
+            cv::Mat GetDistanceMatrix() { return distanceMatrix; }
+
+        protected:
+            virtual void InnerCrossValidation(
+                const ArrayList<TString>& paths,
+                const ArrayList<int>& labels,
+                const std::map<TString, TString>& params,
+                const ArrayList<ArrayList<size_t>>& trainingIdxes);
+
+            virtual TString FeatureName() const
+            {
+                return EdgeMatch().GetName();
+            }
+
+        private:
+            ArrayList<double> precisions;
+            cv::Mat distanceMatrix;
+        };
+
+        template<typename EdgeMatch>
+        void EdgeMatchSolver<EdgeMatch>::InnerCrossValidation(
+            const ArrayList<TString>& paths,
+            const ArrayList<int>& labels,
+            const std::map<TString, TString>& params,
+            const ArrayList<ArrayList<size_t>>& trainingIdxes)
+        {
+            int nImage = paths.Count();
+
+            printf("ImageNum: %d\n", nImage);
+            EdgeMatch(params, true); // display all params of the algorithm
+
+            printf("Cross Validation on " + EdgeMatch().GetName() + "...\n");
+            
+            ArrayList<cv::Mat> images(nImage);
+            ArrayList<ArrayList<PointList>> channels(nImage);
+            #pragma omp parallel for
+            for (int i = 0; i < nImage; i++)
+            {
+                EdgeMatch machine(params);
+                cv::Mat image = cv::imread(paths[i], CV_LOAD_IMAGE_GRAYSCALE); 
+                images[i] = (Preprocess != NULL ? Preprocess(image) : image);
+                channels[i] = machine.GetChannels(images[i]);
+            }
+
+            cv::Mat oneWayDistMat(nImage, nImage, CV_64F);
+            #pragma omp parallel for
+            for (int i = 0; i < nImage; i++)
+            {
+                EdgeMatch machine(params);
+                ArrayList<cv::Mat> transforms = machine.GetTransforms(images[i].size(), channels[i]);
+
+                for (int j = 0; j < nImage; j++)
+                {
+                    if (j == i)
+                        oneWayDistMat.at<double>(i, j) = 0;
+                    else
+                        oneWayDistMat.at<double>(i, j) = machine.GetOneWayDistance(channels[j], transforms);
+                }
+            }
+
+            cv::Mat twoWayDistMat(nImage, nImage, CV_64F);
+            #pragma omp parallel for
+            for (int i = 0; i < nImage; i++)
+            {
+                EdgeMatch machine(params);
+
+                for (int j = 0; j < nImage; j++)
+                {
+                    if (j == i)
+                        twoWayDistMat.at<double>(i, j) = 0;
+                    else
+                        twoWayDistMat.at<double>(i, j) = machine.GetTwoWayDistance(
+                            oneWayDistMat.at<double>(i, j), oneWayDistMat.at<double>(j, i));
+                }
+            }
+            this->distanceMatrix = twoWayDistMat;
+
+            double maxPrecision = -1;
+            this->precisions.Clear();
+            for (int i = 0; i < trainingIdxes.Count(); i++)
+            {
+                printf("\nBegin Fold %d...\n", i + 1);
+                const ArrayList<size_t>& pickUpIndexes = trainingIdxes[i];
+                ArrayList<size_t> restIndexes = Rest(nImage, pickUpIndexes);
+                ArrayList<int> trainingLabels = Divide(labels, pickUpIndexes).Item2();
+                ArrayList<int> evaluationLabels = Divide(labels, pickUpIndexes).Item1();
+                int trainingNum = trainingLabels.Count(), evaluationNum = evaluationLabels.Count();
+
+                cv::Mat distToTraining(evaluationNum, trainingNum, CV_64F);
+                for (int i = 0; i < evaluationNum; i++)
+                    for (int j = 0; j < trainingNum; j++)
+                        distToTraining.at<double>(i, j) = this->distanceMatrix.at<double>(
+                            restIndexes[i], pickUpIndexes[j]);
+
+                this->precisions.Add(KNN<EdgeMatch>().
+                    Evaluate(distToTraining, trainingLabels, evaluationLabels, HARD_VOTING).Item1());
 
                 printf("Fold %d Accuracy: %f\n", i + 1, this->precisions[i]);
             }

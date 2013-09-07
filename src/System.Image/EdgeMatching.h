@@ -242,97 +242,70 @@ namespace System
 
         ///////////////////////////////////////////////////////////////////////
 
-        // Hitmap Matching
-        /*class Hitmap
+        class EdgeMatch
         {
         public:
-            typedef ArrayList<Group<ArrayList<cv::Point>, cv::Mat>> Info;
+            EdgeMatchInfo GetEdgeMatchInfo(const cv::Mat& sketchImage)
+            {
+                ArrayList<PointList> channels = GetChannels(sketchImage);
+                ArrayList<cv::Mat> transforms = GetTransforms(sketchImage);
 
-            Info GetFeature(const cv::Mat& sketchImage);
+                return CreateGroup(channels, transforms);
+            }
 
-            ArrayList<ArrayList<Point>> GetChannels(int orientNum, )
-            static double GetDistance(const Info& u, const Info& v);
+            double GetTwoWayDistance(const EdgeMatchInfo& uInfo, const EdgeMatchInfo& vInfo)
+            {
+                double uToV = GetOneWayDistance(uInfo.Item1(), vInfo.Item2());
+                double vToU = GetOneWayDistance(vInfo.Item1(), uInfo.Item2());
 
-            virtual TString GetName() const { return "hit"; };
+                return GetTwoWayDistance(uToV, vToU);
+            }
 
-        protected:
-            virtual Info Transform(const cv::Mat& sketchImage, double maxDistance);
+            ArrayList<cv::Mat> GetTransforms(const cv::Mat& sketchImage)
+            {
+                return GetTransforms(sketchImage.size(), GetChannels(sketchImage));
+            }
+
+            virtual ArrayList<PointList> GetChannels(const cv::Mat& sketchImage) = 0;
+            virtual ArrayList<cv::Mat> GetTransforms(const cv::Size& size, const ArrayList<PointList> channels) = 0;
+
+            virtual double GetOneWayDistance(const ArrayList<PointList>& u, const ArrayList<cv::Mat>& v) = 0;
+            virtual double GetTwoWayDistance(double uToV, double vToU) = 0;
+
+            virtual TString GetName() const = 0;
         };
 
-        inline Hitmap::Info Hitmap::GetFeature(const cv::Mat& sketchImage)
+        // Hitmap
+        class Hitmap : public EdgeMatch
         {
-            double maxDistance = 22;
-            return Transform(sketchImage, maxDistance);
-        }
+        public:
+            Hitmap(): orientNum(6), maxDistance(22) {}
 
-        inline double Hitmap::GetDistance(const Info& u, const Info& v)
-        {
-            assert(u.Count() == v.Count());
-            int orientNum = u.Count(), uPointNum = 0, vPointNum = 0;
-            double uToV = 0, vToU = 0;
-
-            for (int i = 0; i < orientNum; i++)
+            Hitmap(const std::map<TString, TString>& params, bool printParams = false)
             {
-                const ArrayList<cv::Point>& uPoints = u[i].Item1();
-                const ArrayList<cv::Point>& vPoints = v[i].Item1();
-                const cv::Mat& uMat = u[i].Item2();
-                const cv::Mat& vMat = v[i].Item2();
+                orientNum = GetDoubleValue(params, "orientNum", 6);
+                maxDistance = GetDoubleValue(params, "maxDistance", 22);
 
-                for (size_t i = 0; i < uPoints.Count(); i++)
-                    uToV += vMat.at<uchar>(uPoints[i].y, uPoints[i].x);
-
-                for (size_t i = 0; i < vPoints.Count(); i++)
-                    vToU += uMat.at<uchar>(vPoints[i].y, vPoints[i].x);
-
-                uPointNum += uPoints.Count();
-                vPointNum += vPoints.Count();
-            }
-
-            if (uPointNum == 0 || vPointNum == 0)
-                return 1;
-            else
-                return 1 - sqrt((uToV / uPointNum) * (vToU / vPointNum));
-        }
-        
-        inline Hitmap::Info Hitmap::Transform(const cv::Mat& sketchImage, double maxDistance)
-        {
-            ArrayList<ArrayList<cv::Point>> channels = GetEdgelChannels(sketchImage, 6);
-            Info result(channels.Count());
-
-            for (size_t i = 0; i < channels.Count(); i++)
-            {
-                cv::Mat dt(sketchImage.size(), CV_8U);
-                dt = cv::Scalar::all(0);
-
-                for (size_t j = 0; j < channels[i].Count(); j++)
+                if (printParams)
                 {
-                    int left = (int)floor(channels[i][j].x - maxDistance),
-                        right = (int)ceil(channels[i][j].x + maxDistance),
-                        top = (int)floor(channels[i][j].y - maxDistance),
-                        bottom = (int)ceil(channels[i][j].y + maxDistance);
-                    left = left < 0 ? 0 : left;
-                    right = right > dt.cols ? dt.cols : right;
-                    top = top < 0 ? 0 : top;
-                    bottom = bottom > dt.rows ? dt.rows : bottom;
-
-                    for (int m = top; m < bottom; m++)
-                    {
-                        for (int n = left; n < right; n++)
-                        {
-                            double distance = sqrt((m - channels[i][j].y) * (m - channels[i][j].y) + 
-                                (n - channels[i][j].x) * (n - channels[i][j].x));
-
-                            if (distance <= maxDistance)
-                                dt.at<uchar>(m, n) = 1;
-                        }
-                    }
+                    printf("OrientNum: %d, MaxDistance: %d\n", orientNum, maxDistance);
                 }
-
-                result[i] = CreateGroup(channels[i], dt);
             }
 
-            return result;
-        }*/
+            virtual ArrayList<PointList> GetChannels(const cv::Mat& sketchImage);
+            virtual ArrayList<cv::Mat> GetTransforms(const cv::Size& size, const ArrayList<PointList> channels);
+
+            virtual double GetOneWayDistance(const ArrayList<PointList>& u, const ArrayList<cv::Mat>& v);
+            virtual double GetTwoWayDistance(double uToV, double vToU);
+
+            virtual TString GetName() const 
+            { 
+                return "hit"; 
+            }
+
+        private:
+            int orientNum, maxDistance;
+        };       
     }
 }
 }
