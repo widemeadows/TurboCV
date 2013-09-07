@@ -37,17 +37,17 @@ namespace System
                 paths = dataset.Item1();
                 labels = dataset.Item2();
 
-                params = LoadConfiguration(configFilePath, FeatureName());
+                params = LoadConfiguration(configFilePath, AlgorithmName());
 
-                trainingIdxes = SplitDatasetRandomly(labels, nFold);
+                evaIdxes = SplitDatasetEqually(labels, nFold);
 
-                InnerCrossValidation(paths, labels, params, trainingIdxes);
+                InnerCrossValidation(paths, labels, params, evaIdxes);
             }
 
             ArrayList<TString> GetPaths() { return paths; }
             ArrayList<int> GetLabels() { return labels; }
             std::map<TString, TString> GetConfigParams() { return params; }
-            ArrayList<ArrayList<size_t>> GetTrainingIdxes() { return trainingIdxes; }
+            ArrayList<ArrayList<size_t>> GetEvaIdxes() { return evaIdxes; }
 
         protected:
             cv::Mat (*Preprocess)(const cv::Mat&);
@@ -56,9 +56,9 @@ namespace System
                 const ArrayList<TString>& paths,
                 const ArrayList<int>& labels,
                 const std::map<TString, TString>& params,
-                const ArrayList<ArrayList<size_t>>& trainingIdxes) = 0;
+                const ArrayList<ArrayList<size_t>>& evaIdxes) = 0;
 
-            virtual TString FeatureName() const = 0;
+            virtual TString AlgorithmName() const = 0;
 
             TString datasetPath;
             TString configFilePath;
@@ -68,7 +68,7 @@ namespace System
 
             std::map<TString, TString> params;
 
-            ArrayList<ArrayList<size_t>> trainingIdxes;
+            ArrayList<ArrayList<size_t>> evaIdxes;
         };
 
 
@@ -95,9 +95,9 @@ namespace System
                 const ArrayList<TString>& paths,
                 const ArrayList<int>& labels,
                 const std::map<TString, TString>& params,
-                const ArrayList<ArrayList<size_t>>& trainingIdxes);
+                const ArrayList<ArrayList<size_t>>& evaIdxes);
 
-            virtual TString FeatureName() const
+            virtual TString AlgorithmName() const
             {
                 return LocalFeature().GetName();
             }
@@ -112,7 +112,7 @@ namespace System
             const ArrayList<TString>& paths,
             const ArrayList<int>& labels,
             const std::map<TString, TString>& params,
-            const ArrayList<ArrayList<size_t>>& trainingIdxes)
+            const ArrayList<ArrayList<size_t>>& evaIdxes)
         {
             int nImage = paths.Count(), 
                 nSample = GetDoubleValue(params, "inputNum", 1000000),
@@ -134,10 +134,10 @@ namespace System
 
             double maxPrecision = -1;
             this->precisions.Clear();
-            for (int i = 0; i < trainingIdxes.Count(); i++)
+            for (int i = 0; i < evaIdxes.Count(); i++)
             {
                 printf("\nBegin Fold %d...\n", i + 1);
-                const ArrayList<size_t>& pickUpIndexes = trainingIdxes[i];
+                const ArrayList<size_t>& pickUpIndexes = evaIdxes[i];
                 ArrayList<LocalFeatureVec_f> trainingSet = Divide(features, pickUpIndexes).Item2();
                 ArrayList<int> trainingLabels = Divide(labels, pickUpIndexes).Item2();
                 ArrayList<int> evaluationLabels = Divide(labels, pickUpIndexes).Item1();
@@ -190,9 +190,9 @@ namespace System
                 const ArrayList<TString>& paths,
                 const ArrayList<int>& labels,
                 const std::map<TString, TString>& params,
-                const ArrayList<ArrayList<size_t>>& trainingIdxes);
+                const ArrayList<ArrayList<size_t>>& evaIdxes);
 
-            virtual TString FeatureName() const
+            virtual TString AlgorithmName() const
             {
                 return GlobalFeature().GetName();
             }
@@ -207,7 +207,7 @@ namespace System
             const ArrayList<TString>& paths,
             const ArrayList<int>& labels,
             const std::map<TString, TString>& params,
-            const ArrayList<ArrayList<size_t>>& trainingIdxes)
+            const ArrayList<ArrayList<size_t>>& evaIdxes)
         {
             int nImage = paths.Count();
 
@@ -229,10 +229,10 @@ namespace System
 
             double maxPrecision = -1;
             this->precisions.Clear();
-            for (int i = 0; i < trainingIdxes.Count(); i++)
+            for (int i = 0; i < evaIdxes.Count(); i++)
             {
                 printf("\nBegin Fold %d...\n", i + 1);
-                const ArrayList<size_t>& pickUpIndexes = trainingIdxes[i];
+                const ArrayList<size_t>& pickUpIndexes = evaIdxes[i];
                 ArrayList<GlobalFeatureVec_f> trainingSet = Divide(features, pickUpIndexes).Item2();
                 ArrayList<GlobalFeatureVec_f> evaluationSet = Divide(features, pickUpIndexes).Item1();
                 ArrayList<int> trainingLabels = Divide(labels, pickUpIndexes).Item2();
@@ -271,9 +271,9 @@ namespace System
                 const ArrayList<TString>& paths,
                 const ArrayList<int>& labels,
                 const std::map<TString, TString>& params,
-                const ArrayList<ArrayList<size_t>>& trainingIdxes);
+                const ArrayList<ArrayList<size_t>>& evaIdxes);
 
-            virtual TString FeatureName() const
+            virtual TString AlgorithmName() const
             {
                 return EdgeMatch().GetName();
             }
@@ -288,7 +288,7 @@ namespace System
             const ArrayList<TString>& paths,
             const ArrayList<int>& labels,
             const std::map<TString, TString>& params,
-            const ArrayList<ArrayList<size_t>>& trainingIdxes)
+            const ArrayList<ArrayList<size_t>>& evaIdxes)
         {
             int nImage = paths.Count();
 
@@ -343,10 +343,10 @@ namespace System
 
             double maxPrecision = -1;
             this->precisions.Clear();
-            for (int i = 0; i < trainingIdxes.Count(); i++)
+            for (int i = 0; i < evaIdxes.Count(); i++)
             {
                 printf("\nBegin Fold %d...\n", i + 1);
-                const ArrayList<size_t>& pickUpIndexes = trainingIdxes[i];
+                const ArrayList<size_t>& pickUpIndexes = evaIdxes[i];
                 ArrayList<size_t> restIndexes = Rest(nImage, pickUpIndexes);
                 ArrayList<int> trainingLabels = Divide(labels, pickUpIndexes).Item2();
                 ArrayList<int> evaluationLabels = Divide(labels, pickUpIndexes).Item1();
@@ -356,7 +356,7 @@ namespace System
                 for (int i = 0; i < evaluationNum; i++)
                     for (int j = 0; j < trainingNum; j++)
                         distToTraining.at<double>(i, j) = this->distanceMatrix.at<double>(
-                            restIndexes[i], pickUpIndexes[j]);
+                            pickUpIndexes[i], restIndexes[j]);
 
                 this->precisions.Add(KNN<EdgeMatch>().
                     Evaluate(distToTraining, trainingLabels, evaluationLabels, HARD_VOTING).Item1());

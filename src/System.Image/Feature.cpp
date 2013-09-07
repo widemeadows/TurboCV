@@ -1,6 +1,6 @@
 #include "../System/System.h"
 #include "Core.h"
-#include "Feature.h"
+#include "Recognition.h"
 #include <cv.h>
 #include <cstdio>
 using namespace cv;

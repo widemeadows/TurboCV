@@ -38,13 +38,7 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="EdgeMatching.h">
-      <Filter>头文件</Filter>
-    </ClInclude>
     <ClInclude Include="Eigen.h">
-      <Filter>头文件</Filter>
-    </ClInclude>
-    <ClInclude Include="Feature.h">
       <Filter>头文件</Filter>
     </ClInclude>
     <ClInclude Include="System.Image.h">
@@ -54,6 +48,9 @@
       <Filter>头文件</Filter>
     </ClInclude>
     <ClInclude Include="Solver.hpp">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="Recognition.h">
       <Filter>头文件</Filter>
     </ClInclude>
   </ItemGroup>

@@ -663,6 +663,141 @@ namespace System
             int blockNum;
             ArrayList<int> orientNumPerScale;
         };
+
+
+        //////////////////////////////////////////////////////////////////////////
+        // APIs for EdgeMatch
+        //////////////////////////////////////////////////////////////////////////
+
+        class EdgeMatch
+        {
+        public:
+            EdgeMatchInfo GetEdgeMatchInfo(const cv::Mat& sketchImage)
+            {
+                ArrayList<PointList> channels = GetChannels(sketchImage);
+                ArrayList<cv::Mat> transforms = GetTransforms(sketchImage);
+
+                return CreateGroup(channels, transforms);
+            }
+
+            double GetTwoWayDistance(const EdgeMatchInfo& uInfo, const EdgeMatchInfo& vInfo)
+            {
+                double uToV = GetOneWayDistance(uInfo.Item1(), vInfo.Item2());
+                double vToU = GetOneWayDistance(vInfo.Item1(), uInfo.Item2());
+
+                return GetTwoWayDistance(uToV, vToU);
+            }
+
+            ArrayList<cv::Mat> GetTransforms(const cv::Mat& sketchImage)
+            {
+                return GetTransforms(sketchImage.size(), GetChannels(sketchImage));
+            }
+
+            virtual ArrayList<PointList> GetChannels(const cv::Mat& sketchImage) = 0;
+            virtual ArrayList<cv::Mat> GetTransforms(const cv::Size& size, const ArrayList<PointList> channels) = 0;
+
+            virtual double GetOneWayDistance(const ArrayList<PointList>& u, const ArrayList<cv::Mat>& v) = 0;
+            virtual double GetTwoWayDistance(double uToV, double vToU) = 0;
+
+            virtual TString GetName() const = 0;
+        };
+
+        // Chamfer Matching
+        class CM : public EdgeMatch
+        {
+        public:
+            CM(): maxDistance(40) {}
+
+            CM(const std::map<TString, TString>& params, bool printParams = false)
+            {
+                maxDistance = GetDoubleValue(params, "maxDistance", 40);
+
+                if (printParams)
+                {
+                    printf("MaxDistance: %f\n", maxDistance);
+                }
+            }
+
+            virtual ArrayList<PointList> GetChannels(const cv::Mat& sketchImage);
+            virtual ArrayList<cv::Mat> GetTransforms(const cv::Size& size, const ArrayList<PointList> channels);
+
+            virtual double GetOneWayDistance(const ArrayList<PointList>& u, const ArrayList<cv::Mat>& v);
+            virtual double GetTwoWayDistance(double uToV, double vToU);
+
+            virtual TString GetName() const 
+            { 
+                return "cm"; 
+            }
+
+        private:
+            double maxDistance;
+        };
+
+        // Oriented Chamfer Matching
+        class OCM : public EdgeMatch
+        {
+        public:
+            OCM(): orientNum(6), maxDistance(40) {}
+
+            OCM(const std::map<TString, TString>& params, bool printParams = false)
+            {
+                orientNum = GetDoubleValue(params, "orientNum", 6);
+                maxDistance = GetDoubleValue(params, "maxDistance", 40);
+
+                if (printParams)
+                {
+                    printf("OrientNum: %d, MaxDistance: %f\n", orientNum, maxDistance);
+                }
+            }
+
+            virtual ArrayList<PointList> GetChannels(const cv::Mat& sketchImage);
+            virtual ArrayList<cv::Mat> GetTransforms(const cv::Size& size, const ArrayList<PointList> channels);
+
+            virtual double GetOneWayDistance(const ArrayList<PointList>& u, const ArrayList<cv::Mat>& v);
+            virtual double GetTwoWayDistance(double uToV, double vToU);
+
+            virtual TString GetName() const 
+            { 
+                return "ocm"; 
+            }
+
+        private:
+            int orientNum;
+            double maxDistance;
+        };
+
+        // Hitmap
+        class Hitmap : public EdgeMatch
+        {
+        public:
+            Hitmap(): orientNum(6), maxDistance(22) {}
+
+            Hitmap(const std::map<TString, TString>& params, bool printParams = false)
+            {
+                orientNum = GetDoubleValue(params, "orientNum", 6);
+                maxDistance = GetDoubleValue(params, "maxDistance", 22);
+
+                if (printParams)
+                {
+                    printf("OrientNum: %d, MaxDistance: %f\n", orientNum, maxDistance);
+                }
+            }
+
+            virtual ArrayList<PointList> GetChannels(const cv::Mat& sketchImage);
+            virtual ArrayList<cv::Mat> GetTransforms(const cv::Size& size, const ArrayList<PointList> channels);
+
+            virtual double GetOneWayDistance(const ArrayList<PointList>& u, const ArrayList<cv::Mat>& v);
+            virtual double GetTwoWayDistance(double uToV, double vToU);
+
+            virtual TString GetName() const 
+            { 
+                return "hit"; 
+            }
+
+        private:
+            int orientNum;
+            double maxDistance;
+        };   
     }
 }
 }

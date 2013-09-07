@@ -28,9 +28,8 @@
     <ClCompile Include="ConfigAndData.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="EdgeMatching.h" />
     <ClInclude Include="Eigen.h" />
-    <ClInclude Include="Feature.h" />
+    <ClInclude Include="Recognition.h" />
     <ClInclude Include="Solver.hpp" />
     <ClInclude Include="System.Image.h" />
     <ClInclude Include="Core.h" />

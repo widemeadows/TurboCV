@@ -182,7 +182,7 @@ Group<ArrayList<Word_f>, ArrayList<Histogram>, ArrayList<int>> LoadLocalFeatureD
 
 int main()
 {
-    EdgeMatchCrossValidation<Hitmap>(sketchPreprocess, "sketches");
+    EdgeMatchCrossValidation<CM>(sketchPreprocess, "sketches");
     //LocalFeatureCrossValidation<RHOG>(sketchPreprocess, "sketches");
     //GlobalFeatureCrossValidation<GHOG>(sketchPreprocess, "subset");
 

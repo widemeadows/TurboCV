@@ -24,11 +24,11 @@ namespace System
             map<TString, TString> params;
 
             const TiXmlNode* configs = doc.RootElement()->FirstChild();
-            const TiXmlElement* config = configs->FirstChild((const char*)featureName)->ToElement();
+            const TiXmlNode* config = configs->FirstChild((const char*)featureName);
 
             if (config != NULL)
             {
-                const TiXmlAttribute* attr = config->FirstAttribute();
+                const TiXmlAttribute* attr = config->ToElement()->FirstAttribute();
                 params[attr->Name()] = attr->Value();
 
                 while ((attr = attr->Next()) != NULL)
