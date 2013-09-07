@@ -71,73 +71,54 @@ cv::Mat sketchPreprocess(const cv::Mat& image)
 //    return finalImage;
 //}
 
-template<typename EdgeMatchType>
-void EdgeMatchCrossValidation(cv::Mat (*Preprocess)(const cv::Mat&), const TString& datasetPath)
-{
-    EdgeMatchSolver<EdgeMatchType> solver(Preprocess, datasetPath);
-    solver.CrossValidation();
-
-    TString savePath = EdgeMatchType().GetName() + "_" + datasetPath + "_knn.out";
-
-    ArrayList<double> precisions = solver.GetPrecisions();
-    FILE* file = fopen(savePath, "w");
-
-    for (int i = 0; i < precisions.Count(); i++)
-        fprintf(file, "Fold %d Accuracy: %f\n", i + 1, precisions[i]);
-
-    fprintf(file, "Average: %f, Standard Deviation: %f\n", Math::Mean(precisions), 
-        Math::StandardDeviation(precisions));
-
-    fclose(file);
-
-#if defined(SAVE_DISTANCE_MATRIX)
-    cv::Mat distanceMatrix = solver.GetDistanceMatrix();
-    ArrayList<int> labels = solver.GetLabels();
-
-    savePath = EdgeMatchType().GetName() + "_" + datasetPath + "_matrix";
-    SaveDistanceMatrix(savePath, distanceMatrix, labels);
-#endif
-}
-
 void Batch()
 {
-    LocalFeatureCrossValidation<HOG>(sketchPreprocess, "sketches");
+    LocalFeatureCrossValidation<HOG>("sketches", sketchPreprocess);
     printf("\n");
 
-    LocalFeatureCrossValidation<RHOG>(sketchPreprocess, "sketches");
+    LocalFeatureCrossValidation<RHOG>("sketches", sketchPreprocess);
     printf("\n");
 
-    LocalFeatureCrossValidation<SHOG>(sketchPreprocess, "sketches");
+    LocalFeatureCrossValidation<SHOG>("sketches", sketchPreprocess);
     printf("\n");
 
-    LocalFeatureCrossValidation<LogSHOG>(sketchPreprocess, "sketches");
+    LocalFeatureCrossValidation<LogSHOG>("sketches", sketchPreprocess);
     printf("\n");
 
-    LocalFeatureCrossValidation<HOOSC>(sketchPreprocess, "sketches");
+    LocalFeatureCrossValidation<HOOSC>("sketches", sketchPreprocess);
     printf("\n");
 
-    LocalFeatureCrossValidation<RHOOSC>(sketchPreprocess, "sketches");
+    LocalFeatureCrossValidation<RHOOSC>("sketches", sketchPreprocess);
     printf("\n");
 
-    LocalFeatureCrossValidation<SC>(sketchPreprocess, "sketches");
+    LocalFeatureCrossValidation<SC>("sketches", sketchPreprocess);
     printf("\n");
 
-    LocalFeatureCrossValidation<PSC>(sketchPreprocess, "sketches");
+    LocalFeatureCrossValidation<PSC>("sketches", sketchPreprocess);
     printf("\n");
 
-    LocalFeatureCrossValidation<RSC>(sketchPreprocess, "sketches");
+    LocalFeatureCrossValidation<RSC>("sketches", sketchPreprocess);
     printf("\n");
 
-    LocalFeatureCrossValidation<RPSC>(sketchPreprocess, "sketches");
+    LocalFeatureCrossValidation<RPSC>("sketches", sketchPreprocess);
     printf("\n");
 
-    LocalFeatureCrossValidation<RGabor>(sketchPreprocess, "sketches");
+    LocalFeatureCrossValidation<RGabor>("sketches", sketchPreprocess);
     printf("\n");
 
-    GlobalFeatureCrossValidation<GHOG>(sketchPreprocess, "sketches");
+    GlobalFeatureCrossValidation<GHOG>("sketches", sketchPreprocess);
     printf("\n");
 
-    GlobalFeatureCrossValidation<GIST>(sketchPreprocess, "sketches");
+    GlobalFeatureCrossValidation<GIST>("sketches", sketchPreprocess);
+    printf("\n");
+
+    EdgeMatchCrossValidation<CM>("sketches", sketchPreprocess);
+    printf("\n");
+
+    EdgeMatchCrossValidation<OCM>("sketches", sketchPreprocess);
+    printf("\n");
+
+    EdgeMatchCrossValidation<Hitmap>("sketches", sketchPreprocess);
     printf("\n");
 }
 
@@ -182,9 +163,53 @@ Group<ArrayList<Word_f>, ArrayList<Histogram>, ArrayList<int>> LoadLocalFeatureD
 
 int main()
 {
-    EdgeMatchCrossValidation<CM>(sketchPreprocess, "sketches");
-    //LocalFeatureCrossValidation<RHOG>(sketchPreprocess, "sketches");
-    //GlobalFeatureCrossValidation<GHOG>(sketchPreprocess, "subset");
+    ArrayList<LocalFeatureVec_f> features;
+    double tmp;
+
+    DirectoryInfo dir("features");
+    ArrayList<TString> fileNames = dir.GetFiles();
+
+    for (int i = 0; i < fileNames.Count(); i++)
+    {
+        LocalFeatureVec_f localFeature;
+        
+        FILE* file = fopen(fileNames[i], "r");
+        while (fscanf(file, "%lf", &tmp) == 1)
+        {
+            Descriptor_f desc;
+
+            desc.Add(tmp);
+            for (int j = 1; j < 480; j++)
+            {
+                fgetc(file);
+                fscanf(file, "%lf", &tmp);
+                desc.Add(tmp);
+            }
+
+            localFeature.Add(desc);
+        }
+        fclose(file);
+
+        features.Add(localFeature);
+    }
+
+    ArrayList<int> labels(features.Count());
+    FILE* file = fopen("classInfo.txt", "r");
+    for (int i = 0; i < features.Count(); i++)
+        fscanf(file, "%d", &labels[i]);
+    fclose(file);
+
+    printf("Compute Visual Words...\n");
+    ArrayList<Word_f> words = BOV(SampleDescriptors(features, 1000000), 1000).GetVisualWords();
+
+    printf("Compute Frequency Histograms...\n");
+    ArrayList<Histogram> histograms = FreqHist(features, words).GetFrequencyHistograms();
+
+    CrossValidation(histograms, labels);
+
+    //EdgeMatchCrossValidation<Hitmap>("sketches", sketchPreprocess);
+    //LocalFeatureCrossValidation<RHOG>("sketches", sketchPreprocess);
+    //GlobalFeatureCrossValidation<GHOG>("subset", sketchPreprocess);
 
     /*auto result = LoadLocalFeatureData("hog_sketches_data");
     ArrayList<int> labels = result.Item3();

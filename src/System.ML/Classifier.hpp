@@ -32,7 +32,7 @@ namespace System
                 int K = 4)
             {
                 assert(distanceMatrix.rows == trainingLabels.Count());
-                assert(distanceMatrix.cols == evaluationSet.Count());
+                assert(distanceMatrix.cols == evaluationLabels.Count());
 
                 Train(distanceMatrix, trainingLabels);
                 ArrayList<int> predict = Predict(sigma, K);

@@ -10,7 +10,7 @@ using namespace cv;
 //#define SAVE_DISTANCE_MATRIX
 
 template<typename FeatureType>
-void LocalFeatureCrossValidation(cv::Mat (*Preprocess)(const cv::Mat&), const TString& datasetPath)
+void LocalFeatureCrossValidation(const TString& datasetPath, cv::Mat (*Preprocess)(const cv::Mat&))
 {
     LocalFeatureSolver<FeatureType> solver(Preprocess, datasetPath);
     solver.CrossValidation();
@@ -47,7 +47,7 @@ void LocalFeatureCrossValidation(cv::Mat (*Preprocess)(const cv::Mat&), const TS
 }
 
 template<typename FeatureType>
-void GlobalFeatureCrossValidation(cv::Mat (*Preprocess)(const cv::Mat&), const TString& datasetPath)
+void GlobalFeatureCrossValidation(const TString& datasetPath, cv::Mat (*Preprocess)(const cv::Mat&))
 {
     GlobalFeatureSolver<FeatureType> solver(Preprocess, datasetPath);
     solver.CrossValidation();
@@ -82,40 +82,55 @@ void GlobalFeatureCrossValidation(cv::Mat (*Preprocess)(const cv::Mat&), const T
 #endif
 }
 
-template<typename T>
-void CrossValidation(const ArrayList<T>& samples, const ArrayList<int>& labels, int fold = 3)
+template<typename EdgeMatchType>
+void EdgeMatchCrossValidation(const TString& datasetPath, cv::Mat (*Preprocess)(const cv::Mat&))
 {
-    ArrayList<Group<ArrayList<T>, ArrayList<T>, ArrayList<size_t>>> pass = 
-        RandomSplit(samples, fold);
-    ArrayList<double> passResult;
+    EdgeMatchSolver<EdgeMatchType> solver(Preprocess, datasetPath);
+    solver.CrossValidation();
 
-    for (int i = 0; i < fold; i++)
+    TString savePath = EdgeMatchType().GetName() + "_" + datasetPath + "_knn.out";
+
+    ArrayList<double> precisions = solver.GetPrecisions();
+    FILE* file = fopen(savePath, "w");
+
+    for (int i = 0; i < precisions.Count(); i++)
+        fprintf(file, "Fold %d Accuracy: %f\n", i + 1, precisions[i]);
+
+    fprintf(file, "Average: %f, Standard Deviation: %f\n", Math::Mean(precisions), 
+        Math::StandardDeviation(precisions));
+
+    fclose(file);
+
+#if defined(SAVE_DISTANCE_MATRIX)
+    cv::Mat distanceMatrix = solver.GetDistanceMatrix();
+    ArrayList<int> labels = solver.GetLabels();
+
+    savePath = EdgeMatchType().GetName() + "_" + datasetPath + "_matrix";
+    SaveDistanceMatrix(savePath, distanceMatrix, labels);
+#endif
+}
+
+template<typename T>
+void CrossValidation(const ArrayList<T>& samples, const ArrayList<int>& labels, int nFold = 3)
+{
+    ArrayList<ArrayList<size_t>> evaIdxes = RandomSplit(labels.Count(), nFold);
+    ArrayList<double> precisions;
+
+    for (int i = 0; i < nFold; i++)
     {
         printf("Begin Fold %nDesc...\n", i + 1);
-        ArrayList<T>& evaluationSet = pass[i].Item1();
-        ArrayList<T>& trainingSet = pass[i].Item2();
-        ArrayList<size_t>& pickUpIndexes = pass[i].Item3();
+        const ArrayList<size_t>& pickUpIndexes = evaIdxes[i];
+        ArrayList<T> trainingSet = Divide(samples, pickUpIndexes).Item2();
+        ArrayList<T> evaluationSet = Divide(samples, pickUpIndexes).Item1();
+        ArrayList<int> trainingLabels = Divide(labels, pickUpIndexes).Item2();
+        ArrayList<int> evaluationLabels = Divide(labels, pickUpIndexes).Item1();
 
-        ArrayList<int> trainingLabels, evaluationLabels;
-        int counter = 0;
-        for (int k = 0; k < samples.Count(); k++)
-        {
-            if (counter < pickUpIndexes.Count() && k == pickUpIndexes[counter])
-            {
-                evaluationLabels.Add(labels[k]);
-                counter++;
-            }
-            else
-                trainingLabels.Add(labels[k]);
-        }
+        precisions.Add(KNN<T>().
+            Evaluate(trainingSet, trainingLabels, evaluationSet, evaluationLabels).Item1());
 
-        KNN<T> knn;
-        auto precisions = knn.Evaluate(trainingSet, trainingLabels, evaluationSet, evaluationLabels);
-
-        passResult.Add(precisions.first);
-        printf("Fold %nDesc Accuracy: %f\n\n", i + 1, precisions.first);
+        printf("Fold %nDesc Accuracy: %f\n\n", i + 1, precisions[i]);
     }
 
-    printf("\nAverage: %f, Standard Deviation: %f\n", Math::Mean(passResult), 
-        Math::StandardDeviation(passResult));
+    printf("\nAverage: %f, Standard Deviation: %f\n", Math::Mean(precisions), 
+        Math::StandardDeviation(precisions));
 }
