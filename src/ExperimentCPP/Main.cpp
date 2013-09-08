@@ -27,46 +27,59 @@ cv::Mat sketchPreprocess(const cv::Mat& image)
     return finalImage;
 }
 
-//Mat Preprocess(const Mat& sketchImage, bool thinning, Size size)
+cv::Mat mayaPreprocess(const cv::Mat& image)
+{
+    int leftPadding = 0, rightPadding = 0, topPadding = 0, bottomPadding = 0;
+    if (image.rows < image.cols)
+    {
+        topPadding = (image.cols - image.rows) / 2;
+        bottomPadding = 512 - image.rows - topPadding;
+    }
+    else
+    {
+        leftPadding = (image.rows - image.cols) / 2;
+        rightPadding = 512 - image.cols - leftPadding;
+    }
+
+    cv::Mat squareImage;
+    copyMakeBorder(image, squareImage, topPadding, bottomPadding, leftPadding, rightPadding, 
+        BORDER_CONSTANT, Scalar(255, 255, 255, 255));
+    assert(squareImage.rows == 512 && squareImage.cols == 512);
+
+    cv::Mat thinnedImage;
+    thin(reverse(squareImage), thinnedImage);
+
+    cv::Mat finalImage;
+    clean(thinnedImage, finalImage, 10);
+
+    return finalImage;
+}
+
+//Mat Preprocess(const Mat& sketchImage)
 //{
-//    assert(size.width == size.height);
+//    Mat binaryImage;
+//    threshold(sketchImage, binaryImage, 200, 1, CV_THRESH_BINARY_INV);
 //
-//    Mat tmpImage = reverse(sketchImage);
-//    resize(tmpImage, tmpImage, Size(256, 256));
+//    Mat boundingBox = GetBoundingBox(binaryImage);
 //
-//    //threshold(tmpImage, tmpImage, 200, 1, CV_THRESH_BINARY_INV);
+//    Mat squareImage;
+//    int leftPadding = 0, topPadding = 0;
+//    if (boundingBox.rows < boundingBox.cols)
+//        topPadding = (boundingBox.cols - boundingBox.rows) / 2;
+//    else
+//        leftPadding = (boundingBox.rows - boundingBox.cols) / 2;
+//    copyMakeBorder(boundingBox, squareImage, topPadding, topPadding, 
+//        leftPadding, leftPadding, BORDER_CONSTANT, Scalar(0, 0, 0, 0));
 //
-//    //Mat binaryImage;
-//    //threshold(sketchImage, binaryImage, 200, 1, CV_THRESH_BINARY_INV);
+//    Mat scaledImage;
+//    resize(squareImage, scaledImage, Size(228, 228));
 //
-//    //Mat boundingBox = GetBoundingBox(binaryImage);
+//    Mat paddedImage;
+//    copyMakeBorder(scaledImage, paddedImage, 14, 14, 14, 14, BORDER_CONSTANT, Scalar(0, 0, 0, 0));
+//    assert(paddedImage.rows == size.height && paddedImage.cols == size.width);
 //
-//    //Mat squareImage;
-//    //int widthPadding = 0, heightPadding = 0;
-//    //if (boundingBox.rows < boundingBox.cols)
-//    //    heightPadding = (boundingBox.cols - boundingBox.rows) / 2;
-//    //else
-//    //    widthPadding = (boundingBox.rows - boundingBox.cols) / 2;
-//    //copyMakeBorder(boundingBox, squareImage, heightPadding, heightPadding, 
-//    //    widthPadding, widthPadding, BORDER_CONSTANT, Scalar(0, 0, 0, 0));
-//
-//    //Mat scaledImage;
-//    //Size scaledSize = Size((int)(size.width - 2 * size.width / 18.0),
-//    //    (int)(size.height - 2 * size.height / 18.0));
-//    //resize(squareImage, scaledImage, scaledSize);
-//
-//    //Mat paddedImage;
-//    //heightPadding = (size.height - scaledSize.height) / 2,
-//    //    widthPadding = (size.width - scaledSize.width) / 2; 
-//    //copyMakeBorder(scaledImage, paddedImage, heightPadding, heightPadding, 
-//    //    widthPadding, widthPadding, BORDER_CONSTANT, Scalar(0, 0, 0, 0));
-//    //assert(paddedImage.rows == size.height && paddedImage.cols == size.width);
-//
-//    Mat finalImage = tmpImage;
-//    //clean(paddedImage, finalImage, 3);
-//
-//    if (thinning)
-//        thin(finalImage, finalImage);
+//    Mat finalImage;
+//    thin(paddedImage, finalImage);
 //
 //    return finalImage;
 //}
@@ -163,41 +176,55 @@ Group<ArrayList<Word_f>, ArrayList<Histogram>, ArrayList<int>> LoadLocalFeatureD
 
 int main()
 {
-    ArrayList<LocalFeatureVec_f> features;
-    double tmp;
+    //ArrayList<LocalFeatureVec_f> features;
+    //double tmp;
 
-    DirectoryInfo dir("features");
-    ArrayList<TString> fileNames = dir.GetFiles();
+    //DirectoryInfo dir("features");
+    //ArrayList<TString> fileNames = dir.GetFiles();
 
-    for (int i = 0; i < fileNames.Count(); i++)
+    //for (int i = 0; i < fileNames.Count(); i++)
+    //{
+    //    LocalFeatureVec_f localFeature;
+    //    
+    //    FILE* file = fopen(fileNames[i], "r");
+    //    while (fscanf(file, "%lf", &tmp) == 1)
+    //    {
+    //        Descriptor_f desc;
+
+    //        desc.Add(tmp);
+    //        for (int j = 1; j < 480; j++)
+    //        {
+    //            fgetc(file);
+    //            fscanf(file, "%lf", &tmp);
+    //            desc.Add(tmp);
+    //        }
+
+    //        localFeature.Add(desc);
+    //    }
+    //    fclose(file);
+
+    //    features.Add(localFeature);
+    //}
+
+    ArrayList<TString> paths = LoadDataset("maya").Item1();
+    ArrayList<int> labels = LoadDataset("maya").Item2();
+    std::map<TString, TString> params;
+    int nImage = paths.Count();
+
+    params["angleNum"] = "12";
+    params["orientNum"] = "8";
+    params["pivotRatio"] = "0.1";
+    HOOSC(params, true); // display all params of the algorithm
+
+    ArrayList<LocalFeatureVec_f> features(nImage);
+
+    #pragma omp parallel for
+    for (int i = 0; i < nImage; i++)
     {
-        LocalFeatureVec_f localFeature;
-        
-        FILE* file = fopen(fileNames[i], "r");
-        while (fscanf(file, "%lf", &tmp) == 1)
-        {
-            Descriptor_f desc;
-
-            desc.Add(tmp);
-            for (int j = 1; j < 480; j++)
-            {
-                fgetc(file);
-                fscanf(file, "%lf", &tmp);
-                desc.Add(tmp);
-            }
-
-            localFeature.Add(desc);
-        }
-        fclose(file);
-
-        features.Add(localFeature);
+        HOOSC machine(params);
+        cv::Mat image = cv::imread(paths[i], CV_LOAD_IMAGE_GRAYSCALE); 
+        Convert(machine(mayaPreprocess != NULL ? mayaPreprocess(image) : image), features[i]);
     }
-
-    ArrayList<int> labels(features.Count());
-    FILE* file = fopen("classInfo.txt", "r");
-    for (int i = 0; i < features.Count(); i++)
-        fscanf(file, "%d", &labels[i]);
-    fclose(file);
 
     printf("Compute Visual Words...\n");
     ArrayList<Word_f> words = BOV(SampleDescriptors(features, 1000000), 1000).GetVisualWords();

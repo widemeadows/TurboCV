@@ -118,7 +118,7 @@ void CrossValidation(const ArrayList<T>& samples, const ArrayList<int>& labels, 
 
     for (int i = 0; i < nFold; i++)
     {
-        printf("Begin Fold %nDesc...\n", i + 1);
+        printf("Begin Fold %d...\n", i + 1);
         const ArrayList<size_t>& pickUpIndexes = evaIdxes[i];
         ArrayList<T> trainingSet = Divide(samples, pickUpIndexes).Item2();
         ArrayList<T> evaluationSet = Divide(samples, pickUpIndexes).Item1();
@@ -128,7 +128,7 @@ void CrossValidation(const ArrayList<T>& samples, const ArrayList<int>& labels, 
         precisions.Add(KNN<T>().
             Evaluate(trainingSet, trainingLabels, evaluationSet, evaluationLabels).Item1());
 
-        printf("Fold %nDesc Accuracy: %f\n\n", i + 1, precisions[i]);
+        printf("Fold %d Accuracy: %f\n\n", i + 1, precisions[i]);
     }
 
     printf("\nAverage: %f, Standard Deviation: %f\n", Math::Mean(precisions), 
