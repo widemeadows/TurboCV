@@ -43,16 +43,10 @@ cv::Mat mayaPreprocess(const cv::Mat& image)
 
     cv::Mat squareImage;
     copyMakeBorder(image, squareImage, topPadding, bottomPadding, leftPadding, rightPadding, 
-        BORDER_CONSTANT, Scalar(255, 255, 255, 255));
+        BORDER_CONSTANT, Scalar(0, 0, 0, 0));
     assert(squareImage.rows == 512 && squareImage.cols == 512);
 
-    cv::Mat thinnedImage;
-    thin(reverse(squareImage), thinnedImage);
-
-    cv::Mat finalImage;
-    clean(thinnedImage, finalImage, 10);
-
-    return finalImage;
+    return squareImage;
 }
 
 //Mat Preprocess(const Mat& sketchImage)
@@ -84,56 +78,141 @@ cv::Mat mayaPreprocess(const cv::Mat& image)
 //    return finalImage;
 //}
 
-void Batch()
+void Batch(const TString& datasetPath, cv::Mat (*preprocess)(const cv::Mat&))
 {
-    LocalFeatureCrossValidation<HOG>("sketches", sketchPreprocess);
+    LocalFeatureCrossValidation<HOG>(datasetPath, preprocess);
     printf("\n");
 
-    LocalFeatureCrossValidation<RHOG>("sketches", sketchPreprocess);
+    LocalFeatureCrossValidation<RHOG>(datasetPath, preprocess);
     printf("\n");
 
-    LocalFeatureCrossValidation<SHOG>("sketches", sketchPreprocess);
+    LocalFeatureCrossValidation<SHOG>(datasetPath, preprocess);
     printf("\n");
 
-    LocalFeatureCrossValidation<LogSHOG>("sketches", sketchPreprocess);
+    LocalFeatureCrossValidation<LogSHOG>(datasetPath, preprocess);
     printf("\n");
 
-    LocalFeatureCrossValidation<HOOSC>("sketches", sketchPreprocess);
+    LocalFeatureCrossValidation<HOOSC>(datasetPath, preprocess);
     printf("\n");
 
-    LocalFeatureCrossValidation<RHOOSC>("sketches", sketchPreprocess);
+    LocalFeatureCrossValidation<RHOOSC>(datasetPath, preprocess);
     printf("\n");
 
-    LocalFeatureCrossValidation<SC>("sketches", sketchPreprocess);
+    LocalFeatureCrossValidation<SC>(datasetPath, preprocess);
     printf("\n");
 
-    LocalFeatureCrossValidation<PSC>("sketches", sketchPreprocess);
+    LocalFeatureCrossValidation<PSC>(datasetPath, preprocess);
     printf("\n");
 
-    LocalFeatureCrossValidation<RSC>("sketches", sketchPreprocess);
+    LocalFeatureCrossValidation<RSC>(datasetPath, preprocess);
     printf("\n");
 
-    LocalFeatureCrossValidation<RPSC>("sketches", sketchPreprocess);
+    LocalFeatureCrossValidation<RPSC>(datasetPath, preprocess);
     printf("\n");
 
-    LocalFeatureCrossValidation<RGabor>("sketches", sketchPreprocess);
+    LocalFeatureCrossValidation<RGabor>(datasetPath, preprocess);
     printf("\n");
 
-    GlobalFeatureCrossValidation<GHOG>("sketches", sketchPreprocess);
+    GlobalFeatureCrossValidation<GHOG>(datasetPath, preprocess);
     printf("\n");
 
-    GlobalFeatureCrossValidation<GIST>("sketches", sketchPreprocess);
+    GlobalFeatureCrossValidation<GIST>(datasetPath, preprocess);
     printf("\n");
 
-    EdgeMatchCrossValidation<CM>("sketches", sketchPreprocess);
+    EdgeMatchCrossValidation<CM>(datasetPath, preprocess);
     printf("\n");
 
-    EdgeMatchCrossValidation<OCM>("sketches", sketchPreprocess);
+    EdgeMatchCrossValidation<OCM>(datasetPath, preprocess);
     printf("\n");
 
-    EdgeMatchCrossValidation<Hitmap>("sketches", sketchPreprocess);
+    EdgeMatchCrossValidation<Hitmap>(datasetPath, preprocess);
     printf("\n");
 }
+
+void Choose(const TString& algoName, const TString& datasetPath, cv::Mat (*preprocess)(const cv::Mat&))
+{
+    if (algoName == TString("hog"))
+    {
+        LocalFeatureCrossValidation<HOG>(datasetPath, preprocess);
+        printf("\n");
+    }
+    else if (algoName == TString("rhog"))
+    {
+        LocalFeatureCrossValidation<RHOG>(datasetPath, preprocess);
+        printf("\n");
+    }
+    else if (algoName == TString("shog"))
+    {
+        LocalFeatureCrossValidation<SHOG>(datasetPath, preprocess);
+        printf("\n");
+    }
+    else if (algoName == TString("logshog"))
+    {
+        LocalFeatureCrossValidation<LogSHOG>(datasetPath, preprocess);
+        printf("\n");
+    }
+    else if (algoName == TString("hoosc"))
+    {
+        LocalFeatureCrossValidation<HOOSC>(datasetPath, preprocess);
+        printf("\n");
+    }
+    else if (algoName == TString("rhoosc"))
+    {
+        LocalFeatureCrossValidation<RHOOSC>(datasetPath, preprocess);
+        printf("\n");
+    }
+    else if (algoName == TString("sc"))
+    {
+        LocalFeatureCrossValidation<SC>(datasetPath, preprocess);
+        printf("\n");
+    }
+    else if (algoName == TString("psc"))
+    {
+        LocalFeatureCrossValidation<PSC>(datasetPath, preprocess);
+        printf("\n");
+    }
+    else if (algoName == TString("rsc"))
+    {
+        LocalFeatureCrossValidation<RSC>(datasetPath, preprocess);
+        printf("\n");
+    }
+    else if (algoName == TString("rpsc"))
+    {
+        LocalFeatureCrossValidation<RPSC>(datasetPath, preprocess);
+        printf("\n");
+    }
+    else if (algoName == TString("rgabor"))
+    {
+        LocalFeatureCrossValidation<RGabor>(datasetPath, preprocess);
+        printf("\n");
+    }
+    else if (algoName == TString("ghog"))
+    {
+        GlobalFeatureCrossValidation<GHOG>(datasetPath, preprocess);
+        printf("\n");
+    }
+    else if (algoName == TString("gist"))
+    {
+        GlobalFeatureCrossValidation<GIST>(datasetPath, preprocess);
+        printf("\n");
+    }
+    else if (algoName == TString("cm"))
+    {
+        EdgeMatchCrossValidation<CM>(datasetPath, preprocess);
+        printf("\n");
+    }
+    else if (algoName == TString("ocm"))
+    {
+        EdgeMatchCrossValidation<OCM>(datasetPath, preprocess);
+        printf("\n");
+    }
+    else if (algoName == TString("hitmap"))
+    {
+        EdgeMatchCrossValidation<Hitmap>(datasetPath, preprocess);
+        printf("\n");
+    }
+}
+
 
 Group<ArrayList<Word_f>, ArrayList<Histogram>, ArrayList<int>> LoadLocalFeatureData(const TString& fileName)
 {
@@ -174,8 +253,11 @@ Group<ArrayList<Word_f>, ArrayList<Histogram>, ArrayList<int>> LoadLocalFeatureD
     return CreateGroup(words, histograms, labels);
 }
 
-int main()
+int main(int argc, char* argv[])
 {
+    if (argc == 2)
+        Choose(argv[1], "subset", sketchPreprocess);
+
     //ArrayList<LocalFeatureVec_f> features;
     //double tmp;
 
@@ -206,36 +288,36 @@ int main()
     //    features.Add(localFeature);
     //}
 
-    ArrayList<TString> paths = LoadDataset("maya").Item1();
-    ArrayList<int> labels = LoadDataset("maya").Item2();
-    std::map<TString, TString> params;
-    int nImage = paths.Count();
+    //ArrayList<TString> paths = LoadDataset("mayas").Item1();
+    //ArrayList<int> labels = LoadDataset("mayas").Item2();
+    //std::map<TString, TString> params;
+    //int nImage = paths.Count();
 
-    params["angleNum"] = "12";
-    params["orientNum"] = "8";
-    params["pivotRatio"] = "0.1";
-    HOOSC(params, true); // display all params of the algorithm
+    //params["angleNum"] = "12";
+    //params["orientNum"] = "8";
+    //params["pivotRatio"] = "0.1";
+    //HOOSC(params, true); // display all params of the algorithm
 
-    ArrayList<LocalFeatureVec_f> features(nImage);
+    //ArrayList<LocalFeatureVec_f> features(nImage);
 
-    #pragma omp parallel for
-    for (int i = 0; i < nImage; i++)
-    {
-        HOOSC machine(params);
-        cv::Mat image = cv::imread(paths[i], CV_LOAD_IMAGE_GRAYSCALE); 
-        Convert(machine(mayaPreprocess != NULL ? mayaPreprocess(image) : image), features[i]);
-    }
+    //#pragma omp parallel for
+    //for (int i = 0; i < nImage; i++)
+    //{
+    //    HOOSC machine(params);
+    //    cv::Mat image = cv::imread(paths[i], CV_LOAD_IMAGE_GRAYSCALE); 
+    //    Convert(machine(mayaPreprocess != NULL ? mayaPreprocess(image) : image), features[i]);
+    //}
 
-    printf("Compute Visual Words...\n");
-    ArrayList<Word_f> words = BOV(SampleDescriptors(features, 1000000), 1000).GetVisualWords();
+    //printf("Compute Visual Words...\n");
+    //ArrayList<Word_f> words = BOV(SampleDescriptors(features, 1000000), 1000).GetVisualWords();
 
-    printf("Compute Frequency Histograms...\n");
-    ArrayList<Histogram> histograms = FreqHist(features, words).GetFrequencyHistograms();
+    //printf("Compute Frequency Histograms...\n");
+    //ArrayList<Histogram> histograms = FreqHist(features, words).GetFrequencyHistograms();
 
-    CrossValidation(histograms, labels);
+    //CrossValidation(histograms, labels);
 
-    //EdgeMatchCrossValidation<Hitmap>("sketches", sketchPreprocess);
-    //LocalFeatureCrossValidation<RHOG>("sketches", sketchPreprocess);
+    //EdgeMatchCrossValidation<Hitmap>("subset", sketchPreprocess);
+    //LocalFeatureCrossValidation<RHOG>("subset", sketchPreprocess);
     //GlobalFeatureCrossValidation<GHOG>("subset", sketchPreprocess);
 
     /*auto result = LoadLocalFeatureData("hog_sketches_data");

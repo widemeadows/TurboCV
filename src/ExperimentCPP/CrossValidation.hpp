@@ -10,21 +10,34 @@ using namespace cv;
 //#define SAVE_DISTANCE_MATRIX
 
 template<typename FeatureType>
-void LocalFeatureCrossValidation(const TString& datasetPath, cv::Mat (*Preprocess)(const cv::Mat&))
+void LocalFeatureCrossValidation(const TString& datasetPath, cv::Mat (*preprocess)(const cv::Mat&))
 {
-    LocalFeatureSolver<FeatureType> solver(Preprocess, datasetPath);
+    LocalFeatureSolver<FeatureType> solver(preprocess, datasetPath);
     solver.CrossValidation();
 
-    TString savePath = FeatureType().GetName() + "_" + datasetPath + "_knn.out";
+    TString savePath = FeatureType().GetName() + "_" + datasetPath;
+
+    // Save KNN Accuracies
+
+    ArrayList<double> accuracies = solver.GetAccuracies();
+    FILE* file = fopen(savePath + "_knn.out", "w");
+
+    for (int i = 0; i < accuracies.Count(); i++)
+        fprintf(file, "Fold %d Accuracy: %f\n", i + 1, accuracies[i]);
+
+    fprintf(file, "Average: %f, Standard Deviation: %f\n", Math::Mean(accuracies), 
+        Math::StandardDeviation(accuracies));
+
+    fclose(file);
+
+    // Save Mean Average Precision
 
     ArrayList<double> precisions = solver.GetPrecisions();
-    FILE* file = fopen(savePath, "w");
+    file = fopen(savePath + "_map.out", "w");
 
     for (int i = 0; i < precisions.Count(); i++)
-        fprintf(file, "Fold %d Accuracy: %f\n", i + 1, precisions[i]);
-
-    fprintf(file, "Average: %f, Standard Deviation: %f\n", Math::Mean(precisions), 
-        Math::StandardDeviation(precisions));
+        fprintf(file, "%f ", precisions[i]);
+    fprintf(file, "\n");
 
     fclose(file);
 
@@ -47,21 +60,34 @@ void LocalFeatureCrossValidation(const TString& datasetPath, cv::Mat (*Preproces
 }
 
 template<typename FeatureType>
-void GlobalFeatureCrossValidation(const TString& datasetPath, cv::Mat (*Preprocess)(const cv::Mat&))
+void GlobalFeatureCrossValidation(const TString& datasetPath, cv::Mat (*preprocess)(const cv::Mat&))
 {
-    GlobalFeatureSolver<FeatureType> solver(Preprocess, datasetPath);
+    GlobalFeatureSolver<FeatureType> solver(preprocess, datasetPath);
     solver.CrossValidation();
 
-    TString savePath = FeatureType().GetName() + "_" + datasetPath + "_knn.out";
+    TString savePath = FeatureType().GetName() + "_" + datasetPath;
+
+    // Save KNN Accuracies
+
+    ArrayList<double> accuracies = solver.GetAccuracies();
+    FILE* file = fopen(savePath + "_knn.out", "w");
+
+    for (int i = 0; i < accuracies.Count(); i++)
+        fprintf(file, "Fold %d Accuracy: %f\n", i + 1, accuracies[i]);
+
+    fprintf(file, "Average: %f, Standard Deviation: %f\n", Math::Mean(accuracies), 
+        Math::StandardDeviation(accuracies));
+
+    fclose(file);
+
+    // Save Mean Average Precision
 
     ArrayList<double> precisions = solver.GetPrecisions();
-    FILE* file = fopen(savePath, "w");
+    file = fopen(savePath + "_map.out", "w");
 
     for (int i = 0; i < precisions.Count(); i++)
-        fprintf(file, "Fold %d Accuracy: %f\n", i + 1, precisions[i]);
-
-    fprintf(file, "Average: %f, Standard Deviation: %f\n", Math::Mean(precisions), 
-        Math::StandardDeviation(precisions));
+        fprintf(file, "%f ", precisions[i]);
+    fprintf(file, "\n");
 
     fclose(file);
 
@@ -83,21 +109,34 @@ void GlobalFeatureCrossValidation(const TString& datasetPath, cv::Mat (*Preproce
 }
 
 template<typename EdgeMatchType>
-void EdgeMatchCrossValidation(const TString& datasetPath, cv::Mat (*Preprocess)(const cv::Mat&))
+void EdgeMatchCrossValidation(const TString& datasetPath, cv::Mat (*preprocess)(const cv::Mat&))
 {
-    EdgeMatchSolver<EdgeMatchType> solver(Preprocess, datasetPath);
+    EdgeMatchSolver<EdgeMatchType> solver(preprocess, datasetPath);
     solver.CrossValidation();
 
-    TString savePath = EdgeMatchType().GetName() + "_" + datasetPath + "_knn.out";
+    TString savePath = EdgeMatchType().GetName() + "_" + datasetPath;
+
+    // Save KNN Accuracies
+
+    ArrayList<double> accuracies = solver.GetAccuracies();
+    FILE* file = fopen(savePath + "_knn.out", "w");
+
+    for (int i = 0; i < accuracies.Count(); i++)
+        fprintf(file, "Fold %d Accuracy: %f\n", i + 1, accuracies[i]);
+
+    fprintf(file, "Average: %f, Standard Deviation: %f\n", Math::Mean(accuracies), 
+        Math::StandardDeviation(accuracies));
+
+    fclose(file);
+
+    // Save Mean Average Precision
 
     ArrayList<double> precisions = solver.GetPrecisions();
-    FILE* file = fopen(savePath, "w");
+    file = fopen(savePath + "_map.out", "w");
 
     for (int i = 0; i < precisions.Count(); i++)
-        fprintf(file, "Fold %d Accuracy: %f\n", i + 1, precisions[i]);
-
-    fprintf(file, "Average: %f, Standard Deviation: %f\n", Math::Mean(precisions), 
-        Math::StandardDeviation(precisions));
+        fprintf(file, "%f ", precisions[i]);
+    fprintf(file, "\n");
 
     fclose(file);
 

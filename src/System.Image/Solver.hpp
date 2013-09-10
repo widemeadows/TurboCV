@@ -39,7 +39,7 @@ namespace System
 
                 params = LoadConfiguration(configFilePath, AlgorithmName());
 
-                evaIdxes = SplitDatasetEqually(labels, nFold);
+                evaIdxes = SplitDatasetRandomly(labels, nFold);
 
                 InnerCrossValidation(paths, labels, params, evaIdxes);
             }
@@ -86,7 +86,9 @@ namespace System
                 const TString& configFilePath = "config.xml"):
                 Solver(preprocess, datasetPath, configFilePath) {}
 
+            ArrayList<double> GetAccuracies() { return accuracies; }
             ArrayList<double> GetPrecisions() { return precisions; }
+
             ArrayList<Word_f> GetWords() { return words; }
             ArrayList<Histogram> GetHistograms() { return histograms; }
 
@@ -102,7 +104,9 @@ namespace System
                 return LocalFeature().GetName();
             }
 
+            ArrayList<double> accuracies;
             ArrayList<double> precisions;
+
             ArrayList<Word_f> words;
             ArrayList<Histogram> histograms;
         };
@@ -132,8 +136,8 @@ namespace System
                 Convert(machine(Preprocess != NULL ? Preprocess(image) : image), features[i]);
             }
 
-            double maxPrecision = -1;
-            this->precisions.Clear();
+            double maxAccuracy = -1;
+            this->accuracies.Clear();
             for (int i = 0; i < evaIdxes.Count(); i++)
             {
                 printf("\nBegin Fold %d...\n", i + 1);
@@ -150,21 +154,30 @@ namespace System
                 ArrayList<Histogram> trainingHistograms = Divide(histograms, pickUpIndexes).Item2();
                 ArrayList<Histogram> evaluationHistograms = Divide(histograms, pickUpIndexes).Item1();
 
-                this->precisions.Add(KNN<Histogram>().
+                this->accuracies.Add(KNN<Histogram>().
                     Evaluate(trainingHistograms, trainingLabels, evaluationHistograms, evaluationLabels).Item1());
 
-                if (this->precisions[i] > maxPrecision)
+                if (this->accuracies[i] > maxAccuracy)
                 {
-                    maxPrecision = precisions[i];
+                    maxAccuracy = accuracies[i];
                     this->words = words;
                     this->histograms = histograms;
                 }
 
-                printf("Fold %d Accuracy: %f\n", i + 1, this->precisions[i]);
+                printf("Fold %d Accuracy: %f\n", i + 1, this->accuracies[i]);
             }
 
-            printf("\nAverage: %f, Standard Deviation: %f\n", Math::Mean(precisions), 
-                Math::StandardDeviation(precisions));
+            printf("\nAverage: %f, Standard Deviation: %f\n", Math::Mean(this->accuracies), 
+                Math::StandardDeviation(this->accuracies));
+
+            this->precisions = MAP<Histogram>().
+                FullCrossValidation(this->histograms, this->labels).Item1();
+
+            printf("Mean Average Precision:");
+            int nDisplay = (5 <= this->precisions.Count() ? 5 : this->precisions.Count());
+            for (int i = 0; i < nDisplay; i++)
+                printf(" %.4f", this->precisions[i]);
+            printf("\n");
         }
 
 
@@ -182,7 +195,9 @@ namespace System
                 const TString& configFilePath = "config.xml"):
                 Solver(preprocess, datasetPath, configFilePath) {}
 
+            ArrayList<double> GetAccuracies() { return accuracies; }
             ArrayList<double> GetPrecisions() { return precisions; }
+
             ArrayList<GlobalFeatureVec_f> GetFeatures() { return features; }
 
         protected:
@@ -198,7 +213,9 @@ namespace System
             }
 
         private:
+            ArrayList<double> accuracies;
             ArrayList<double> precisions;
+
             ArrayList<GlobalFeatureVec_f> features;
         };
 
@@ -228,7 +245,7 @@ namespace System
             this->features = features;
 
             double maxPrecision = -1;
-            this->precisions.Clear();
+            this->accuracies.Clear();
             for (int i = 0; i < evaIdxes.Count(); i++)
             {
                 printf("\nBegin Fold %d...\n", i + 1);
@@ -238,14 +255,23 @@ namespace System
                 ArrayList<int> trainingLabels = Divide(labels, pickUpIndexes).Item2();
                 ArrayList<int> evaluationLabels = Divide(labels, pickUpIndexes).Item1();
 
-                this->precisions.Add(KNN<GlobalFeatureVec_f>().
+                this->accuracies.Add(KNN<GlobalFeatureVec_f>().
                     Evaluate(trainingSet, trainingLabels, evaluationSet, evaluationLabels).Item1());
 
-                printf("Fold %d Accuracy: %f\n", i + 1, this->precisions[i]);
+                printf("Fold %d Accuracy: %f\n", i + 1, this->accuracies[i]);
             }
 
-            printf("\nAverage: %f, Standard Deviation: %f\n", Math::Mean(precisions), 
-                Math::StandardDeviation(precisions));
+            printf("\nAverage: %f, Standard Deviation: %f\n", Math::Mean(this->accuracies), 
+                Math::StandardDeviation(this->accuracies));
+
+            this->precisions = MAP<GlobalFeatureVec_f>().
+                FullCrossValidation(this->features, this->labels).Item1();
+
+            printf("Mean Average Precision:");
+            int nDisplay = (5 <= this->precisions.Count() ? 5 : this->precisions.Count());
+            for (int i = 0; i < nDisplay; i++)
+                printf(" %.4f", this->precisions[i]);
+            printf("\n");
         }
 
 
@@ -263,7 +289,9 @@ namespace System
                 const TString& configFilePath = "config.xml"):
                 Solver(preprocess, datasetPath, configFilePath) {}
 
+            ArrayList<double> GetAccuracies() { return accuracies; }
             ArrayList<double> GetPrecisions() { return precisions; }
+
             cv::Mat GetDistanceMatrix() { return distanceMatrix; }
 
         protected:
@@ -279,7 +307,9 @@ namespace System
             }
 
         private:
+            ArrayList<double> accuracies;
             ArrayList<double> precisions;
+
             cv::Mat distanceMatrix;
         };
 
@@ -342,7 +372,7 @@ namespace System
             this->distanceMatrix = twoWayDistMat;
 
             double maxPrecision = -1;
-            this->precisions.Clear();
+            this->accuracies.Clear();
             for (int i = 0; i < evaIdxes.Count(); i++)
             {
                 printf("\nBegin Fold %d...\n", i + 1);
@@ -358,14 +388,23 @@ namespace System
                         distToTraining.at<double>(i, j) = this->distanceMatrix.at<double>(
                             pickUpIndexes[i], restIndexes[j]);
 
-                this->precisions.Add(KNN<EdgeMatch>().
+                this->accuracies.Add(KNN<EdgeMatch>().
                     Evaluate(distToTraining, trainingLabels, evaluationLabels, HARD_VOTING).Item1());
 
-                printf("Fold %d Accuracy: %f\n", i + 1, this->precisions[i]);
+                printf("Fold %d Accuracy: %f\n", i + 1, this->accuracies[i]);
             }
 
-            printf("\nAverage: %f, Standard Deviation: %f\n", Math::Mean(precisions), 
-                Math::StandardDeviation(precisions));
+            printf("\nAverage: %f, Standard Deviation: %f\n", Math::Mean(this->accuracies), 
+                Math::StandardDeviation(this->accuracies));
+
+            this->precisions = MAP<Histogram>().
+                FullCrossValidation(this->distanceMatrix, this->labels).Item1();
+
+            printf("Mean Average Precision:");
+            int nDisplay = (5 <= this->precisions.Count() ? 5 : this->precisions.Count());
+            for (int i = 0; i < nDisplay; i++)
+                printf(" %.4f", this->precisions[i]);
+            printf("\n");
         }
     }
 }

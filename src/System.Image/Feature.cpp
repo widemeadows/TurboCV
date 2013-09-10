@@ -259,9 +259,9 @@ namespace System
 
         LocalFeatureVec SHOG::GetFeature(const Mat& sketchImage)
         {
-            ArrayList<Point> points = GetEdgels(sketchImage);
-            ArrayList<Point> pivots = SampleFromPoints(points, (int)(points.Count() * pivotRatio));
             ArrayList<Mat> orientChannels = GetOrientChannels(sketchImage, orientNum);
+            ArrayList<Point> points = GetEdgels(sketchImage);
+            ArrayList<Point> pivots = SampleFromPoints(points, (size_t)(points.Count() * pivotRatio + 0.5));
 
             LocalFeatureVec feature;
             for (int i = 0; i < pivots.Count(); i++)
@@ -348,7 +348,7 @@ namespace System
                 sigmas.Add(sigmas[i - 1] * sigmaStep);
 
             ArrayList<Point> points = GetEdgels(sketchImage);
-            ArrayList<Point> pivots = SampleFromPoints(points, (int)(points.Count() * pivotRatio));
+            ArrayList<Point> pivots = SampleFromPoints(points, (size_t)(points.Count() * pivotRatio + 0.5));
             ArrayList<Mat> orientChannels = GetOrientChannels(sketchImage, orientNum);
             ArrayList<Mat> pyramid = GetLoGPyramid(sketchImage, sigmas);
 
@@ -438,7 +438,7 @@ namespace System
         LocalFeatureVec HOOSC::GetFeature(const Mat& sketchImage)
         {
             ArrayList<Point> points = GetEdgels(sketchImage);
-            ArrayList<Point> pivots = SampleFromPoints(points, (size_t)(points.Count() * pivotRatio));
+            ArrayList<Point> pivots = SampleFromPoints(points, (size_t)(points.Count() * pivotRatio + 0.5));
 
             Group<Mat, Mat> gradient = GetGradient(sketchImage);
             Mat& powerImage = gradient.Item1();
@@ -462,6 +462,7 @@ namespace System
 
             ArrayList<double> distances = EulerDistance(pivot, points);
             ArrayList<double> angles = Angle(pivot, points);
+
             double mean = Math::Sum(distances) / (pointNum - 1); // Except pivot
             for (int i = 0; i < pointNum; i++)
                 distances[i] /= mean;
@@ -601,7 +602,7 @@ namespace System
         LocalFeatureVec SC::GetFeature(const Mat& sketchImage)
         {
             ArrayList<Point> points = GetEdgels(sketchImage);
-            ArrayList<Point> pivots = SampleFromPoints(points, (int)(points.Count() * pivotRatio));
+            ArrayList<Point> pivots = SampleFromPoints(points, (size_t)(points.Count() * pivotRatio + 0.5));
 
             LocalFeatureVec feature;
             for (int i = 0; i < pivots.Count(); i++)
@@ -667,7 +668,7 @@ namespace System
         LocalFeatureVec PSC::GetFeature(const Mat& sketchImage)
         {
             ArrayList<Point> points = GetEdgels(sketchImage);
-            ArrayList<Point> pivots = SampleFromPoints(points, (int)(points.Count() * pivotRatio));
+            ArrayList<Point> pivots = SampleFromPoints(points, (size_t)(points.Count() * pivotRatio + 0.5));
 
             LocalFeatureVec feature;
             for (int i = 0; i < pivots.Count(); i++)
@@ -738,7 +739,7 @@ namespace System
 
             Mat orientImage = GetGradient(sketchImage).Item2();
             ArrayList<Point> points = GetEdgels(sketchImage); 
-            ArrayList<Point> pivots = SampleFromPoints(points, (int)(points.Count() * pivotRatio));
+            ArrayList<Point> pivots = SampleFromPoints(points, (size_t)(points.Count() * pivotRatio + 0.5));
 
             LocalFeatureVec feature;
             ArrayList<Point> centers = SampleOnGrid(sketchImage.rows, sketchImage.cols, sampleNum);
