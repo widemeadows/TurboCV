@@ -49,34 +49,34 @@ cv::Mat mayaPreprocess(const cv::Mat& image)
     return squareImage;
 }
 
-//Mat Preprocess(const Mat& sketchImage)
-//{
-//    Mat binaryImage;
-//    threshold(sketchImage, binaryImage, 200, 1, CV_THRESH_BINARY_INV);
-//
-//    Mat boundingBox = GetBoundingBox(binaryImage);
-//
-//    Mat squareImage;
-//    int leftPadding = 0, topPadding = 0;
-//    if (boundingBox.rows < boundingBox.cols)
-//        topPadding = (boundingBox.cols - boundingBox.rows) / 2;
-//    else
-//        leftPadding = (boundingBox.rows - boundingBox.cols) / 2;
-//    copyMakeBorder(boundingBox, squareImage, topPadding, topPadding, 
-//        leftPadding, leftPadding, BORDER_CONSTANT, Scalar(0, 0, 0, 0));
-//
-//    Mat scaledImage;
-//    resize(squareImage, scaledImage, Size(228, 228));
-//
-//    Mat paddedImage;
-//    copyMakeBorder(scaledImage, paddedImage, 14, 14, 14, 14, BORDER_CONSTANT, Scalar(0, 0, 0, 0));
-//    assert(paddedImage.rows == size.height && paddedImage.cols == size.width);
-//
-//    Mat finalImage;
-//    thin(paddedImage, finalImage);
-//
-//    return finalImage;
-//}
+cv::Mat oraclePreprocess(const Mat& image)
+{
+    Mat boundingBox = GetBoundingBox(reverse(image));
+
+    Mat squareImage;
+    int leftPadding = 0, topPadding = 0;
+    if (boundingBox.rows < boundingBox.cols)
+        topPadding = (boundingBox.cols - boundingBox.rows) / 2;
+    else
+        leftPadding = (boundingBox.rows - boundingBox.cols) / 2;
+    copyMakeBorder(boundingBox, squareImage, topPadding, topPadding, 
+        leftPadding, leftPadding, BORDER_CONSTANT, Scalar(0, 0, 0, 0));
+
+    Mat scaledImage;
+    resize(squareImage, scaledImage, Size(228, 228));
+
+    Mat paddedImage;
+    copyMakeBorder(scaledImage, paddedImage, 14, 14, 14, 14, BORDER_CONSTANT, Scalar(0, 0, 0, 0));
+    assert(paddedImage.rows == 256 && paddedImage.cols == 256);
+
+    Mat binaryImage;
+    threshold(paddedImage, binaryImage, 200, 255, CV_THRESH_BINARY);
+
+    Mat finalImage;
+    thin(binaryImage, finalImage);
+
+    return finalImage;
+}
 
 void Batch(const TString& datasetPath, cv::Mat (*preprocess)(const cv::Mat&))
 {
@@ -213,7 +213,6 @@ void Choose(const TString& algoName, const TString& datasetPath, cv::Mat (*prepr
     }
 }
 
-
 Group<ArrayList<Word_f>, ArrayList<Histogram>, ArrayList<int>> LoadLocalFeatureData(const TString& fileName)
 {
     FILE* file = fopen(fileName, "r");
@@ -256,7 +255,7 @@ Group<ArrayList<Word_f>, ArrayList<Histogram>, ArrayList<int>> LoadLocalFeatureD
 int main(int argc, char* argv[])
 {
     if (argc == 2)
-        Choose(argv[1], "subset", sketchPreprocess);
+        Choose(argv[1], "oracles", oraclePreprocess);
 
     //ArrayList<LocalFeatureVec_f> features;
     //double tmp;

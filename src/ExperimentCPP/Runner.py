@@ -1,7 +1,7 @@
 import subprocess
 
 if __name__ == "__main__":
-    algoNames = ["hog", "rhog", "hoosc", "sc", "gist", "cm", "ocm", "hitmap"]
+    algoNames = ["rgabor", "hog", "rhog", "gist", "cm", "ocm", "hitmap", "sc", "hoosc"]
 
     for algoName in algoNames:
         p = subprocess.Popen("ExperimentCPP.exe " + algoName)

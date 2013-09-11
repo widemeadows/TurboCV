@@ -69,13 +69,13 @@ namespace System
         class HOG : public LocalFeature
         {
         public:
-            HOG(): orientNum(4), cellNum(4), cellSize(23) {}
+            HOG(): orientNum(4), cellNum(6), cellSize(14) {}
 
             HOG(const std::map<TString, TString>& params, bool printParams = false)
             {
                 orientNum = GetDoubleValue(params, "orientNum", 4);
-                cellNum = GetDoubleValue(params, "cellNum", 4);
-                cellSize = GetDoubleValue(params, "cellSize", 23);
+                cellNum = GetDoubleValue(params, "cellNum", 6);
+                cellSize = GetDoubleValue(params, "cellSize", 14);
 
                 if (printParams)
                 {

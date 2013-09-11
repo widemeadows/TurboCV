@@ -38,5 +38,6 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="Scatter.py" />
+    <None Include="Runner.py" />
   </ItemGroup>
 </Project>

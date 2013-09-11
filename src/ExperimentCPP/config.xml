@@ -1,6 +1,6 @@
 <configurations>
   <features>
-    <hog orientNum="4" cellNum="4" cellSize="23" wordNum="500"/>
+    <hog orientNum="4" cellNum="6" cellSize="14" wordNum="1000"/>
     <rhog orientNum="4" cellNum="4" sampleNum="28" blockSize="92" wordNum="500"/>
     <shog orientNum="4" cellNum="4" pivotRatio="0.33" wordNum="500"/>
     <lshog orientNum="4" cellNum="4" scaleNum="15" sigmaInit="0.7" sigmaStep="1.2" pivotRatio="0.33" wordNum="500"/>
