@@ -282,6 +282,11 @@ namespace System
                     this->sigmas = sigmas;
             }
 
+            ArrayList<double> GetSigmas()
+            {
+                return sigmas;
+            }
+
             ArrayList<Histogram> GetFrequencyHistograms()
             {
                 if (histograms.Count() != 0)

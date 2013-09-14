@@ -10,6 +10,39 @@ using namespace cv;
 //#define SAVE_DISTANCE_MATRIX
 
 template<typename FeatureType>
+void EnLocalFeatureCrossValidation(const TString& datasetPath, cv::Mat (*preprocess)(const cv::Mat&))
+{
+    EnLocalFeatureSolver<FeatureType> solver(preprocess, datasetPath);
+    solver.CrossValidation();
+
+    TString savePath = FeatureType().GetName() + "_" + datasetPath;
+
+    // Save KNN Accuracies
+
+    ArrayList<double> accuracies = solver.GetAccuracies();
+    FILE* file = fopen(savePath + "_knn.out", "w");
+
+    for (int i = 0; i < accuracies.Count(); i++)
+        fprintf(file, "Fold %d Accuracy: %f\n", i + 1, accuracies[i]);
+
+    fprintf(file, "Average: %f, Standard Deviation: %f\n", Math::Mean(accuracies), 
+        Math::StandardDeviation(accuracies));
+
+    fclose(file);
+
+    // Save Mean Average Precision
+
+    ArrayList<double> precisions = solver.GetPrecisions();
+    file = fopen(savePath + "_map.out", "w");
+
+    for (int i = 0; i < precisions.Count(); i++)
+        fprintf(file, "%f ", precisions[i]);
+    fprintf(file, "\n");
+
+    fclose(file);
+}
+
+template<typename FeatureType>
 void LocalFeatureCrossValidation(const TString& datasetPath, cv::Mat (*preprocess)(const cv::Mat&))
 {
     LocalFeatureSolver<FeatureType> solver(preprocess, datasetPath);
@@ -47,13 +80,11 @@ void LocalFeatureCrossValidation(const TString& datasetPath, cv::Mat (*preproces
     ArrayList<int> labels = solver.GetLabels();
 
 #if defined(SAVE_FEATURE)
-    savePath = FeatureType().GetName() + "_" + datasetPath + "_data";
-    SaveLocalFeatures(savePath, words, histograms, labels);
+    SaveLocalFeatures(savePath + "_data", words, histograms, labels);
 #endif
 
 #if defined(SAVE_DISTANCE_MATRIX)
-    savePath = FeatureType().GetName() + "_" + datasetPath + "_matrix";
-    SaveDistanceMatrix(savePath, histograms, labels);
+    SaveDistanceMatrix(savePath + "_matrix", histograms, labels);
 #endif
 
 #endif
@@ -96,13 +127,11 @@ void GlobalFeatureCrossValidation(const TString& datasetPath, cv::Mat (*preproce
     ArrayList<int> labels = solver.GetLabels();
 
 #if defined(SAVE_FEATURE)
-    savePath = FeatureType().GetName() + "_" + datasetPath + "_data";
-    SaveGlobalFeatures(savePath, features, labels);
+    SaveGlobalFeatures(savePath + "_data", features, labels);
 #endif
 
 #if defined(SAVE_DISTANCE_MATRIX)
-    savePath = FeatureType().GetName() + "_" + datasetPath + "_matrix";
-    SaveDistanceMatrix(savePath, features, labels);
+    SaveDistanceMatrix(savePath + "_matrix", features, labels);
 #endif
 
 #endif
@@ -144,8 +173,7 @@ void EdgeMatchCrossValidation(const TString& datasetPath, cv::Mat (*preprocess)(
     cv::Mat distanceMatrix = solver.GetDistanceMatrix();
     ArrayList<int> labels = solver.GetLabels();
 
-    savePath = EdgeMatchType().GetName() + "_" + datasetPath + "_matrix";
-    SaveDistanceMatrix(savePath, distanceMatrix, labels);
+    SaveDistanceMatrix(savePath + "_matrix", distanceMatrix, labels);
 #endif
 }
 

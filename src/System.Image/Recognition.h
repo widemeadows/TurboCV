@@ -228,7 +228,7 @@ namespace System
         class HOOSC : public LocalFeature
         {
         public:
-            HOOSC(): angleNum(9), orientNum(8), pivotRatio(0.33)
+            HOOSC(): angleNum(6), orientNum(6), pivotRatio(0.33)
             {
                 double tmp[] = {0, 0.125, 0.25, 0.5, 1, 2};
                 logDistances = ArrayList<double>(tmp, tmp + sizeof(tmp) / sizeof(double));
@@ -236,8 +236,8 @@ namespace System
 
             HOOSC(const std::map<TString, TString>& params, bool printParams = false)
             {
-                angleNum = GetDoubleValue(params, "angleNum", 9);
-                orientNum = GetDoubleValue(params, "orientNum", 8);
+                angleNum = GetDoubleValue(params, "angleNum", 6);
+                orientNum = GetDoubleValue(params, "orientNum", 6);
                 pivotRatio = GetDoubleValue(params, "pivotRatio", 0.33);
 
                 double tmp[] = {0, 0.125, 0.25, 0.5, 1, 2};

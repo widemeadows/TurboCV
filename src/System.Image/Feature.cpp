@@ -18,6 +18,49 @@ namespace System
 
         void SaveLocalFeatures(
             const TString& fileName, 
+            const ArrayList<double>& sigmas,
+            const ArrayList<Word_f>& words,
+            const ArrayList<Histogram>& freqHists, 
+            const ArrayList<int>& labels)
+        {
+            if (words.Count() == 0 || freqHists.Count() == 0)
+                return;
+
+            FILE* file = fopen(fileName, "w");
+
+            int nWord = words.Count();      
+            int nDim = words[0].Count();
+
+            fprintf(file, "%d\n", nWord);
+            for (int i = 0; i < nWord; i++)
+                fprintf(file, "%f ", sigmas[i]);
+            fprintf(file, "\n");
+
+            fprintf(file, "%d %d\n", nWord, nDim);
+            for (int i = 0; i < nWord; i++)
+            {
+                for (int j = 0; j < nDim; j++)
+                    fprintf(file, "%f ", words[i][j]);
+                fprintf(file, "\n");
+            }
+
+            int nHist = freqHists.Count();
+            nDim = freqHists[0].Count();
+
+            fprintf(file, "%d %d\n", nHist, nDim);
+            for (int i = 0; i < nHist; i++)
+            {
+                fprintf(file, "%d ", labels[i]);
+                for (int j = 0; j < nDim; j++)
+                    fprintf(file, "%f ", freqHists[i][j]);
+                fprintf(file, "\n");
+            }
+
+            fclose(file);
+        }
+
+        void SaveLocalFeatures(
+            const TString& fileName, 
             const ArrayList<Word_f>& words,
             const ArrayList<Histogram>& freqHists, 
             const ArrayList<int>& labels)
