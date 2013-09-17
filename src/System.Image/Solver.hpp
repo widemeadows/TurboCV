@@ -143,19 +143,23 @@ namespace System
             }
 
             printf("Compute Visual Words...\n");
-            ArrayList<Word_f> wordL1s = BOV(SampleDescriptors(features, nSample), nWord / 2).GetVisualWords();
+            BOV bovL1(SampleDescriptors(features, nSample), nWord);
+            ArrayList<Word_f> wordL1s = bovL1.GetVisualWords();
+            ArrayList<double> sigmaL1s = bovL1.GetSigmas();
 
             printf("Compute Frequency Histograms...\n");
-            FreqHist* freqHist = new FreqHist(features, wordL1s);
+            FreqHist* freqHist = new FreqHist(features, wordL1s, sigmaL1s);
             ArrayList<Histogram> histogramL1s = freqHist->GetFrequencyHistograms();
 
-            printf("Compute Reconstructed Inputs...\n");
-            features = freqHist->GetReconstructedInputs();
+            printf("Compute Errors...\n");
+            features = freqHist->GetReconstructErrors();
 
             delete freqHist;
 
             printf("Compute Visual Words...\n");
-            ArrayList<Word_f> wordL2s = BOV(SampleDescriptors(features, nSample), nWord / 2).GetVisualWords();
+            BOV bovL2(SampleDescriptors(features, nSample), nWord);
+            ArrayList<Word_f> wordL2s = bovL2.GetVisualWords();
+            //ArrayList<double> sigmaL2s = bovL2.GetSigmas();
 
             printf("Compute Frequency Histograms...\n");
             ArrayList<Histogram> histogramL2s = FreqHist(features, wordL2s).GetFrequencyHistograms();
@@ -166,6 +170,10 @@ namespace System
             ArrayList<Word_f> words;
             words.Add(wordL1s);
             words.Add(wordL2s);
+
+            ArrayList<double> sigmas;
+            sigmas.Add(sigmaL1s);
+            //sigmas.Add(sigmaL2s);
 
             ArrayList<Histogram> histograms(nImage);
             for (int i = 0; i < nImage; i++)
@@ -195,6 +203,7 @@ namespace System
                 {
                     maxAccuracy = accuracies[i];
                     this->words = words;
+                    this->sigmas = sigmas;
                     this->histograms = histograms;
                 }
 

@@ -260,5 +260,6 @@ Group<ArrayList<Word_f>, ArrayList<Histogram>, ArrayList<int>> LoadLocalFeatureD
 
 int main(int argc, char* argv[])
 {
-    EnLocalFeatureCrossValidation<RGabor>("sketches", sketchPreprocess);
+    //EnLocalFeatureCrossValidation<RGabor>("oracles", oraclePreprocess);
+    LocalFeatureCrossValidation<RGabor>("oracles", oraclePreprocess);
 }

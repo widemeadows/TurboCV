@@ -45,7 +45,7 @@ void EnLocalFeatureCrossValidation(const TString& datasetPath, cv::Mat (*preproc
 template<typename FeatureType>
 void LocalFeatureCrossValidation(const TString& datasetPath, cv::Mat (*preprocess)(const cv::Mat&))
 {
-    LocalFeatureSolver<FeatureType> solver(preprocess, datasetPath);
+    LocalFeatureSolver<FeatureType> solver(preprocess, datasetPath, "config.xml", true);
     solver.CrossValidation();
 
     TString savePath = FeatureType().GetName() + "_" + datasetPath;
