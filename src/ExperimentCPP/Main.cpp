@@ -261,5 +261,43 @@ Group<ArrayList<Word_f>, ArrayList<Histogram>, ArrayList<int>> LoadLocalFeatureD
 int main(int argc, char* argv[])
 {
     //EnLocalFeatureCrossValidation<RGabor>("oracles", oraclePreprocess);
-    LocalFeatureCrossValidation<RGabor>("oracles", oraclePreprocess);
+    //LocalFeatureCrossValidation<RGabor>("oracles", oraclePreprocess);
+
+    EnLocalFeatureSolver<RGabor> solver(oraclePreprocess, "subset");
+    solver.CrossValidation();
+
+    auto labels = solver.GetLabels();
+    auto histograms = solver.GetHistograms();
+
+    FILE* file = fopen("rgabor_hist.txt", "w");
+
+    fprintf(file, "%d %d\n", histograms.Count(), histograms[0].Count());
+    for (int i = 0; i < histograms.Count(); i++)
+    {
+        for (int j = 0; j < histograms[i].Count(); j++)
+            fprintf(file, "%f ", histograms[i][j]);
+
+        fprintf(file, "\n");
+    }
+
+    fclose(file);
+
+    cv::Mat result = TSNE::Compute(histograms);
+
+    file = fopen("Y.txt", "w");
+    for (int i = 0; i < result.rows; i++)
+    {
+        for (int j = 0; j < result.cols; j++)
+            fprintf(file, "%f ", result.at<double>(i, j));
+        fprintf(file, "\n");
+    }
+
+    fclose(file);
+
+    file = fopen("labels.txt", "w");
+
+    for (int i = 0; i < labels.Count(); i++)
+        fprintf(file, "%d\n", labels[i]);
+    
+    fclose(file);
 }
