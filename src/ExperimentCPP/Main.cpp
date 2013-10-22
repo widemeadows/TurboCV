@@ -261,9 +261,9 @@ Group<ArrayList<Word_f>, ArrayList<Histogram>, ArrayList<int>> LoadLocalFeatureD
 int main(int argc, char* argv[])
 {
     //EnLocalFeatureCrossValidation<RGabor>("oracles", oraclePreprocess);
-    //LocalFeatureCrossValidation<RGabor>("oracles", oraclePreprocess);
+    LocalFeatureCrossValidation<RHOG>("sketches", sketchPreprocess);
 
-    EnLocalFeatureSolver<RGabor> solver(oraclePreprocess, "subset");
+    /*EnLocalFeatureSolver<RGabor> solver(oraclePreprocess, "subset");
     solver.CrossValidation();
 
     auto labels = solver.GetLabels();
@@ -299,5 +299,5 @@ int main(int argc, char* argv[])
     for (int i = 0; i < labels.Count(); i++)
         fprintf(file, "%d\n", labels[i]);
     
-    fclose(file);
+    fclose(file);*/
 }
