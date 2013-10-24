@@ -15,7 +15,7 @@ void EnLocalFeatureCrossValidation(const TString& datasetPath, cv::Mat (*preproc
     EnLocalFeatureSolver<FeatureType> solver(preprocess, datasetPath);
     solver.CrossValidation();
 
-    TString savePath = FeatureType().GetName() + "_" + datasetPath;
+    TString savePath = FeatureType().GetName() + "_e_" + datasetPath;
 
     // Save KNN Accuracies
 
@@ -40,6 +40,14 @@ void EnLocalFeatureCrossValidation(const TString& datasetPath, cv::Mat (*preproc
     fprintf(file, "\n");
 
     fclose(file);
+
+#if defined(SAVE_FEATURE)
+    ArrayList<Word_f> words = solver.GetWords();
+    ArrayList<Histogram> histograms = solver.GetHistograms();
+    ArrayList<int> labels = solver.GetLabels();
+
+    SaveLocalFeatures(savePath + "_data", words, histograms, labels);
+#endif
 }
 
 template<typename FeatureType>

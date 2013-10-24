@@ -260,8 +260,8 @@ Group<ArrayList<Word_f>, ArrayList<Histogram>, ArrayList<int>> LoadLocalFeatureD
 
 int main(int argc, char* argv[])
 {
-    //EnLocalFeatureCrossValidation<RGabor>("oracles", oraclePreprocess);
-    LocalFeatureCrossValidation<RHOG>("sketches", sketchPreprocess);
+    EnLocalFeatureCrossValidation<RGabor>("sketches", sketchPreprocess);
+    //LocalFeatureCrossValidation<RHOG>("sketches", sketchPreprocess);
 
     /*EnLocalFeatureSolver<RGabor> solver(oraclePreprocess, "subset");
     solver.CrossValidation();

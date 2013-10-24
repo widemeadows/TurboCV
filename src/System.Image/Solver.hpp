@@ -167,22 +167,22 @@ namespace System
             features.Clear();
             features.Shrink();
 
-            ArrayList<Word_f> words;
-            words.Add(wordL1s);
-            words.Add(wordL2s);
+            this->words.Clear();
+            this->words.Add(wordL1s);
+            this->words.Add(wordL2s);
 
-            ArrayList<double> sigmas;
-            sigmas.Add(sigmaL1s);
-            //sigmas.Add(sigmaL2s);
+            this->sigmas.Clear();
+            this->sigmas.Add(sigmaL1s);
+            //this->sigmas.Add(sigmaL2s);
 
-            ArrayList<Histogram> histograms(nImage);
+            this->histograms = ArrayList<Histogram>(nImage);
             for (int i = 0; i < nImage; i++)
             {
-                histograms[i].Add(histogramL1s[i].begin(), histogramL1s[i].end());
-                histograms[i].Add(histogramL2s[i].begin(), histogramL2s[i].end());
+                this->histograms[i].Add(histogramL1s[i].begin(), histogramL1s[i].end());
+                this->histograms[i].Add(histogramL2s[i].begin(), histogramL2s[i].end());
 
                 for (int j = histograms[i].Count(); j >= 0; j--)
-                    histograms[i][j] /= 2;
+                    this->histograms[i][j] /= 2;
             }
 
             double maxAccuracy = -1;
@@ -193,19 +193,14 @@ namespace System
                 const ArrayList<size_t>& pickUpIndexes = evaIdxes[i];
                 ArrayList<int> trainingLabels = Divide(labels, pickUpIndexes).Item2();
                 ArrayList<int> evaluationLabels = Divide(labels, pickUpIndexes).Item1();
-                ArrayList<Histogram> trainingHistograms = Divide(histograms, pickUpIndexes).Item2();
-                ArrayList<Histogram> evaluationHistograms = Divide(histograms, pickUpIndexes).Item1();
+                ArrayList<Histogram> trainingHistograms = Divide(this->histograms, pickUpIndexes).Item2();
+                ArrayList<Histogram> evaluationHistograms = Divide(this->histograms, pickUpIndexes).Item1();
 
                 this->accuracies.Add(KNN<Histogram>().
                     Evaluate(trainingHistograms, trainingLabels, evaluationHistograms, evaluationLabels).Item1());
 
                 if (this->accuracies[i] > maxAccuracy)
-                {
                     maxAccuracy = accuracies[i];
-                    this->words = words;
-                    this->sigmas = sigmas;
-                    this->histograms = histograms;
-                }
 
                 printf("Fold %d Accuracy: %f\n", i + 1, this->accuracies[i]);
             }
@@ -411,9 +406,7 @@ namespace System
                     Evaluate(trainingHistograms, trainingLabels, evaluationHistograms, evaluationLabels).Item1());
 
                 if (this->accuracies[i] > maxAccuracy)
-                {
                     maxAccuracy = accuracies[i];
-                }
 
                 printf("Fold %d Accuracy: %f\n", i + 1, this->accuracies[i]);
             }
