@@ -85,6 +85,9 @@ namespace System
         Group<cv::Mat, cv::Mat> GetGradient(const cv::Mat& image, double sigma = 1.0);
         ArrayList<cv::Mat> GetOrientChannels(const cv::Mat& image, int orientNum,
             double sigma = 1.0);
+
+        cv::Mat GetStudentKernel(cv::Size ksize, double sigma, double theta,
+            double lambd, double gamma, double psi, int ktype = CV_64F);
         ArrayList<cv::Mat> GetGaborChannels(const cv::Mat& image, int orientNum, 
             double sigma = 4, double lambda = 10);
 

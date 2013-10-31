@@ -264,6 +264,54 @@ namespace System
             return orientChannels;
         }
 
+        Mat GetStudentKernel(Size ksize, double sigma, double theta, double lambd, 
+            double gamma, double psi, int ktype)
+        {
+            double sigma_x = sigma;
+            double sigma_y = sigma/gamma;
+            int nstds = 3;
+            int xmin, xmax, ymin, ymax;
+            double c = cos(theta), s = sin(theta);
+
+            if (ksize.width > 0)
+                xmax = ksize.width/2;
+            else
+                xmax = cvRound(std::max(fabs(nstds * sigma_x * c), fabs(nstds * sigma_y * s)));
+
+            if (ksize.height > 0)
+                ymax = ksize.height/2;
+            else
+                ymax = cvRound(std::max(fabs(nstds * sigma_x * s), fabs(nstds * sigma_y * c)));
+
+            xmin = -xmax;
+            ymin = -ymax;
+
+            CV_Assert(ktype == CV_32F || ktype == CV_64F);
+
+            Mat kernel(ymax - ymin + 1, xmax - xmin + 1, ktype);
+            double scale = 1.0 / (CV_PI * sigma);
+            double ex = 1.0 / (sigma_x * sigma_x);
+            double ey = 1.0 / (sigma_y * sigma_y);
+            double cscale = CV_PI * 2.0 / lambd;
+
+            for (int y = ymin; y <= ymax; y++)
+            {
+                for (int x = xmin; x <= xmax; x++)
+                {
+                    double xr = x * c + y * s;
+                    double yr = -x * s + y * c;
+                    double v = scale / (1 + ex * xr * xr + ey * yr * yr) * cos(cscale * xr + psi);
+
+                    if (ktype == CV_32F)
+                        kernel.at<float>(ymax - y, xmax - x) = (float)v;
+                    else
+                        kernel.at<double>(ymax - y, xmax - x) = v;
+                }
+            }
+        
+            return kernel;
+        }
+
         ArrayList<Mat> GetGaborChannels(const Mat& image, int orientNum, double sigma, double lambda)
         {
             int ksize = sigma * 6 + 1;
