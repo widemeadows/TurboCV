@@ -224,7 +224,7 @@ Group<ArrayList<Word_f>, ArrayList<Histogram>, ArrayList<int>> LoadLocalFeatureD
     FILE* file = fopen(fileName, "r");
     int nRow, nCol;
 
-    fscanf(file, "%nDesc %nDesc", &nRow, &nCol);
+    fscanf(file, "%d %d", &nRow, &nCol);
 
     ArrayList<Word_f> words(nRow);
 
@@ -237,14 +237,14 @@ Group<ArrayList<Word_f>, ArrayList<Histogram>, ArrayList<int>> LoadLocalFeatureD
         words[i] = word;
     }
 
-    fscanf(file, "%nDesc %nDesc", &nRow, &nCol);
+    fscanf(file, "%d %d", &nRow, &nCol);
 
     ArrayList<int> labels(nRow);
     ArrayList<Histogram> histograms(nRow);
 
     for (int i = 0; i < nRow; i++)
     {
-        fscanf(file, "%nDesc", &labels[i]);
+        fscanf(file, "%d", &labels[i]);
 
         Histogram histogram(nCol);
         for (int j = 0; j < nCol; j++)
@@ -258,23 +258,139 @@ Group<ArrayList<Word_f>, ArrayList<Histogram>, ArrayList<int>> LoadLocalFeatureD
     return CreateGroup(words, histograms, labels);
 }
 
+Group<ArrayList<PointList>, ArrayList<Mat>> GetTransforms(
+    int x, int y, size_t blockSize,
+    const ArrayList<PointList>& pointLists)
+{
+    int expectedTop = (int)(y - blockSize / 2),
+        expectedLeft = (int)(x - blockSize / 2),
+        expectedBottom = expectedTop + blockSize,
+        expectedRight = expectedLeft + blockSize;
+
+    ArrayList<PointList> pLists;
+    for (int i = 0; i < pointLists.Count(); i++)
+    {
+        PointList pList;
+
+        for (int j = 0; j < pointLists[i].Count(); j++)
+        {
+            if (expectedLeft <= pointLists[i][j].x && pointLists[i][j].x < expectedRight &&
+                expectedTop <= pointLists[i][j].y && pointLists[i][j].y < expectedBottom)
+                pList.Add(Point(pointLists[i][j].x - expectedLeft, 
+                                pointLists[i][j].y - expectedTop));
+        }
+
+        pLists.Add(pList);
+    }
+
+    OCM machine;
+    ArrayList<Mat> mats = machine.GetTransforms(Size(blockSize, blockSize), pLists);
+
+    return CreateGroup(pLists, mats);
+}
+
 int main(int argc, char* argv[])
 {
     //EnLocalFeatureCrossValidation<RGabor>("sketches", sketchPreprocess);
-    //EnLocalFeatureCrossValidation<RHOG>("oracles", oraclePreprocess);
-    LocalFeatureCrossValidation<RHOG>("sketches", sketchPreprocess);
-    LocalFeatureCrossValidation<RHOG>("oracles", oraclePreprocess);
+    //EnLocalFeatureCrossValidation<RGabor>("oracles", oraclePreprocess);
+    //LocalFeatureCrossValidation<RGabor>("subset", sketchPreprocess);
+    //LocalFeatureCrossValidation<RHOG>("oracles", oraclePreprocess);
 
-    //Mat img = imread("27634.png", CV_LOAD_IMAGE_GRAYSCALE);
-    //img = oraclePreprocess(img);
-    //imshow(img);
-    //waitKey(0);
+    auto dataset = LoadDataset("subset");
+    auto paths = dataset.Item1();
+    auto labels = dataset.Item2();
 
-    //auto channels = GetGaborChannels(img, 4);
+    int nImage = paths.Count();
 
-    //for (auto channel : channels)
-    //{
-    //    imshow(channel);
-    //    waitKey(0);
-    //}
+    printf("ImageNum: %d\n", nImage);
+    printf("Cross Validation on Local Hitmap...\n");
+    
+    ArrayList<cv::Mat> images(nImage);
+    ArrayList<ArrayList<PointList>> channels(nImage);
+    #pragma omp parallel for
+    for (int i = 0; i < nImage; i++)
+    {
+        cv::Mat image = cv::imread(paths[i], CV_LOAD_IMAGE_GRAYSCALE);
+        images[i] = sketchPreprocess(image);
+        channels[i] = GetEdgelChannels(images[i], 6);
+    }
+
+    cout << "Clustering" << endl;
+    ArrayList<Point> points = SampleOnGrid(images[0].rows, images[0].cols, 28);
+    size_t blockSize = 92, clusterNum = 500;
+
+    ArrayList<Group<int, int, int>> tmpPoints;
+    for (int i = 0; i < nImage; i++)
+    for (size_t j = 0; j < points.Count(); j++)
+        tmpPoints.Add(CreateGroup(i, points[j].x, points[j].y));
+    ArrayList<Group<int, int, int>> centerPoints = RandomPickUp(tmpPoints, clusterNum);
+
+    ArrayList<Group<ArrayList<PointList>, ArrayList<Mat>>> centers(clusterNum);
+    #pragma omp parallel for
+    for (int i = 0; i < clusterNum; i++)
+    {
+        centers[i] = GetTransforms(centerPoints[i].Item2(), centerPoints[i].Item3(), blockSize,
+            channels[centerPoints[i].Item1()]);
+    }
+
+    cout << "Bagging" << endl;
+    ArrayList<Histogram> histograms(nImage);
+    #pragma omp parallel for
+    for (int i = 0; i < nImage; i++)
+    {
+        Histogram hist(clusterNum);
+
+        for (int j = 0; j < points.Count(); j++)
+        {
+            Group<ArrayList<PointList>, ArrayList<Mat>> block = GetTransforms(
+                points[j].x, points[j].y, blockSize, channels[i]);
+
+            OCM machine;
+            int idx = 0;
+            double minDist = numeric_limits<double>::max();
+
+            for (int k = 0; k < clusterNum; k++)
+            {
+                double d1 = machine.GetOneWayDistance(block.Item1(), centers[k].Item2());
+                double d2 = machine.GetOneWayDistance(centers[k].Item1(), block.Item2());
+                double distance = machine.GetTwoWayDistance(d1, d2);
+
+                if (distance < minDist)
+                {
+                    idx = k;
+                    minDist = distance;
+                }
+            }
+
+            hist[idx]++;
+        }
+
+        NormOneNormalize(hist.begin(), hist.end());
+        histograms[i] = hist;
+        printf("%d\n", i);
+    }
+
+    auto evaIdxes = SplitDatasetRandomly(labels, 3);
+    for (int i = 0; i < evaIdxes.Count(); i++)
+    {
+        printf("\nBegin Fold %d...\n", i + 1);
+        const ArrayList<size_t>& pickUpIndexes = evaIdxes[i];
+        ArrayList<int> trainingLabels = Divide(labels, pickUpIndexes).Item2();
+        ArrayList<int> evaluationLabels = Divide(labels, pickUpIndexes).Item1();
+        ArrayList<Histogram> trainingHistograms = Divide(histograms, pickUpIndexes).Item2();
+        ArrayList<Histogram> evaluationHistograms = Divide(histograms, pickUpIndexes).Item1();
+
+        printf("Fold %d Accuracy: ", i + 1);
+        cout << KNN<Histogram>().
+            Evaluate(trainingHistograms, trainingLabels, evaluationHistograms, evaluationLabels).Item1() << endl;
+    }
+
+    ArrayList<GlobalFeatureVec_f> fHists;
+    for (int i = 0; i < histograms.Count(); i++)
+    {
+        GlobalFeatureVec_f tmp;
+        Convert(histograms[i], tmp);
+        fHists.Add(tmp);
+    }
+    SaveGlobalFeatures("test_data", fHists, labels);
 }

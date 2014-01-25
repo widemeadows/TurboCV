@@ -797,7 +797,7 @@ namespace System
         private:
             int orientNum;
             double maxDistance;
-        };   
+        };
     }
 }
 }

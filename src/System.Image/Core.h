@@ -368,6 +368,13 @@ namespace System
             ArrayList<LocalFeatureVec_f> errors;
         };
 
+        inline ArrayList<Descriptor_f> SampleDescriptors(const ArrayList<Descriptor_f>& descriptors,
+            size_t sampleNum = INF)
+        {
+            sampleNum = cv::min(descriptors.Count(), sampleNum);
+            return RandomPickUp(descriptors, sampleNum);
+        }
+
         inline ArrayList<Descriptor_f> SampleDescriptors(const ArrayList<LocalFeatureVec_f>& features, 
             size_t sampleNum = INF)
         {

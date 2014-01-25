@@ -38,6 +38,12 @@ namespace System
             printf("K-Means Begin...\n");
             kmeans(samples, clusterNum, clusterIds, termCriteria, 1, KMEANS_PP_CENTERS, centers);
 
+            //auto samples = SampleDescriptors(descriptors, clusterNum);
+            //Mat centers(clusterNum, descriptorSize, CV_32F);
+            //for (size_t i = 0; i < clusterNum; i++)
+            //for (size_t j = 0; j < descriptorSize; j++)
+            //    centers.at<float>(i, j) = samples[i][j];
+
             ArrayList<Word_f> words(clusterNum);
             for (size_t i = 0; i < clusterNum; i++)
                 for (size_t j = 0; j < descriptorSize; j++)
@@ -46,6 +52,10 @@ namespace System
             ArrayList<size_t> labels(descriptorNum);
             for (size_t i = 0; i < descriptorNum; i++)
                 labels[i] = clusterIds.at<int>(i, 0);
+
+            //ArrayList<size_t> labels(descriptorNum);
+            //for (size_t i = 0; i < descriptorNum; i++)
+            //    labels[i] = 0;
 
             return CreateGroup(words, labels);
         }
