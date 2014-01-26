@@ -36,6 +36,9 @@
     <ClCompile Include="EdgeMatch.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
+    <ClCompile Include="Core.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Eigen.h">

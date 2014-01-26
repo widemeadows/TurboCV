@@ -258,7 +258,7 @@ Group<ArrayList<Word_f>, ArrayList<Histogram>, ArrayList<int>> LoadLocalFeatureD
     return CreateGroup(words, histograms, labels);
 }
 
-Group<ArrayList<PointList>, ArrayList<Mat>> GetTransforms(
+Group<ArrayList<PointList>, ArrayList<Mat>> GetBlock(
     int x, int y, size_t blockSize,
     const ArrayList<PointList>& pointLists)
 {
@@ -268,6 +268,7 @@ Group<ArrayList<PointList>, ArrayList<Mat>> GetTransforms(
         expectedRight = expectedLeft + blockSize;
 
     ArrayList<PointList> pLists;
+
     for (int i = 0; i < pointLists.Count(); i++)
     {
         PointList pList;
@@ -284,9 +285,52 @@ Group<ArrayList<PointList>, ArrayList<Mat>> GetTransforms(
     }
 
     OCM machine;
-    ArrayList<Mat> mats = machine.GetTransforms(Size(blockSize, blockSize), pLists);
+    return CreateGroup(pLists, machine.GetTransforms(Size(blockSize, blockSize), pLists));
+}
 
-    return CreateGroup(pLists, mats);
+double GetOneWayDistance(const ArrayList<PointList>& u, ArrayList<TDTree>& v)
+{
+    int orientNum = u.Count(), uPointNum = 0;
+    double uToV = 0;
+
+    for (int i = 0; i < orientNum; i++)
+    {
+        const ArrayList<Point>& uPoints = u[i];
+        TDTree& vTree = v[i];
+
+        for (size_t i = 0; i < uPoints.Count(); i++)
+            uToV += vTree.Find(uPoints[i]).Item2();
+
+        uPointNum += uPoints.Count();
+    }
+
+    if (uPointNum == 0)
+        return numeric_limits<double>::max();
+    else
+        return uToV / uPointNum;
+}
+
+double GetOneWayDistance(const ArrayList<PointList>& u, const ArrayList<cv::Mat>& v)
+{
+    assert(u.Count() == v.Count());
+    int orientNum = u.Count(), uPointNum = 0;
+    double uToV = 0;
+
+    for (int i = 0; i < orientNum; i++)
+    {
+        const ArrayList<Point>& uPoints = u[i];
+        const Mat& vMat = v[i];
+
+        for (size_t i = 0; i < uPoints.Count(); i++)
+            uToV += sqrt(vMat.at<float>(uPoints[i].y, uPoints[i].x));
+
+        uPointNum += uPoints.Count();
+    }
+
+    if (uPointNum == 0)
+        return numeric_limits<double>::max();
+    else
+        return uToV / uPointNum;
 }
 
 int main(int argc, char* argv[])
@@ -312,11 +356,11 @@ int main(int argc, char* argv[])
     {
         cv::Mat image = cv::imread(paths[i], CV_LOAD_IMAGE_GRAYSCALE);
         images[i] = sketchPreprocess(image);
-        channels[i] = GetEdgelChannels(images[i], 6);
+        channels[i] = GetEdgelChannels(images[i], 4);
     }
 
     cout << "Clustering" << endl;
-    ArrayList<Point> points = SampleOnGrid(images[0].rows, images[0].cols, 28);
+    ArrayList<Point> points = SampleOnGrid(images[0].rows, images[0].cols, 14);
     size_t blockSize = 92, clusterNum = 500;
 
     ArrayList<Group<int, int, int>> tmpPoints;
@@ -329,7 +373,7 @@ int main(int argc, char* argv[])
     #pragma omp parallel for
     for (int i = 0; i < clusterNum; i++)
     {
-        centers[i] = GetTransforms(centerPoints[i].Item2(), centerPoints[i].Item3(), blockSize,
+        centers[i] = GetBlock(centerPoints[i].Item2(), centerPoints[i].Item3(), blockSize,
             channels[centerPoints[i].Item1()]);
     }
 
@@ -342,30 +386,24 @@ int main(int argc, char* argv[])
 
         for (int j = 0; j < points.Count(); j++)
         {
-            Group<ArrayList<PointList>, ArrayList<Mat>> block = GetTransforms(
+            Group<ArrayList<PointList>, ArrayList<Mat>> block = GetBlock(
                 points[j].x, points[j].y, blockSize, channels[i]);
-
-            OCM machine;
-            int idx = 0;
-            double minDist = numeric_limits<double>::max();
 
             for (int k = 0; k < clusterNum; k++)
             {
-                double d1 = machine.GetOneWayDistance(block.Item1(), centers[k].Item2());
-                double d2 = machine.GetOneWayDistance(centers[k].Item1(), block.Item2());
-                double distance = machine.GetTwoWayDistance(d1, d2);
+                double d1 = GetOneWayDistance(block.Item1(), centers[k].Item2());
+                double d2 = GetOneWayDistance(centers[k].Item1(), block.Item2());
+                //d1 = min(d1, 40.0);
+                //d2 = min(d2, 40.0);
+                double distance = (d1 + d2) / 2.0;
 
-                if (distance < minDist)
-                {
-                    idx = k;
-                    minDist = distance;
-                }
+                hist[k] += Math::Gauss(distance, 2.0);
             }
-
-            hist[idx]++;
         }
 
         NormOneNormalize(hist.begin(), hist.end());
+        //for (int j = 0; j < hist.Count(); j++)
+        //    hist[j] /= points.Count();
         histograms[i] = hist;
         printf("%d\n", i);
     }

@@ -44,6 +44,104 @@ namespace System
 			}
 		};
 
+        // Two Dimensional Tree
+        class TDTree
+        {
+        public:
+            TDTree() {};
+            TDTree(ArrayList<cv::Point>& points)
+            {
+                Build(points);
+            }
+
+            void Build(ArrayList<cv::Point>& points);
+            Group<cv::Point, double> Find(const cv::Point& point);
+
+        private:
+            template<typename RandomAccessIterator>
+            void innerBuild(const RandomAccessIterator& left, const RandomAccessIterator& right)
+            {
+                if (left >= right)
+                    return;
+
+                static auto compX = [](const cv::Point& u, const cv::Point& v) -> bool
+                {
+                    return u.x < v.x;
+                };
+
+                static auto compY = [](const cv::Point& u, const cv::Point& v) -> bool
+                {
+                    return u.y < v.y;
+                };
+
+                int minX = min_element(left, right, compX)->x;
+                int maxX = max_element(left, right, compX)->x;
+                int minY = min_element(left, right, compY)->y;
+                int maxY = max_element(left, right, compY)->y;
+
+                auto mid = left + (right - left) / 2;
+                int midIdx = mid - nodes.begin();
+
+                flags[midIdx] = (maxY - minY > maxX - minX);
+                if (flags[midIdx])
+                    nth_element(left, mid, right, compY);
+                else
+                    nth_element(left, mid, right, compX);
+
+                innerBuild(left, mid);
+                innerBuild(mid + 1, right);
+            }
+
+            template<typename RandomAccessIterator>
+            void innerFind(
+                const RandomAccessIterator& left, const RandomAccessIterator& right,
+                const cv::Point& point)
+            {
+                if (left >= right)
+                    return;
+
+                static auto getSquareDistance = [](const cv::Point& u, const cv::Point& v) -> int
+                {
+                    return (u.x - v.x) * (u.x - v.x) + (u.y - v.y) * (u.y - v.y);
+                };
+
+                auto mid = left + (right - left) / 2;
+                int midIdx = mid - nodes.begin();
+
+                int distance = getSquareDistance(point, *mid);
+                
+                if (distance < minDist)
+                {
+                    minDist = distance;
+                    nearest = *mid;
+                }
+
+                if (distance == 0)
+                    return;
+                
+                int margin = flags[midIdx] ? (point.y - mid->y) : (point.x - mid->x);
+                
+                if (margin <= 0)
+                    innerFind(left, mid, point);
+                else
+                    innerFind(mid + 1, right, point);
+
+                if (margin * margin < minDist)
+                {
+                    if (margin <= 0)
+                        innerFind(mid + 1, right, point);
+                    else
+                        innerFind(left, mid, point);
+                }
+            }
+
+            ArrayList<cv::Point> nodes;
+            ArrayList<int> flags;
+
+            double minDist;
+            cv::Point nearest;
+        };
+
 
 		//////////////////////////////////////////////////////////////////////////
 		// APIs for Geometry Operations
