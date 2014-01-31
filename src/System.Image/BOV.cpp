@@ -25,24 +25,24 @@ namespace System
             printf("Descriptor Num: %d, Descriptor Size: %d.\n", 
                 (int)descriptorNum, (int)descriptorSize);
 
-            Mat samples(descriptorNum, descriptorSize, CV_32F);
-            for (size_t i = 0; i < descriptorNum; i++)
-                for (size_t j = 0; j < descriptorSize; j++)
-                    samples.at<float>(i, j) = descriptors[i][j];
+            //Mat samples(descriptorNum, descriptorSize, CV_32F);
+            //for (size_t i = 0; i < descriptorNum; i++)
+            //    for (size_t j = 0; j < descriptorSize; j++)
+            //        samples.at<float>(i, j) = descriptors[i][j];
 
             Mat clusterIds(descriptorNum, 1, CV_32S);
             for (size_t i = 0; i < descriptorNum; i++)
                 clusterIds.at<int>(i, 0) = 0;
 
-            Mat centers(clusterNum, descriptorSize, CV_32F);
-            printf("K-Means Begin...\n");
-            kmeans(samples, clusterNum, clusterIds, termCriteria, 1, KMEANS_PP_CENTERS, centers);
-
-            //auto samples = SampleDescriptors(descriptors, clusterNum);
             //Mat centers(clusterNum, descriptorSize, CV_32F);
-            //for (size_t i = 0; i < clusterNum; i++)
-            //for (size_t j = 0; j < descriptorSize; j++)
-            //    centers.at<float>(i, j) = samples[i][j];
+            //printf("K-Means Begin...\n");
+            //kmeans(samples, clusterNum, clusterIds, termCriteria, 1, KMEANS_PP_CENTERS, centers);
+
+            auto samples = SampleDescriptors(descriptors, clusterNum);
+            Mat centers(clusterNum, descriptorSize, CV_32F);
+            for (size_t i = 0; i < clusterNum; i++)
+                for (size_t j = 0; j < descriptorSize; j++)
+                    centers.at<float>(i, j) = samples[i][j];
 
             ArrayList<Word_f> words(clusterNum);
             for (size_t i = 0; i < clusterNum; i++)
@@ -52,10 +52,6 @@ namespace System
             ArrayList<size_t> labels(descriptorNum);
             for (size_t i = 0; i < descriptorNum; i++)
                 labels[i] = clusterIds.at<int>(i, 0);
-
-            //ArrayList<size_t> labels(descriptorNum);
-            //for (size_t i = 0; i < descriptorNum; i++)
-            //    labels[i] = 0;
 
             return CreateGroup(words, labels);
         }

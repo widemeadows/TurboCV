@@ -340,95 +340,97 @@ int main(int argc, char* argv[])
     //LocalFeatureCrossValidation<RGabor>("subset", sketchPreprocess);
     //LocalFeatureCrossValidation<RHOG>("oracles", oraclePreprocess);
 
-    auto dataset = LoadDataset("subset");
-    auto paths = dataset.Item1();
-    auto labels = dataset.Item2();
+    LocalFeatureCrossValidation<Test>("subset", sketchPreprocess);
 
-    int nImage = paths.Count();
+    //auto dataset = LoadDataset("subset");
+    //auto paths = dataset.Item1();
+    //auto labels = dataset.Item2();
 
-    printf("ImageNum: %d\n", nImage);
-    printf("Cross Validation on Local Hitmap...\n");
-    
-    ArrayList<cv::Mat> images(nImage);
-    ArrayList<ArrayList<PointList>> channels(nImage);
-    #pragma omp parallel for
-    for (int i = 0; i < nImage; i++)
-    {
-        cv::Mat image = cv::imread(paths[i], CV_LOAD_IMAGE_GRAYSCALE);
-        images[i] = sketchPreprocess(image);
-        channels[i] = GetEdgelChannels(images[i], 4);
-    }
+    //int nImage = paths.Count();
 
-    cout << "Clustering" << endl;
-    ArrayList<Point> points = SampleOnGrid(images[0].rows, images[0].cols, 14);
-    size_t blockSize = 92, clusterNum = 500;
+    //printf("ImageNum: %d\n", nImage);
+    //printf("Cross Validation on Local Hitmap...\n");
+    //
+    //ArrayList<cv::Mat> images(nImage);
+    //ArrayList<ArrayList<PointList>> channels(nImage);
+    //#pragma omp parallel for
+    //for (int i = 0; i < nImage; i++)
+    //{
+    //    cv::Mat image = cv::imread(paths[i], CV_LOAD_IMAGE_GRAYSCALE);
+    //    images[i] = sketchPreprocess(image);
+    //    channels[i] = GetEdgelChannels(images[i], 4);
+    //}
 
-    ArrayList<Group<int, int, int>> tmpPoints;
-    for (int i = 0; i < nImage; i++)
-    for (size_t j = 0; j < points.Count(); j++)
-        tmpPoints.Add(CreateGroup(i, points[j].x, points[j].y));
-    ArrayList<Group<int, int, int>> centerPoints = RandomPickUp(tmpPoints, clusterNum);
+    //cout << "Clustering" << endl;
+    //ArrayList<Point> points = SampleOnGrid(images[0].rows, images[0].cols, 14);
+    //size_t blockSize = 92, clusterNum = 500;
 
-    ArrayList<Group<ArrayList<PointList>, ArrayList<Mat>>> centers(clusterNum);
-    #pragma omp parallel for
-    for (int i = 0; i < clusterNum; i++)
-    {
-        centers[i] = GetBlock(centerPoints[i].Item2(), centerPoints[i].Item3(), blockSize,
-            channels[centerPoints[i].Item1()]);
-    }
+    //ArrayList<Group<int, int, int>> tmpPoints;
+    //for (int i = 0; i < nImage; i++)
+    //for (size_t j = 0; j < points.Count(); j++)
+    //    tmpPoints.Add(CreateGroup(i, points[j].x, points[j].y));
+    //ArrayList<Group<int, int, int>> centerPoints = RandomPickUp(tmpPoints, clusterNum);
 
-    cout << "Bagging" << endl;
-    ArrayList<Histogram> histograms(nImage);
-    #pragma omp parallel for
-    for (int i = 0; i < nImage; i++)
-    {
-        Histogram hist(clusterNum);
+    //ArrayList<Group<ArrayList<PointList>, ArrayList<Mat>>> centers(clusterNum);
+    //#pragma omp parallel for
+    //for (int i = 0; i < clusterNum; i++)
+    //{
+    //    centers[i] = GetBlock(centerPoints[i].Item2(), centerPoints[i].Item3(), blockSize,
+    //        channels[centerPoints[i].Item1()]);
+    //}
 
-        for (int j = 0; j < points.Count(); j++)
-        {
-            Group<ArrayList<PointList>, ArrayList<Mat>> block = GetBlock(
-                points[j].x, points[j].y, blockSize, channels[i]);
+    //cout << "Bagging" << endl;
+    //ArrayList<Histogram> histograms(nImage);
+    //#pragma omp parallel for
+    //for (int i = 0; i < nImage; i++)
+    //{
+    //    Histogram hist(clusterNum);
 
-            for (int k = 0; k < clusterNum; k++)
-            {
-                double d1 = GetOneWayDistance(block.Item1(), centers[k].Item2());
-                double d2 = GetOneWayDistance(centers[k].Item1(), block.Item2());
-                //d1 = min(d1, 40.0);
-                //d2 = min(d2, 40.0);
-                double distance = (d1 + d2) / 2.0;
+    //    for (int j = 0; j < points.Count(); j++)
+    //    {
+    //        Group<ArrayList<PointList>, ArrayList<Mat>> block = GetBlock(
+    //            points[j].x, points[j].y, blockSize, channels[i]);
 
-                hist[k] += Math::Gauss(distance, 2.0);
-            }
-        }
+    //        for (int k = 0; k < clusterNum; k++)
+    //        {
+    //            double d1 = GetOneWayDistance(block.Item1(), centers[k].Item2());
+    //            double d2 = GetOneWayDistance(centers[k].Item1(), block.Item2());
+    //            //d1 = min(d1, 40.0);
+    //            //d2 = min(d2, 40.0);
+    //            double distance = (d1 + d2) / 2.0;
 
-        NormOneNormalize(hist.begin(), hist.end());
-        //for (int j = 0; j < hist.Count(); j++)
-        //    hist[j] /= points.Count();
-        histograms[i] = hist;
-        printf("%d\n", i);
-    }
+    //            hist[k] += Math::Gauss(distance, 2.0);
+    //        }
+    //    }
 
-    auto evaIdxes = SplitDatasetRandomly(labels, 3);
-    for (int i = 0; i < evaIdxes.Count(); i++)
-    {
-        printf("\nBegin Fold %d...\n", i + 1);
-        const ArrayList<size_t>& pickUpIndexes = evaIdxes[i];
-        ArrayList<int> trainingLabels = Divide(labels, pickUpIndexes).Item2();
-        ArrayList<int> evaluationLabels = Divide(labels, pickUpIndexes).Item1();
-        ArrayList<Histogram> trainingHistograms = Divide(histograms, pickUpIndexes).Item2();
-        ArrayList<Histogram> evaluationHistograms = Divide(histograms, pickUpIndexes).Item1();
+    //    NormOneNormalize(hist.begin(), hist.end());
+    //    //for (int j = 0; j < hist.Count(); j++)
+    //    //    hist[j] /= points.Count();
+    //    histograms[i] = hist;
+    //    printf("%d\n", i);
+    //}
 
-        printf("Fold %d Accuracy: ", i + 1);
-        cout << KNN<Histogram>().
-            Evaluate(trainingHistograms, trainingLabels, evaluationHistograms, evaluationLabels).Item1() << endl;
-    }
+    //auto evaIdxes = SplitDatasetRandomly(labels, 3);
+    //for (int i = 0; i < evaIdxes.Count(); i++)
+    //{
+    //    printf("\nBegin Fold %d...\n", i + 1);
+    //    const ArrayList<size_t>& pickUpIndexes = evaIdxes[i];
+    //    ArrayList<int> trainingLabels = Divide(labels, pickUpIndexes).Item2();
+    //    ArrayList<int> evaluationLabels = Divide(labels, pickUpIndexes).Item1();
+    //    ArrayList<Histogram> trainingHistograms = Divide(histograms, pickUpIndexes).Item2();
+    //    ArrayList<Histogram> evaluationHistograms = Divide(histograms, pickUpIndexes).Item1();
 
-    ArrayList<GlobalFeatureVec_f> fHists;
-    for (int i = 0; i < histograms.Count(); i++)
-    {
-        GlobalFeatureVec_f tmp;
-        Convert(histograms[i], tmp);
-        fHists.Add(tmp);
-    }
-    SaveGlobalFeatures("test_data", fHists, labels);
+    //    printf("Fold %d Accuracy: ", i + 1);
+    //    cout << KNN<Histogram>().
+    //        Evaluate(trainingHistograms, trainingLabels, evaluationHistograms, evaluationLabels).Item1() << endl;
+    //}
+
+    //ArrayList<GlobalFeatureVec_f> fHists;
+    //for (int i = 0; i < histograms.Count(); i++)
+    //{
+    //    GlobalFeatureVec_f tmp;
+    //    Convert(histograms[i], tmp);
+    //    fHists.Add(tmp);
+    //}
+    //SaveGlobalFeatures("test_data", fHists, labels);
 }

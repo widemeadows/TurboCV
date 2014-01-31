@@ -2,6 +2,7 @@
 #include "Core.h"
 #include "Recognition.h"
 #include <cv.h>
+#include <highgui.h>
 #include <cstdio>
 using namespace cv;
 using namespace std;
@@ -994,6 +995,97 @@ namespace System
                         descriptor.Add(hist.at<double>(i, j, k));
 
             NormTwoNormalize(descriptor.begin(), descriptor.end());
+            return descriptor;
+        }
+
+
+        //////////////////////////////////////////////////////////////////////////
+        // Test
+        //////////////////////////////////////////////////////////////////////////
+
+        auto cmp = [](const Point& u, const Point& v) -> bool
+        {
+            if (u.x != v.x)
+                return u.x < v.x;
+            else
+                return u.y < v.y;
+        };
+
+        LocalFeatureVec Test::GetFeature(const Mat& sketchImage)
+        {
+            ArrayList<Point> points = GetEdgels(sketchImage);
+            ArrayList<Point> pivots = SampleFromPoints(points, (size_t)(points.Count() * pivotRatio + 0.5));
+            sort(pivots.begin(), pivots.end(), cmp);
+
+            double mean = 0;
+            for (int i = 0; i < pivots.Count(); i++)
+            for (int j = 0; j < pivots.Count(); j++)
+            {
+                mean += EulerDistance(points[i], points[j]);
+            }
+            mean /= (pivots.Count() * pivots.Count() - pivots.Count());
+
+            LocalFeatureVec feature;
+            for (int i = 0; i < pivots.Count(); i++)
+            {
+                Descriptor descriptor = GetDescriptor(pivots[i], pivots, mean);
+                feature.Add(descriptor);
+            }
+
+            printf(".");
+            return feature;
+        }
+
+        Descriptor Test::GetDescriptor(const Point& pivot, const ArrayList<Point>& points, 
+            const double mean)
+        {
+            int pointNum = points.Count();
+            assert(pointNum > 1);
+
+            int distanceNum = logDistances.Count() - 1;
+            int dims[] = { distanceNum, distanceNum, angleNum };
+            Mat bins(3, dims, CV_64F);
+            for (int i = 0; i < distanceNum; i++)
+            for (int j = 0; j < distanceNum; j++)
+            for (int k = 0; k < angleNum; k++)
+                bins.at<double>(i, j, k) = 0.0;
+
+            auto getDistanceIdx = [](double ratio) -> int
+            {
+                return ceil(log(ratio) / log(2.0)) - 3.0;
+            };
+
+            for (int i = 0; i < pointNum; i++)
+            for (int j = i + 1; j < pointNum; j++)
+            {
+                if (points[i] != pivot && points[j] != pivot)
+                {
+                    double pivotToI = EulerDistance(pivot, points[i]);
+                    double pivotToJ = EulerDistance(pivot, points[j]);
+                    double cosian = (points[i] - pivot).ddot(points[j] - pivot) / pivotToJ / pivotToJ;
+                    cosian = min(1.0, cosian);
+                    cosian = max(-1.0, cosian);
+                    double angle = acos(cosian);
+
+                    int idxI = getDistanceIdx(pivotToI / mean);
+                    int idxJ = getDistanceIdx(pivotToJ / mean);
+
+                    if (idxI >= 0 && idxI < distanceNum && idxJ >= 0 && idxJ < distanceNum)
+                    {
+                        int a = FindBinIndex(angle, 0, CV_PI, angleNum, true);
+                        bins.at<double>(idxI, idxJ, a)++;
+                    }
+                }
+            }
+
+            Descriptor descriptor;
+            for (int i = 0; i < distanceNum; i++)
+            for (int j = 0; j < distanceNum; j++)
+            for (int k = 0; k < angleNum; k++)
+                descriptor.Add(bins.at<double>(i, j, k));
+
+            NormOneNormalize(descriptor.begin(), descriptor.end());
+
             return descriptor;
         }
 

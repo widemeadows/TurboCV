@@ -435,7 +435,7 @@ namespace System
         ArrayList<Point> SampleFromPoints(const ArrayList<Point>& points, size_t samplingNum)
         {
             size_t pointNum = points.Count();
-            assert(pointNum >= samplingNum);
+            samplingNum = min(pointNum, samplingNum);
 
             ArrayList<Group<double, Group<size_t, size_t>>> distances(pointNum * (pointNum - 1) / 2);
             unordered_set<Point, PointHash> pivots;

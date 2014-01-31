@@ -569,6 +569,57 @@ namespace System
             double blockSize;
         };
 
+        // Test
+        class Test : public LocalFeature
+        {
+        public:
+            Test() : angleNum(12), pivotRatio(0.33)
+            {
+                double tmp[] = { 0, 0.125, 0.25, 0.5, 1, 2 };
+                logDistances = ArrayList<double>(tmp, tmp + sizeof(tmp) / sizeof(double));
+            }
+
+            Test(const std::map<TString, TString>& params, bool printParams = false)
+            {
+                angleNum = GetDoubleValue(params, "angleNum", 12);
+                pivotRatio = GetDoubleValue(params, "pivotRatio", 0.33);
+
+                double tmp[] = { 0, 0.125, 0.25, 0.5, 1, 2 };
+                logDistances = GetDoubleList(params, "logDistances",
+                    ArrayList<double>(tmp, tmp + sizeof(tmp) / sizeof(double)));
+
+                if (printParams)
+                {
+                    printf("LogDistances:");
+                    for (int i = 0; i < logDistances.Count(); i++)
+                        printf(" %f", logDistances[i]);
+                    printf("\n");
+
+                    printf("AngleNum: %d, PivotRatio: %f\n", angleNum, pivotRatio);
+                }
+            }
+
+            virtual LocalFeatureVec operator()(const cv::Mat& sketchImage)
+            {
+                return GetFeature(sketchImage);
+            }
+
+            virtual TString GetName() const
+            {
+                return "test";
+            }
+
+        protected:
+            LocalFeatureVec GetFeature(const cv::Mat& sketchImage);
+            Descriptor GetDescriptor(const cv::Point& pivot, const ArrayList<cv::Point>& points, 
+                const double mean);
+
+        private:
+            ArrayList<double> logDistances;
+            int angleNum;
+            double pivotRatio;
+        };
+
         //////////////////////////////////////////////////////////////////////////
         // APIs for Global Features
         //////////////////////////////////////////////////////////////////////////
