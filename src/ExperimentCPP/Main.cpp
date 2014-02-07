@@ -340,7 +340,7 @@ int main(int argc, char* argv[])
     //LocalFeatureCrossValidation<RGabor>("subset", sketchPreprocess);
     //LocalFeatureCrossValidation<RHOG>("oracles", oraclePreprocess);
 
-    LocalFeatureCrossValidation<Test>("subset", sketchPreprocess);
+    LocalFeatureCrossValidation<TGabor>("subset", sketchPreprocess);
 
     //auto dataset = LoadDataset("subset");
     //auto paths = dataset.Item1();
