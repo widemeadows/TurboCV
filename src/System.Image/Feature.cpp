@@ -4,6 +4,7 @@
 #include <cv.h>
 #include <highgui.h>
 #include <cstdio>
+#include <functional>
 using namespace cv;
 using namespace std;
 
@@ -998,98 +999,6 @@ namespace System
             return descriptor;
         }
 
-
-        //////////////////////////////////////////////////////////////////////////
-        // Test
-        //////////////////////////////////////////////////////////////////////////
-
-        auto cmp = [](const Point& u, const Point& v) -> bool
-        {
-            if (u.x != v.x)
-                return u.x < v.x;
-            else
-                return u.y < v.y;
-        };
-
-        LocalFeatureVec Test::GetFeature(const Mat& sketchImage)
-        {
-            ArrayList<Point> points = GetEdgels(sketchImage);
-            ArrayList<Point> pivots = SampleFromPoints(points, (size_t)(points.Count() * pivotRatio + 0.5));
-            sort(pivots.begin(), pivots.end(), cmp);
-
-            double mean = 0;
-            for (int i = 0; i < pivots.Count(); i++)
-            for (int j = 0; j < pivots.Count(); j++)
-            {
-                mean += EulerDistance(points[i], points[j]);
-            }
-            mean /= (pivots.Count() * pivots.Count() - pivots.Count());
-
-            LocalFeatureVec feature;
-            for (int i = 0; i < pivots.Count(); i++)
-            {
-                Descriptor descriptor = GetDescriptor(pivots[i], pivots, mean);
-                feature.Add(descriptor);
-            }
-
-            printf(".");
-            return feature;
-        }
-
-        Descriptor Test::GetDescriptor(const Point& pivot, const ArrayList<Point>& points, 
-            const double mean)
-        {
-            int pointNum = points.Count();
-            assert(pointNum > 1);
-
-            int distanceNum = logDistances.Count() - 1;
-            int dims[] = { distanceNum, distanceNum, angleNum };
-            Mat bins(3, dims, CV_64F);
-            for (int i = 0; i < distanceNum; i++)
-            for (int j = 0; j < distanceNum; j++)
-            for (int k = 0; k < angleNum; k++)
-                bins.at<double>(i, j, k) = 0.0;
-
-            auto getDistanceIdx = [](double ratio) -> int
-            {
-                return ceil(log(ratio) / log(2.0)) - 3.0;
-            };
-
-            for (int i = 0; i < pointNum; i++)
-            for (int j = i + 1; j < pointNum; j++)
-            {
-                if (points[i] != pivot && points[j] != pivot)
-                {
-                    double pivotToI = EulerDistance(pivot, points[i]);
-                    double pivotToJ = EulerDistance(pivot, points[j]);
-                    double cosian = (points[i] - pivot).ddot(points[j] - pivot) / pivotToJ / pivotToJ;
-                    cosian = min(1.0, cosian);
-                    cosian = max(-1.0, cosian);
-                    double angle = acos(cosian);
-
-                    int idxI = getDistanceIdx(pivotToI / mean);
-                    int idxJ = getDistanceIdx(pivotToJ / mean);
-
-                    if (idxI >= 0 && idxI < distanceNum && idxJ >= 0 && idxJ < distanceNum)
-                    {
-                        int a = FindBinIndex(angle, 0, CV_PI, angleNum, true);
-                        bins.at<double>(idxI, idxJ, a)++;
-                    }
-                }
-            }
-
-            Descriptor descriptor;
-            for (int i = 0; i < distanceNum; i++)
-            for (int j = 0; j < distanceNum; j++)
-            for (int k = 0; k < angleNum; k++)
-                descriptor.Add(bins.at<double>(i, j, k));
-
-            NormOneNormalize(descriptor.begin(), descriptor.end());
-
-            return descriptor;
-        }
-
-
         //////////////////////////////////////////////////////////////////////////
         // GHOG
         //////////////////////////////////////////////////////////////////////////
@@ -1121,6 +1030,71 @@ namespace System
                 for (int j = blockSize / 2 - 1; j < sketchImage.cols; j += blockSize / 2)
                     for (int k = 0; k < orientNum; k++)
                         feature.Add(filteredOrientChannels[k].at<double>(i, j));
+
+            NormTwoNormalize(feature.begin(), feature.end());
+            return feature;
+        }
+
+
+        //////////////////////////////////////////////////////////////////////////
+        // LGBPHS
+        //////////////////////////////////////////////////////////////////////////
+
+        GlobalFeatureVec LGBPHS::GetFeature(const Mat& sketchImage)
+        {
+            int blockSize = sketchImage.rows / blockNum;
+            ArrayList<Mat> orientChannels = GetOrientChannels(sketchImage, orientNum);
+            
+            ArrayList<Mat> lbpChannels(orientNum);
+            for (int i = 0; i < orientNum; i++)
+            {
+                Mat lbpMap(orientChannels[i].size(), CV_8U);
+
+                for (int j = 0; j < orientChannels[i].rows; j++)
+                for (int k = 0; k < orientChannels[i].cols; k++)
+                {
+                    int factor = 1;
+                    uchar lbp = 0;
+
+                    for (int m = -1; m <= 1; m++)
+                    for (int n = -1; n <= 1; n++)
+                    {
+                        if (m == 0 && n == 0)
+                            continue;
+
+                        int newR = j + m, newC = k + n;
+                        if (newR >= 0 && newR < orientChannels[i].rows &&
+                            newC >= 0 && newC < orientChannels[i].cols &&
+                            orientChannels[i].at<double>(newR, newC) > orientChannels[i].at<double>(j, k))
+                            lbp += factor;
+
+                        factor *= 2;
+                    }
+
+                    lbpMap.at<uchar>(j, k) = lbp;
+                }
+
+                lbpChannels[i] = lbpMap;
+            }
+
+            GlobalFeatureVec feature;
+            for (int i = blockSize / 2; i < sketchImage.rows; i += blockSize)
+            for (int j = blockSize / 2; j < sketchImage.cols; j += blockSize)
+            for (int k = 0; k < orientNum; k++)
+            {
+                int top = max(0, i - blockSize / 2),
+                    bottom = min(sketchImage.rows, i + blockSize / 2),
+                    left = max(0, j - blockSize / 2),
+                    right = min(sketchImage.cols, j + blockSize / 2);
+
+                ArrayList<double> histogram(256);
+                for (int m = top; m < bottom; m++)
+                for (int n = left; n < right; n++)
+                    histogram[lbpChannels[k].at<uchar>(m, n)]++;
+
+                for (auto item : histogram)
+                    feature.Add(item);
+            }
 
             NormTwoNormalize(feature.begin(), feature.end());
             return feature;
@@ -1242,6 +1216,132 @@ namespace System
             }
 
             return gaborsInFreqDomain;
+        }
+
+
+        //////////////////////////////////////////////////////////////////////////
+        // TGabor
+        //////////////////////////////////////////////////////////////////////////
+
+        ArrayList<Mat> GetChannels(const Mat& sketchImage, int orientNum, int angleNum)
+        {
+            int ksize = 4;
+            double interval = CV_PI / angleNum;
+
+            ArrayList<Mat> gaborChannels = GetGaborChannels(sketchImage, orientNum);
+            ArrayList<Mat> edgeChannels(orientNum * angleNum);
+            for (int i = 0; i < edgeChannels.Count(); i++)
+                edgeChannels[i] = Mat::zeros(sketchImage.rows, sketchImage.cols, CV_64F);
+
+            for (int i = 0; i < sketchImage.rows; i++)
+            {
+                for (int j = 0; j < sketchImage.cols; j++)
+                {
+                    if (!sketchImage.at<uchar>(i, j))
+                        continue;
+
+                    Point u(j, i);
+                    int bottom = max(i - ksize, 0),
+                        top = min(i + ksize, sketchImage.rows - 1),
+                        left = max(j - ksize, 0),
+                        right = min(j + ksize, sketchImage.cols - 1);
+
+                    for (int p = 0; p < orientNum; p++)
+                    for (int m = bottom; m <= top; m++)
+                    for (int n = left; n <= right; n++)
+                    {
+                        Point v(n, m);
+                        if (u == v)
+                            continue;
+
+                        Point uv = v - u;
+                        if (uv.y <= 0)
+                        {
+                            uv.x = -uv.x;
+                            uv.y = -uv.y;
+                        }
+                        double cosian = uv.x / sqrt(uv.x * uv.x + uv.y * uv.y);
+                        double angle = acos(cosian);
+                        size_t a = FindBinIndex(angle, 0, CV_PI, angleNum, true);
+                        edgeChannels[p * angleNum + a].at<double>(i, j) +=
+                            gaborChannels[p].at<double>(m, n);
+                    }
+                }
+            }
+
+            return edgeChannels;
+        }
+
+        LocalFeatureVec TGabor::GetFeature(const Mat& sketchImage)
+        {
+            int cellSize = blockSize / cellNum, kernelSize = cellSize * 2 + 1;
+            Mat tentKernel(kernelSize, kernelSize, CV_64F);
+            for (int i = 0; i < kernelSize; i++)
+            {
+                for (int j = 0; j < kernelSize; j++)
+                {
+                    double ratio = 1 - sqrt((i - cellSize) * (i - cellSize) +
+                        (j - cellSize) * (j - cellSize)) / cellSize;
+                    if (ratio < 0)
+                        ratio = 0;
+
+                    tentKernel.at<double>(i, j) = ratio;
+                }
+            }
+
+            ArrayList<Mat> orientChannels = GetChannels(sketchImage, orientNum, angleNum);
+            ArrayList<Mat> filteredOrientChannels(orientChannels.Count());
+            for (int i = 0; i < orientChannels.Count(); i++)
+                filter2D(orientChannels[i], filteredOrientChannels[i], -1, tentKernel);
+
+            LocalFeatureVec feature;
+            ArrayList<Point> centers = SampleOnGrid(sketchImage.rows, sketchImage.cols, sampleNum);
+            for (Point center : centers)
+            {
+                Descriptor descriptor = GetDescriptor(filteredOrientChannels, center);
+                feature.Add(descriptor);
+            }
+
+            printf(".");
+            return feature;
+        }
+
+        Descriptor TGabor::GetDescriptor(const ArrayList<Mat>& filteredOrientChannels,
+            const Point& center)
+        {
+            int height = filteredOrientChannels[0].rows,
+                width = filteredOrientChannels[0].cols;
+            double cellSize = blockSize / cellNum;
+            int expectedTop = center.y - blockSize / 2,
+                expectedLeft = center.x - blockSize / 2;
+            int dims[] = { cellNum, cellNum, filteredOrientChannels.Count() };
+            Mat hist(3, dims, CV_64F);
+
+            for (int i = 0; i < cellNum; i++)
+            {
+                for (int j = 0; j < cellNum; j++)
+                {
+                    for (int k = 0; k < filteredOrientChannels.Count(); k++)
+                    {
+                        int r = (int)(expectedTop + (i + 0.5) * cellSize),
+                            c = (int)(expectedLeft + (j + 0.5) * cellSize);
+
+                        if (r < 0 || r >= height || c < 0 || c >= width)
+                            hist.at<double>(i, j, k) = 0;
+                        else
+                            hist.at<double>(i, j, k) = filteredOrientChannels[k].at<double>(r, c);
+                    }
+                }
+            }
+
+            Descriptor descriptor;
+            for (int i = 0; i < cellNum; i++)
+            for (int j = 0; j < cellNum; j++)
+            for (int k = 0; k < filteredOrientChannels.Count(); k++)
+                descriptor.Add(hist.at<double>(i, j, k));
+
+            NormTwoNormalize(descriptor.begin(), descriptor.end());
+            return descriptor;
         }
     }
 }

@@ -569,57 +569,7 @@ namespace System
             double blockSize;
         };
 
-        // Test
-        class Test : public LocalFeature
-        {
-        public:
-            Test() : angleNum(12), pivotRatio(0.33)
-            {
-                double tmp[] = { 0, 0.125, 0.25, 0.5, 1, 2 };
-                logDistances = ArrayList<double>(tmp, tmp + sizeof(tmp) / sizeof(double));
-            }
-
-            Test(const std::map<TString, TString>& params, bool printParams = false)
-            {
-                angleNum = GetDoubleValue(params, "angleNum", 12);
-                pivotRatio = GetDoubleValue(params, "pivotRatio", 0.33);
-
-                double tmp[] = { 0, 0.125, 0.25, 0.5, 1, 2 };
-                logDistances = GetDoubleList(params, "logDistances",
-                    ArrayList<double>(tmp, tmp + sizeof(tmp) / sizeof(double)));
-
-                if (printParams)
-                {
-                    printf("LogDistances:");
-                    for (int i = 0; i < logDistances.Count(); i++)
-                        printf(" %f", logDistances[i]);
-                    printf("\n");
-
-                    printf("AngleNum: %d, PivotRatio: %f\n", angleNum, pivotRatio);
-                }
-            }
-
-            virtual LocalFeatureVec operator()(const cv::Mat& sketchImage)
-            {
-                return GetFeature(sketchImage);
-            }
-
-            virtual TString GetName() const
-            {
-                return "test";
-            }
-
-        protected:
-            LocalFeatureVec GetFeature(const cv::Mat& sketchImage);
-            Descriptor GetDescriptor(const cv::Point& pivot, const ArrayList<cv::Point>& points, 
-                const double mean);
-
-        private:
-            ArrayList<double> logDistances;
-            int angleNum;
-            double pivotRatio;
-        };
-
+        
         //////////////////////////////////////////////////////////////////////////
         // APIs for Global Features
         //////////////////////////////////////////////////////////////////////////
@@ -663,6 +613,40 @@ namespace System
 
         private:
             int orientNum, blockSize;
+        };
+
+        // Local Gabor Binary Pattern Histogram Sequence
+        class LGBPHS : public GlobalFeature
+        {
+        public:
+            LGBPHS() : orientNum(8), blockNum(4) {}
+
+            LGBPHS(const std::map<TString, TString>& params, bool printParams = false)
+            {
+                orientNum = GetDoubleValue(params, "orientNum", 8);
+                blockNum = GetDoubleValue(params, "blockNum", 4);
+
+                if (printParams)
+                {
+                    printf("OrientNum: %d, BlockNum: %d\n", orientNum, blockNum);
+                }
+            }
+
+            virtual GlobalFeatureVec operator()(const cv::Mat& sketchImage)
+            {
+                return GetFeature(sketchImage);
+            }
+
+            virtual TString GetName() const
+            {
+                return "lgbphs";
+            }
+
+        protected:
+            GlobalFeatureVec GetFeature(const cv::Mat& sketchImage);
+
+        private:
+            int orientNum, blockNum;
         };
 
         // Model the Shape of Scene
@@ -848,6 +832,49 @@ namespace System
         private:
             int orientNum;
             double maxDistance;
+        };
+
+        
+
+        class TGabor : public LocalFeature
+        {
+        public:
+            TGabor() : orientNum(4), angleNum(4), cellNum(4), sampleNum(28), blockSize(92) {}
+
+            TGabor(const std::map<TString, TString>& params, bool printParams = false)
+            {
+                orientNum = GetDoubleValue(params, "orientNum", 4);
+                angleNum = GetDoubleValue(params, "angleNum", 4);
+                cellNum = GetDoubleValue(params, "cellNum", 4);
+                sampleNum = GetDoubleValue(params, "sampleNum", 28);
+                blockSize = GetDoubleValue(params, "blockSize", 92);
+
+                if (printParams)
+                {
+                    printf("OrientNum: %d, AngleNum: %d, CellNum: %d, SampleNum: %d, BlockSize: %d\n",
+                        orientNum, angleNum, cellNum, sampleNum, (int)blockSize);
+                }
+            }
+
+            virtual LocalFeatureVec operator()(const cv::Mat& sketchImage)
+            {
+                return GetFeature(sketchImage);
+            }
+
+            virtual TString GetName() const
+            {
+                return "tgabor";
+            }
+
+        protected:
+            LocalFeatureVec GetFeature(const cv::Mat& sketchImage);
+
+        private:
+            Descriptor GetDescriptor(const ArrayList<cv::Mat>& filteredOrientImages,
+                const cv::Point& center);
+
+            int orientNum, angleNum, cellNum, sampleNum;
+            double blockSize;
         };
     }
 }
