@@ -19,11 +19,13 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="Clustering.cpp" />
     <ClCompile Include="Kmeans.cpp" />
     <ClCompile Include="Reduction.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Classifier.hpp" />
+    <ClInclude Include="Clustering.h" />
     <ClInclude Include="Core.h" />
     <ClInclude Include="LDA.h" />
     <ClInclude Include="Reduction.h" />

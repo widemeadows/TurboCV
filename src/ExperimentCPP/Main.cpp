@@ -84,6 +84,32 @@ cv::Mat oraclePreprocess(const Mat& image)
     return finalImage;
 }
 
+cv::Mat oraclePreprocess2(const Mat& image)
+{
+    Mat boundingBox = GetBoundingBox(reverse(image));
+
+    Mat squareImage;
+    int leftPadding = 0, topPadding = 0;
+    if (boundingBox.rows < boundingBox.cols)
+        topPadding = (boundingBox.cols - boundingBox.rows) / 2;
+    else
+        leftPadding = (boundingBox.rows - boundingBox.cols) / 2;
+    copyMakeBorder(boundingBox, squareImage, topPadding, topPadding,
+        leftPadding, leftPadding, BORDER_CONSTANT, Scalar(0, 0, 0, 0));
+
+    Mat scaledImage;
+    resize(squareImage, scaledImage, Size(228, 228));
+
+    Mat paddedImage;
+    copyMakeBorder(scaledImage, paddedImage, 14, 14, 14, 14, BORDER_CONSTANT, Scalar(0, 0, 0, 0));
+    assert(paddedImage.rows == 256 && paddedImage.cols == 256);
+
+    Mat binaryImage;
+    threshold(paddedImage, binaryImage, 200, 255, CV_THRESH_BINARY);
+
+    return binaryImage;
+}
+
 void Batch(const TString& datasetPath, cv::Mat (*preprocess)(const cv::Mat&))
 {
     LocalFeatureCrossValidation<HOG>(datasetPath, preprocess);
@@ -340,97 +366,84 @@ int main(int argc, char* argv[])
     //LocalFeatureCrossValidation<RGabor>("subset", sketchPreprocess);
     //LocalFeatureCrossValidation<RHOG>("oracles", oraclePreprocess);
 
-    LocalFeatureCrossValidation<TGabor>("subset", sketchPreprocess);
+    //LocalFeatureCrossValidation<TGabor>("subset", oraclePreprocess);
+    Mat image = imread("00003.png", CV_LOAD_IMAGE_GRAYSCALE);
+    image = oraclePreprocess(image);
+    
+    auto edgels = GetEdgels(image);
+    Mat X(edgels.Count(), 2, CV_64F);
+    cout << edgels.Count() << endl;
+    for (int i = 0; i < edgels.Count(); i++)
+    {
+        X.at<double>(i, 0) = edgels[i].y;
+        X.at<double>(i, 1) = edgels[i].x;
+    }
 
-    //auto dataset = LoadDataset("subset");
-    //auto paths = dataset.Item1();
-    //auto labels = dataset.Item2();
+    ArrayList<Vec3b> colors(10);
+    for (int i = 0; i < colors.Count(); i++)
+    {
+        colors[i] = Vec3b(rand() / (double)RAND_MAX * 255, 
+                          rand() / (double)RAND_MAX * 255, 
+                          rand() / (double)RAND_MAX * 255);
+    }
 
-    //int nImage = paths.Count();
+    Mat prob = GMM(X, 10).Item1();
+    Mat colorImg = Mat::zeros(image.size(), CV_8UC3);
+    for (int i = 0; i < edgels.Count(); i++)
+    {
+        double maxProb = -1;
+        int maxIdx = -1;
+        for (int j = 0; j < prob.cols; j++)
+        if (prob.at<double>(i, j) > maxProb)
+        {
+            maxProb = prob.at<double>(i, j);
+            maxIdx = j;
+        }
 
-    //printf("ImageNum: %d\n", nImage);
-    //printf("Cross Validation on Local Hitmap...\n");
+        colorImg.at<Vec3b>(edgels[i].y, edgels[i].x) = colors[maxIdx];
+    }
+    imshow("win", colorImg);
+    waitKey(0);
+
+    Mat clusterIds = Mat::zeros(edgels.Count(), 1, CV_32S);
+    Mat centers(colors.Count(), 2, CV_32F);
+    Mat Xf;
+    X.convertTo(Xf, CV_32F);
+    kmeans(Xf, colors.Count(), clusterIds, TermCriteria(CV_TERMCRIT_ITER, 500, 1e-6), 
+        1, KMEANS_PP_CENTERS, centers);
+    for (int i = 0; i < edgels.Count(); i++)
+    {
+        colorImg.at<Vec3b>(edgels[i].y, edgels[i].x) = colors[clusterIds.at<int>(i)];
+    }
+    imshow("win", colorImg);
+    waitKey(0);
+
     //
-    //ArrayList<cv::Mat> images(nImage);
-    //ArrayList<ArrayList<PointList>> channels(nImage);
-    //#pragma omp parallel for
-    //for (int i = 0; i < nImage; i++)
+    //auto channels = GetGaborChannels(image, 4);
+    //for (int i = 0; i < channels.Count(); i++)
+    //    blur(channels[i], channels[i], Size(5, 5));
+    //for (int i = 0; i < channels.Count(); i++)
+    //for (int j = 0; j < image.rows; j++)
+    //for (int k = 0; k < image.cols; k++)
+    //if (!image.at<uchar>(j, k))
+    //    channels[i].at<double>(j, k) = 0.0;
+
+    //for (int j = 0; j < image.rows; j++)
+    //for (int k = 0; k < image.cols; k++)
+    //if (image.at<uchar>(j, k))
     //{
-    //    cv::Mat image = cv::imread(paths[i], CV_LOAD_IMAGE_GRAYSCALE);
-    //    images[i] = sketchPreprocess(image);
-    //    channels[i] = GetEdgelChannels(images[i], 4);
+    //    ArrayList<Group<double, int>> values;
+    //    for (int i = 0; i < channels.Count(); i++)
+    //        values.Add(CreateGroup(channels[i].at<double>(j, k), i));
+
+    //    sort(values.begin(), values.end());
+    //    for (int i = 0; i < values.Count() - 1; i++)
+    //        channels[values[i].Item2()].at<double>(j, k) = 0.0;
     //}
 
-    //cout << "Clustering" << endl;
-    //ArrayList<Point> points = SampleOnGrid(images[0].rows, images[0].cols, 14);
-    //size_t blockSize = 92, clusterNum = 500;
-
-    //ArrayList<Group<int, int, int>> tmpPoints;
-    //for (int i = 0; i < nImage; i++)
-    //for (size_t j = 0; j < points.Count(); j++)
-    //    tmpPoints.Add(CreateGroup(i, points[j].x, points[j].y));
-    //ArrayList<Group<int, int, int>> centerPoints = RandomPickUp(tmpPoints, clusterNum);
-
-    //ArrayList<Group<ArrayList<PointList>, ArrayList<Mat>>> centers(clusterNum);
-    //#pragma omp parallel for
-    //for (int i = 0; i < clusterNum; i++)
+    //for (auto channel : channels)
     //{
-    //    centers[i] = GetBlock(centerPoints[i].Item2(), centerPoints[i].Item3(), blockSize,
-    //        channels[centerPoints[i].Item1()]);
+    //    imshow(channel);
+    //    waitKey(0);
     //}
-
-    //cout << "Bagging" << endl;
-    //ArrayList<Histogram> histograms(nImage);
-    //#pragma omp parallel for
-    //for (int i = 0; i < nImage; i++)
-    //{
-    //    Histogram hist(clusterNum);
-
-    //    for (int j = 0; j < points.Count(); j++)
-    //    {
-    //        Group<ArrayList<PointList>, ArrayList<Mat>> block = GetBlock(
-    //            points[j].x, points[j].y, blockSize, channels[i]);
-
-    //        for (int k = 0; k < clusterNum; k++)
-    //        {
-    //            double d1 = GetOneWayDistance(block.Item1(), centers[k].Item2());
-    //            double d2 = GetOneWayDistance(centers[k].Item1(), block.Item2());
-    //            //d1 = min(d1, 40.0);
-    //            //d2 = min(d2, 40.0);
-    //            double distance = (d1 + d2) / 2.0;
-
-    //            hist[k] += Math::Gauss(distance, 2.0);
-    //        }
-    //    }
-
-    //    NormOneNormalize(hist.begin(), hist.end());
-    //    //for (int j = 0; j < hist.Count(); j++)
-    //    //    hist[j] /= points.Count();
-    //    histograms[i] = hist;
-    //    printf("%d\n", i);
-    //}
-
-    //auto evaIdxes = SplitDatasetRandomly(labels, 3);
-    //for (int i = 0; i < evaIdxes.Count(); i++)
-    //{
-    //    printf("\nBegin Fold %d...\n", i + 1);
-    //    const ArrayList<size_t>& pickUpIndexes = evaIdxes[i];
-    //    ArrayList<int> trainingLabels = Divide(labels, pickUpIndexes).Item2();
-    //    ArrayList<int> evaluationLabels = Divide(labels, pickUpIndexes).Item1();
-    //    ArrayList<Histogram> trainingHistograms = Divide(histograms, pickUpIndexes).Item2();
-    //    ArrayList<Histogram> evaluationHistograms = Divide(histograms, pickUpIndexes).Item1();
-
-    //    printf("Fold %d Accuracy: ", i + 1);
-    //    cout << KNN<Histogram>().
-    //        Evaluate(trainingHistograms, trainingLabels, evaluationHistograms, evaluationLabels).Item1() << endl;
-    //}
-
-    //ArrayList<GlobalFeatureVec_f> fHists;
-    //for (int i = 0; i < histograms.Count(); i++)
-    //{
-    //    GlobalFeatureVec_f tmp;
-    //    Convert(histograms[i], tmp);
-    //    fHists.Add(tmp);
-    //}
-    //SaveGlobalFeatures("test_data", fHists, labels);
 }

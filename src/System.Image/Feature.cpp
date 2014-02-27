@@ -1225,51 +1225,108 @@ namespace System
 
         ArrayList<Mat> GetChannels(const Mat& sketchImage, int orientNum, int angleNum)
         {
-            int ksize = 4;
-            double interval = CV_PI / angleNum;
+            int ksize = 10;
 
-            ArrayList<Mat> gaborChannels = GetGaborChannels(sketchImage, orientNum);
-            ArrayList<Mat> edgeChannels(orientNum * angleNum);
-            for (int i = 0; i < edgeChannels.Count(); i++)
-                edgeChannels[i] = Mat::zeros(sketchImage.rows, sketchImage.cols, CV_64F);
-
-            for (int i = 0; i < sketchImage.rows; i++)
+            ArrayList<PointList> tmp = GetEdgelChannels(sketchImage, orientNum);
+            ArrayList<Mat> pChannels(orientNum);
+            for (int i = 0; i < pChannels.Count(); i++)
             {
-                for (int j = 0; j < sketchImage.cols; j++)
+                Mat mat = Mat::zeros(sketchImage.size(), CV_8U);
+                for (int j = 0; j < tmp[i].Count(); j++)
+                    mat.at<uchar>(tmp[i][j].y, tmp[i][j].x) = 255;
+                pChannels[i] = mat;
+            }
+            
+            ArrayList<Mat> triChannels(angleNum * orientNum);
+            for (int i = 0; i < triChannels.Count(); i++)
+                triChannels[i] = Mat::zeros(sketchImage.size(), CV_64F);
+
+            for (int c = 0; c < pChannels.Count(); c++)
+            for (int i = 0; i < sketchImage.rows; i++)
+            for (int j = 0; j < sketchImage.cols; j++)
+            if (pChannels[c].at<uchar>(i, j))
+            {
+                int bottom = max(i - ksize, 0),
+                    top = min(i + ksize, sketchImage.rows - 1),
+                    left = max(j - ksize, 0),
+                    right = min(j + ksize, sketchImage.cols - 1);
+
+                Point u(j, i);
+
+                ArrayList<Point> points;
+                for (int m = bottom; m <= top; m++)
+                for (int n = left; n <= right; n++)
                 {
-                    if (!sketchImage.at<uchar>(i, j))
+                    Point v(n, m);
+                    if (u == v || !pChannels[c].at<uchar>(m, n))
                         continue;
 
-                    Point u(j, i);
-                    int bottom = max(i - ksize, 0),
-                        top = min(i + ksize, sketchImage.rows - 1),
-                        left = max(j - ksize, 0),
-                        right = min(j + ksize, sketchImage.cols - 1);
+                    points.Add(v);
+                }
 
-                    for (int p = 0; p < orientNum; p++)
-                    for (int m = bottom; m <= top; m++)
-                    for (int n = left; n <= right; n++)
-                    {
-                        Point v(n, m);
-                        if (u == v)
-                            continue;
+                sort(points.begin(), points.end(), [](const Point& u, const Point& v)
+                {
+                    if (u.x != v.x)
+                        return u.x < v.x;
+                    else
+                        return u.y < v.y;
+                });
 
-                        Point uv = v - u;
-                        if (uv.y <= 0)
-                        {
-                            uv.x = -uv.x;
-                            uv.y = -uv.y;
-                        }
-                        double cosian = uv.x / sqrt(uv.x * uv.x + uv.y * uv.y);
-                        double angle = acos(cosian);
-                        size_t a = FindBinIndex(angle, 0, CV_PI, angleNum, true);
-                        edgeChannels[p * angleNum + a].at<double>(i, j) +=
-                            gaborChannels[p].at<double>(m, n);
-                    }
+                ArrayList<double> tmp(angleNum);
+                for (int m = 0; m < points.Count(); m++)
+                for (int n = m + 1; n < points.Count(); n++)
+                {
+                    Point mu = points[m] - u;
+                    Point nu = points[n] - u;
+                    Point mn = points[m] - points[n];
+                    double cosian = (mu.ddot(mu) + nu.ddot(nu) - mn.ddot(mn)) / (2 * sqrt(mu.ddot(mu)) * sqrt(nu.ddot(nu)));
+                    cosian = min(1.0, cosian);
+                    cosian = max(-1.0, cosian);
+                    double angle = acos(cosian);
+                    int a = FindBinIndex(angle, 0, CV_PI, angleNum, true);
+                    triChannels[c * angleNum + a].at<double>(i, j)++;
                 }
             }
 
-            return edgeChannels;
+            return triChannels;
+
+            /*ArrayList<Mat> channels(orientNum * angleNum);
+            for (int i = 0; i < channels.Count(); i++)
+                channels[i] = Mat::zeros(sketchImage.size(), CV_64F);
+            
+            ArrayList<Mat> gaborChannels = GetGaborChannels(sketchImage, orientNum);
+            ArrayList<PointList> points = GetEdgelChannels(sketchImage, orientNum);
+            for (int i = 0; i < orientNum; i++)
+            {
+                sort(points[i].begin(), points[i].end(), [](const Point& u, const Point& v)
+                {
+                    if (u.x != v.x)
+                        return u.x < v.x;
+                    else
+                        return u.y < v.y;
+                });
+
+                for (int j = 0; j < points[i].Count(); j++)
+                {
+                    ArrayList<double> tmp(angleNum);
+
+                    for (int k = 0; k < points[i].Count(); k++)
+                    {
+                        if (points[i][j] == points[i][k])
+                            continue;
+
+                        double angle = Angle(points[i][j], points[i][k]);
+                        int a = FindBinIndex(angle, 0, 2 * CV_PI, angleNum, true);
+                        tmp[a]++;
+                    }
+
+                    NormOneNormalize(tmp.begin(), tmp.end());
+                    for (int k = 0; k < tmp.Count(); k++)
+                        channels[i * angleNum + k].at<double>(points[i][j].y, points[i][j].x) = tmp[k];
+                }
+            }
+
+            return channels;*/
         }
 
         LocalFeatureVec TGabor::GetFeature(const Mat& sketchImage)

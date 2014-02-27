@@ -21,6 +21,9 @@
     <ClCompile Include="Kmeans.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
+    <ClCompile Include="Clustering.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="LDA.h">
@@ -39,6 +42,9 @@
       <Filter>头文件</Filter>
     </ClInclude>
     <ClInclude Include="Retrieval.hpp">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="Clustering.h">
       <Filter>头文件</Filter>
     </ClInclude>
   </ItemGroup>
