@@ -834,8 +834,6 @@ namespace System
             double maxDistance;
         };
 
-        
-
         class TGabor : public LocalFeature
         {
         public:
@@ -875,6 +873,38 @@ namespace System
 
             int orientNum, angleNum, cellNum, sampleNum;
             double blockSize;
+        };
+
+        class GMMtSL : GlobalFeature
+        {
+        public:
+            GMMtSL() : nComponent(10) {}
+
+            GMMtSL(const std::map<TString, TString>& params, bool printParams = false)
+            {
+                nComponent = GetDoubleValue(params, "nComponent", 10);
+
+                if (printParams)
+                {
+                    printf("nComponent: %d\n", nComponent);
+                }
+            }
+
+            virtual GlobalFeatureVec operator()(const cv::Mat& sketchImage)
+            {
+                return GetFeature(sketchImage);
+            }
+
+            virtual TString GetName() const
+            {
+                return "gmmtsl";
+            }
+
+        protected:
+            GlobalFeatureVec GetFeature(const cv::Mat& sketchImage);
+
+        private:
+            int nComponent;
         };
     }
 }

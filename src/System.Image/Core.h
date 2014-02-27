@@ -169,6 +169,9 @@ namespace System
             double sigma = 9, double lambda = 24);
         ArrayList<cv::Point> SampleOnShape(const cv::Mat& binaryImage, size_t samplingNum);
 
+        cv::Mat EdgelsToMat(ArrayList<cv::Point> edgels);
+        cv::Mat PerformGMMOnShape(const cv::Mat& binaryImage, size_t nComponent);
+
 
 		//////////////////////////////////////////////////////////////////////////
 		// APIs for Grayscale Images

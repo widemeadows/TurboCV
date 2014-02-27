@@ -1,4 +1,5 @@
 #include "../System/System.h"
+#include "../System.ML/System.ML.h"
 #include "Core.h"
 #include <cv.h>
 #include <queue>
@@ -480,6 +481,55 @@ namespace System
         ArrayList<Point> SampleOnShape(const Mat& binaryImage, size_t samplingNum)
         {
             return SampleFromPoints(GetEdgels(binaryImage), samplingNum);
+        }
+
+        Mat EdgelsToMat(ArrayList<Point> edgels)
+        {
+            Mat mat(edgels.Count(), 2, CV_64F);
+
+            for (int i = 0; i < edgels.Count(); i++)
+            {
+                mat.at<double>(i, 0) = edgels[i].x;
+                mat.at<double>(i, 1) = edgels[i].y;
+            }
+
+            return mat;
+        }
+
+        Mat PerformGMMOnShape(const Mat& binaryImage, size_t nComponent)
+        {
+            auto edgels = GetEdgels(binaryImage);
+            Mat x = EdgelsToMat(edgels);
+
+            ArrayList<Vec3b> colors(nComponent);
+            for (int i = 0; i < nComponent; i++)
+            {
+                colors[i] = Vec3b(
+                    rand() / (double)RAND_MAX * 255,
+                    rand() / (double)RAND_MAX * 255,
+                    rand() / (double)RAND_MAX * 255);
+            }
+
+            auto result = ML::GMM(x, colors.Count(), TermCriteria(CV_TERMCRIT_ITER, 200, 1e-6));
+            Mat prob = result.Item1();
+            ML::GMMFeature model = result.Item2();
+
+            Mat rgbImage = Mat::zeros(binaryImage.size(), CV_8UC3);
+            for (int i = 0; i < edgels.Count(); i++)
+            {
+                double maxProb = numeric_limits<double>::min();
+                int maxIdx = -1;
+                for (int j = 0; j < nComponent; j++)
+                if (prob.at<double>(i, j) > maxProb)
+                {
+                    maxProb = prob.at<double>(i, j);
+                    maxIdx = j;
+                }
+
+                rgbImage.at<Vec3b>(edgels[i].y, edgels[i].x) = colors[maxIdx];
+            }
+
+            return rgbImage;
         }
 	}
 }

@@ -107,7 +107,28 @@ cv::Mat oraclePreprocess2(const Mat& image)
     Mat binaryImage;
     threshold(paddedImage, binaryImage, 200, 255, CV_THRESH_BINARY);
 
-    return binaryImage;
+    Mat thinnedImage;
+    thin(binaryImage, thinnedImage);
+
+    Mat finalImage(thinnedImage.size(), CV_8U);
+
+    int radius = 5;
+    for (int i = 0; i < thinnedImage.rows; i++)
+    for (int j = 0; j < thinnedImage.cols; j++)
+    if (thinnedImage.at<uchar>(i, j))
+    {
+        int top = max(i - radius, 0),
+            bottom = min(i + radius, thinnedImage.rows - 1),
+            left = max(j - radius, 0),
+            right = min(j + radius, thinnedImage.cols - 1);
+
+        for (int m = top; m <= bottom; m++)
+        for (int n = left; n <= right; n++)
+        if (binaryImage.at<uchar>(m, n))
+            finalImage.at<uchar>(m, n) = 255;
+    }
+
+    return finalImage;
 }
 
 void Batch(const TString& datasetPath, cv::Mat (*preprocess)(const cv::Mat&))
@@ -366,84 +387,76 @@ int main(int argc, char* argv[])
     //LocalFeatureCrossValidation<RGabor>("subset", sketchPreprocess);
     //LocalFeatureCrossValidation<RHOG>("oracles", oraclePreprocess);
 
-    //LocalFeatureCrossValidation<TGabor>("subset", oraclePreprocess);
-    Mat image = imread("00003.png", CV_LOAD_IMAGE_GRAYSCALE);
-    image = oraclePreprocess(image);
+    LocalFeatureCrossValidation<RGabor>("subset", oraclePreprocess);
+
+    /*String datasetPath = "subset";
+    auto dataset = LoadDataset(datasetPath);
+    auto paths = dataset.Item1();
+    auto labels = dataset.Item2();
+    auto evaIdxes = SplitDatasetRandomly(labels, 3);
+    auto Preprocess = oraclePreprocess2;
     
-    auto edgels = GetEdgels(image);
-    Mat X(edgels.Count(), 2, CV_64F);
-    cout << edgels.Count() << endl;
-    for (int i = 0; i < edgels.Count(); i++)
+    int nImage = paths.Count();
+    printf("ImageNum: %d\n", nImage);
+
+    printf("Cross Validation on " + GMMtSL().GetName() + "...\n");
+    ArrayList<GlobalFeatureVec> features(nImage);
+
+    #pragma omp parallel for
+    for (int i = 0; i < nImage; i++)
     {
-        X.at<double>(i, 0) = edgels[i].y;
-        X.at<double>(i, 1) = edgels[i].x;
+        GMMtSL machine;
+        cv::Mat image = cv::imread(paths[i], CV_LOAD_IMAGE_GRAYSCALE);
+        features[i] = machine(Preprocess != NULL ? Preprocess(image) : image);
     }
 
-    ArrayList<Vec3b> colors(10);
-    for (int i = 0; i < colors.Count(); i++)
+    double maxPrecision = -1;
+    for (int i = 0; i < evaIdxes.Count(); i++)
     {
-        colors[i] = Vec3b(rand() / (double)RAND_MAX * 255, 
-                          rand() / (double)RAND_MAX * 255, 
-                          rand() / (double)RAND_MAX * 255);
+        printf("\nBegin Fold %d...\n", i + 1);
+        const ArrayList<size_t>& pickUpIndexes = evaIdxes[i];
+        ArrayList<GlobalFeatureVec> trainingSet = Divide(features, pickUpIndexes).Item2();
+        ArrayList<GlobalFeatureVec> evaluationSet = Divide(features, pickUpIndexes).Item1();
+        ArrayList<int> trainingLabels = Divide(labels, pickUpIndexes).Item2();
+        ArrayList<int> evaluationLabels = Divide(labels, pickUpIndexes).Item1();
+
+        double accuracy = KNN<GlobalFeatureVec>().
+            Evaluate(trainingSet, trainingLabels, evaluationSet, evaluationLabels, 
+            [](const GlobalFeatureVec& u, const GlobalFeatureVec& v)
+            {
+            int size = u.Count() / 4;
+            double distance = 0;
+
+            for (int i = 0; i < u.Count(); i += size)
+            {
+                distance += GetDistance(
+                    GMMFeature(ArrayList<double>(u.begin() + i, u.begin() + i + size)),
+                    GMMFeature(ArrayList<double>(v.begin() + i, v.begin() + i + size)));
+            }
+
+            return distance;
+            }, -1, 4).Item1();
+
+        printf("Fold %d Accuracy: %f\n", i + 1, accuracy);
+    }*/
+
+   /* String files[] = { "00002", "00003", "00004", "00005",
+        "13740", "13741", "13742", "13743", "13744",
+        "29651", "29652", "29653", "29654", "29655"};
+    ArrayList<GMMFeature> features;
+
+    for (auto file : files)
+    {
+        Mat image = imread(file + ".png", CV_LOAD_IMAGE_GRAYSCALE);
+        image = oraclePreprocess2(image);
+        Mat x = EdgelsToMat(GetEdgels(image));
+        GMMFeature feature = GMM(x, 10).Item2();
+
+        features.Add(feature);
     }
 
-    Mat prob = GMM(X, 10).Item1();
-    Mat colorImg = Mat::zeros(image.size(), CV_8UC3);
-    for (int i = 0; i < edgels.Count(); i++)
+    for (auto feature : features)
     {
-        double maxProb = -1;
-        int maxIdx = -1;
-        for (int j = 0; j < prob.cols; j++)
-        if (prob.at<double>(i, j) > maxProb)
-        {
-            maxProb = prob.at<double>(i, j);
-            maxIdx = j;
-        }
-
-        colorImg.at<Vec3b>(edgels[i].y, edgels[i].x) = colors[maxIdx];
-    }
-    imshow("win", colorImg);
-    waitKey(0);
-
-    Mat clusterIds = Mat::zeros(edgels.Count(), 1, CV_32S);
-    Mat centers(colors.Count(), 2, CV_32F);
-    Mat Xf;
-    X.convertTo(Xf, CV_32F);
-    kmeans(Xf, colors.Count(), clusterIds, TermCriteria(CV_TERMCRIT_ITER, 500, 1e-6), 
-        1, KMEANS_PP_CENTERS, centers);
-    for (int i = 0; i < edgels.Count(); i++)
-    {
-        colorImg.at<Vec3b>(edgels[i].y, edgels[i].x) = colors[clusterIds.at<int>(i)];
-    }
-    imshow("win", colorImg);
-    waitKey(0);
-
-    //
-    //auto channels = GetGaborChannels(image, 4);
-    //for (int i = 0; i < channels.Count(); i++)
-    //    blur(channels[i], channels[i], Size(5, 5));
-    //for (int i = 0; i < channels.Count(); i++)
-    //for (int j = 0; j < image.rows; j++)
-    //for (int k = 0; k < image.cols; k++)
-    //if (!image.at<uchar>(j, k))
-    //    channels[i].at<double>(j, k) = 0.0;
-
-    //for (int j = 0; j < image.rows; j++)
-    //for (int k = 0; k < image.cols; k++)
-    //if (image.at<uchar>(j, k))
-    //{
-    //    ArrayList<Group<double, int>> values;
-    //    for (int i = 0; i < channels.Count(); i++)
-    //        values.Add(CreateGroup(channels[i].at<double>(j, k), i));
-
-    //    sort(values.begin(), values.end());
-    //    for (int i = 0; i < values.Count() - 1; i++)
-    //        channels[values[i].Item2()].at<double>(j, k) = 0.0;
-    //}
-
-    //for (auto channel : channels)
-    //{
-    //    imshow(channel);
-    //    waitKey(0);
-    //}
+        cout << GetDistance(features[2], feature) << endl;
+    }*/
 }

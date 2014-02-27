@@ -1,4 +1,5 @@
 #include "../System/System.h"
+#include "../System.ML/System.ML.h"
 #include "Core.h"
 #include "Recognition.h"
 #include <cv.h>
@@ -1399,6 +1400,26 @@ namespace System
 
             NormTwoNormalize(descriptor.begin(), descriptor.end());
             return descriptor;
+        }
+        
+        // GMMtSL
+        GlobalFeatureVec GMMtSL::GetFeature(const Mat& sketchImage)
+        {
+            int blockNum = 2;
+            int blockSize = sketchImage.rows / blockNum;
+            GlobalFeatureVec feature;
+
+            for (int i = 0; i < sketchImage.rows; i += blockSize)
+            for (int j = 0; j < sketchImage.cols; j += blockSize)
+            {
+                Mat x = EdgelsToMat(GetEdgels(Mat(sketchImage, Rect(j, i, blockSize, blockSize))));
+                ML::GMMFeature gmmFeature = ML::GMM(x, 5).Item2();
+
+                feature.Add(gmmFeature.ToArrayList());
+            }
+
+            cout << ".";
+            return feature;
         }
     }
 }
