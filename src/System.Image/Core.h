@@ -182,12 +182,16 @@ namespace System
         void ConvolveFFT(cv::InputArray src, cv::OutputArray dst, int ddepth, cv::InputArray kernel);
         cv::Mat imshow(const cv::Mat& image, bool scale = true);
 
-        Group<cv::Mat, cv::Mat> GetGradientKernel(double sigma, double epsilon);
-        Group<cv::Mat, cv::Mat> GetGradient(const cv::Mat& image, double sigma = 1.0);
-        ArrayList<cv::Mat> GetOrientChannels(const cv::Mat& image, int orientNum,
-            double sigma = 1.0);
+        Group<cv::Mat, cv::Mat> GetDiscreteGradient(const cv::Mat& image);
 
-        cv::Mat GetStudentKernel(cv::Size ksize, double sigma, double theta,
+        Group<cv::Mat, cv::Mat> GetGaussDerivKernels(double sigma, double epsilon = 1e-2);
+        ArrayList<cv::Mat> GetGaussDerivKernels(int orientNum, double sigma, double epsilon = 1e-2);
+        ArrayList<cv::Mat> GetGaussDerivChannels(const cv::Mat& image, int orientNum, double sigma = 1.0);
+
+        Group<cv::Mat, cv::Mat> GetGradient(const cv::Mat& image, double sigma = 1.0);
+        ArrayList<cv::Mat> GetOrientChannels(const cv::Mat& image, int orientNum, double sigma = 1.0);
+
+        cv::Mat GetStudentTKernel(cv::Size ksize, double sigma, double theta,
             double lambd, double gamma, double psi, int ktype = CV_64F);
         ArrayList<cv::Mat> GetGaborChannels(const cv::Mat& image, int orientNum, 
             double sigma = 4, double lambda = 10);

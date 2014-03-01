@@ -154,11 +154,49 @@ namespace System
         // APIs for Gradient
         //////////////////////////////////////////////////////////////////////////
         
-        Group<Mat, Mat> GetGradientKernel(double sigma, double epsilon)
+        Group<Mat, Mat> GetDiscreteGradient(const Mat& image)
+        {
+            Mat dxImage(image.size(), CV_64F), dyImage(image.size(), CV_64F);
+
+            auto getPixel = [image](size_t i, size_t j) -> double
+            {
+                if (image.type() == CV_64F)
+                    return image.at<double>(i, j);
+                else if (image.type() == CV_32F)
+                    return image.at<float>(i, j);
+                else if (image.type() == CV_32S)
+                    return image.at<int>(i, j);
+                else if (image.type() == CV_8U)
+                    return image.at<uchar>(i, j);
+                else
+                    return image.at<char>(i, j);
+            };
+
+            for (int i = 0; i < image.rows; i++)
+            for (int j = 0; j < image.cols; j++)
+            {
+                if (i == 0)
+                    dyImage.at<double>(i, j) = getPixel(i + 1, j) - getPixel(i, j);
+                else if (i == image.rows - 1)
+                    dyImage.at<double>(i, j) = getPixel(i, j) - getPixel(i - 1, j);
+                else
+                    dyImage.at<double>(i, j) = (getPixel(i + 1, j) + getPixel(i - 1, j)) / 2.0;
+
+                if (j == 0)
+                    dxImage.at<double>(i, j) = getPixel(i, j + 1) - getPixel(i, j);
+                else if (j == image.cols - 1)
+                    dxImage.at<double>(i, j) = getPixel(i, j) - getPixel(i, j - 1);
+                else
+                    dxImage.at<double>(i, j) = (getPixel(i, j + 1) + getPixel(i, j - 1)) / 2.0;
+            }
+
+            return CreateGroup(dxImage, dyImage);
+        }
+
+        Group<Mat, Mat> GetGaussDerivKernels(double sigma, double epsilon)
         {
             int halfSize = (int)ceil(sigma * sqrt(-2 * log(sqrt(2 * CV_PI) * sigma * epsilon)));
             int size = halfSize * 2 + 1;
-            double sum = 0, root;
             Mat dx(size, size, CV_64F), dy(size, size, CV_64F);
 
             for (int i = 0; i < size; i++)
@@ -168,29 +206,45 @@ namespace System
                     dx.at<double>(i, j) = Math::Gauss(i - halfSize, sigma) * 
                         Math::GaussDeriv(j - halfSize, sigma);
                     dy.at<double>(j, i) = dx.at<double>(i, j);
-                    sum += dx.at<double>(i, j) * dx.at<double>(i, j);
                 }
             }
 
-            root = sqrt(sum);
-            if (root > 0)
-            {
-                for (int i = 0; i < size; i++)
-                {
-                    for (int j = 0; j < size; j++)
-                    {
-                        dx.at<double>(i, j) /= root;
-                        dy.at<double>(i, j) /= root;
-                    }
-                }
-            }
+            normalize(dx, dx, 1.0, 0.0, NORM_L2);
+            normalize(dy, dy, 1.0, 0.0, NORM_L2);
 
             return CreateGroup(dx, dy);
         }
 
+        ArrayList<Mat> GetGaussDerivKernels(int orientNum, double sigma, double epsilon)
+        {
+            int halfSize = (int)ceil(sigma * sqrt(-2 * log(sqrt(2 * CV_PI) * sigma * epsilon)));
+            int size = halfSize * 2 + 1;
+            Mat dx(size, size, CV_64F), dy(size, size, CV_64F);
+
+            for (int i = 0; i < size; i++)
+            {
+                for (int j = 0; j < size; j++)
+                {
+                    dx.at<double>(i, j) = Math::Gauss(i - halfSize, sigma) *
+                        Math::GaussDeriv(j - halfSize, sigma);
+                    dy.at<double>(j, i) = dx.at<double>(i, j);
+                }
+            }
+
+            ArrayList<Mat> kernels(orientNum);
+            for (int i = 0; i < orientNum; i++)
+            {
+                double orient = CV_PI / orientNum * i;
+                kernels[i] = dx * cos(orient) + dy * sin(orient);
+                normalize(kernels[i], kernels[i], 1.0, 0.0, NORM_L2);
+            }
+
+            return kernels;
+        }
+
         Group<Mat, Mat> GetGradient(const Mat& image, double sigma)
         {
-            Group<Mat, Mat> kernel = GetGradientKernel(sigma, 1e-2);
+            Group<Mat, Mat> kernel = GetGaussDerivKernels(sigma, 1e-2);
             Mat dxImage, dyImage;
             filter2D(image, dxImage, CV_64F, kernel.Item1());
             filter2D(image, dyImage, CV_64F, kernel.Item2());
@@ -218,6 +272,20 @@ namespace System
                     dxImage.at<double>(i, j) * dxImage.at<double>(i, j));
 
             return CreateGroup(powerImage, orientImage);
+        }
+
+        ArrayList<Mat> GetGaussDerivChannels(const Mat& image, int orientNum, double sigma)
+        {
+            ArrayList<Mat> kernels = GetGaussDerivKernels(orientNum, sigma, 1e-2);
+            ArrayList<Mat> channels(orientNum);
+
+            for (int i = 0; i < orientNum; i++)
+            {
+                filter2D(image, channels[i], CV_64F, kernels[i]);
+                channels[i] = abs(channels[i]);
+            }
+
+            return channels;
         }
 
         ArrayList<Mat> GetOrientChannels(const Mat& image, int orientNum, double sigma)
@@ -264,7 +332,7 @@ namespace System
             return orientChannels;
         }
 
-        Mat GetStudentKernel(Size ksize, double sigma, double theta, double lambd, 
+        Mat GetStudentTKernel(Size ksize, double sigma, double theta, double lambd, 
             double gamma, double psi, int ktype)
         {
             double sigma_x = sigma;

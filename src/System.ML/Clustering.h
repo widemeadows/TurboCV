@@ -71,7 +71,8 @@ namespace System
             ArrayList<cv::Mat> miu;
             ArrayList<cv::Mat> sigma;
         };
-
+        
+        // Total Square Loss (tSL)
         double GetDistance(const GMMFeature& u, const GMMFeature& v);
 
         Group<cv::Mat, GMMFeature> GMM(const cv::Mat& x, int K);

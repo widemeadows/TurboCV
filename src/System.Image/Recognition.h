@@ -834,23 +834,21 @@ namespace System
             double maxDistance;
         };
 
-        class TGabor : public LocalFeature
+        class Test : public LocalFeature
         {
         public:
-            TGabor() : orientNum(4), angleNum(4), cellNum(4), sampleNum(28), blockSize(92) {}
+            Test() : cellNum(4), sampleNum(28), blockSize(92) {}
 
-            TGabor(const std::map<TString, TString>& params, bool printParams = false)
+            Test(const std::map<TString, TString>& params, bool printParams = false)
             {
-                orientNum = GetDoubleValue(params, "orientNum", 4);
-                angleNum = GetDoubleValue(params, "angleNum", 4);
                 cellNum = GetDoubleValue(params, "cellNum", 4);
                 sampleNum = GetDoubleValue(params, "sampleNum", 28);
                 blockSize = GetDoubleValue(params, "blockSize", 92);
 
                 if (printParams)
                 {
-                    printf("OrientNum: %d, AngleNum: %d, CellNum: %d, SampleNum: %d, BlockSize: %d\n",
-                        orientNum, angleNum, cellNum, sampleNum, (int)blockSize);
+                    printf("CellNum: %d, SampleNum: %d, BlockSize: %d\n",
+                        cellNum, sampleNum, (int)blockSize);
                 }
             }
 
@@ -861,7 +859,7 @@ namespace System
 
             virtual TString GetName() const
             {
-                return "tgabor";
+                return "test";
             }
 
         protected:
@@ -871,40 +869,8 @@ namespace System
             Descriptor GetDescriptor(const ArrayList<cv::Mat>& filteredOrientImages,
                 const cv::Point& center);
 
-            int orientNum, angleNum, cellNum, sampleNum;
+            int cellNum, sampleNum;
             double blockSize;
-        };
-
-        class GMMtSL : GlobalFeature
-        {
-        public:
-            GMMtSL() : nComponent(10) {}
-
-            GMMtSL(const std::map<TString, TString>& params, bool printParams = false)
-            {
-                nComponent = GetDoubleValue(params, "nComponent", 10);
-
-                if (printParams)
-                {
-                    printf("nComponent: %d\n", nComponent);
-                }
-            }
-
-            virtual GlobalFeatureVec operator()(const cv::Mat& sketchImage)
-            {
-                return GetFeature(sketchImage);
-            }
-
-            virtual TString GetName() const
-            {
-                return "gmmtsl";
-            }
-
-        protected:
-            GlobalFeatureVec GetFeature(const cv::Mat& sketchImage);
-
-        private:
-            int nComponent;
         };
     }
 }

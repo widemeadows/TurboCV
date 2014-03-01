@@ -84,53 +84,6 @@ cv::Mat oraclePreprocess(const Mat& image)
     return finalImage;
 }
 
-cv::Mat oraclePreprocess2(const Mat& image)
-{
-    Mat boundingBox = GetBoundingBox(reverse(image));
-
-    Mat squareImage;
-    int leftPadding = 0, topPadding = 0;
-    if (boundingBox.rows < boundingBox.cols)
-        topPadding = (boundingBox.cols - boundingBox.rows) / 2;
-    else
-        leftPadding = (boundingBox.rows - boundingBox.cols) / 2;
-    copyMakeBorder(boundingBox, squareImage, topPadding, topPadding,
-        leftPadding, leftPadding, BORDER_CONSTANT, Scalar(0, 0, 0, 0));
-
-    Mat scaledImage;
-    resize(squareImage, scaledImage, Size(228, 228));
-
-    Mat paddedImage;
-    copyMakeBorder(scaledImage, paddedImage, 14, 14, 14, 14, BORDER_CONSTANT, Scalar(0, 0, 0, 0));
-    assert(paddedImage.rows == 256 && paddedImage.cols == 256);
-
-    Mat binaryImage;
-    threshold(paddedImage, binaryImage, 200, 255, CV_THRESH_BINARY);
-
-    Mat thinnedImage;
-    thin(binaryImage, thinnedImage);
-
-    Mat finalImage(thinnedImage.size(), CV_8U);
-
-    int radius = 5;
-    for (int i = 0; i < thinnedImage.rows; i++)
-    for (int j = 0; j < thinnedImage.cols; j++)
-    if (thinnedImage.at<uchar>(i, j))
-    {
-        int top = max(i - radius, 0),
-            bottom = min(i + radius, thinnedImage.rows - 1),
-            left = max(j - radius, 0),
-            right = min(j + radius, thinnedImage.cols - 1);
-
-        for (int m = top; m <= bottom; m++)
-        for (int n = left; n <= right; n++)
-        if (binaryImage.at<uchar>(m, n))
-            finalImage.at<uchar>(m, n) = 255;
-    }
-
-    return finalImage;
-}
-
 void Batch(const TString& datasetPath, cv::Mat (*preprocess)(const cv::Mat&))
 {
     LocalFeatureCrossValidation<HOG>(datasetPath, preprocess);
@@ -387,76 +340,43 @@ int main(int argc, char* argv[])
     //LocalFeatureCrossValidation<RGabor>("subset", sketchPreprocess);
     //LocalFeatureCrossValidation<RHOG>("oracles", oraclePreprocess);
 
-    LocalFeatureCrossValidation<RGabor>("subset", oraclePreprocess);
-
-    /*String datasetPath = "subset";
-    auto dataset = LoadDataset(datasetPath);
-    auto paths = dataset.Item1();
-    auto labels = dataset.Item2();
-    auto evaIdxes = SplitDatasetRandomly(labels, 3);
-    auto Preprocess = oraclePreprocess2;
+    LocalFeatureCrossValidation<RHOG>("subset", oraclePreprocess);
     
-    int nImage = paths.Count();
-    printf("ImageNum: %d\n", nImage);
+    //Mat image = imread("00001.png", CV_LOAD_IMAGE_GRAYSCALE);
+    //Mat sketchImage = oraclePreprocess(image);
 
-    printf("Cross Validation on " + GMMtSL().GetName() + "...\n");
-    ArrayList<GlobalFeatureVec> features(nImage);
+    //auto channels = GetGaussDerivChannels(sketchImage, 4);
+    //for (auto channel : channels)
+    //{
+    //    imshow(channel);
+    //    waitKey(0);
+    //}
+    //Group<Mat, Mat> kernel = GetGradientKernel(1.0, 1e-2);
+    //Mat dx, dy;
+    //filter2D(sketchImage, dx, CV_64F, kernel.Item1());
+    //filter2D(sketchImage, dy, CV_64F, kernel.Item2());
 
-    #pragma omp parallel for
-    for (int i = 0; i < nImage; i++)
-    {
-        GMMtSL machine;
-        cv::Mat image = cv::imread(paths[i], CV_LOAD_IMAGE_GRAYSCALE);
-        features[i] = machine(Preprocess != NULL ? Preprocess(image) : image);
-    }
+    //Mat dxx, dyy, dxy;
+    //filter2D(dx, dxx, CV_64F, kernel.Item1());
+    //filter2D(dx, dxy, CV_64F, kernel.Item2());
+    //filter2D(dy, dyy, CV_64F, kernel.Item2());
 
-    double maxPrecision = -1;
-    for (int i = 0; i < evaIdxes.Count(); i++)
-    {
-        printf("\nBegin Fold %d...\n", i + 1);
-        const ArrayList<size_t>& pickUpIndexes = evaIdxes[i];
-        ArrayList<GlobalFeatureVec> trainingSet = Divide(features, pickUpIndexes).Item2();
-        ArrayList<GlobalFeatureVec> evaluationSet = Divide(features, pickUpIndexes).Item1();
-        ArrayList<int> trainingLabels = Divide(labels, pickUpIndexes).Item2();
-        ArrayList<int> evaluationLabels = Divide(labels, pickUpIndexes).Item1();
+    //dx = abs(dx);
+    //dy = abs(dy);
+    //dxx = abs(dxx);
+    //dxy = abs(dxy);
+    //dyy = abs(dyy);
 
-        double accuracy = KNN<GlobalFeatureVec>().
-            Evaluate(trainingSet, trainingLabels, evaluationSet, evaluationLabels, 
-            [](const GlobalFeatureVec& u, const GlobalFeatureVec& v)
-            {
-            int size = u.Count() / 4;
-            double distance = 0;
-
-            for (int i = 0; i < u.Count(); i += size)
-            {
-                distance += GetDistance(
-                    GMMFeature(ArrayList<double>(u.begin() + i, u.begin() + i + size)),
-                    GMMFeature(ArrayList<double>(v.begin() + i, v.begin() + i + size)));
-            }
-
-            return distance;
-            }, -1, 4).Item1();
-
-        printf("Fold %d Accuracy: %f\n", i + 1, accuracy);
-    }*/
-
-   /* String files[] = { "00002", "00003", "00004", "00005",
-        "13740", "13741", "13742", "13743", "13744",
-        "29651", "29652", "29653", "29654", "29655"};
-    ArrayList<GMMFeature> features;
-
-    for (auto file : files)
-    {
-        Mat image = imread(file + ".png", CV_LOAD_IMAGE_GRAYSCALE);
-        image = oraclePreprocess2(image);
-        Mat x = EdgelsToMat(GetEdgels(image));
-        GMMFeature feature = GMM(x, 10).Item2();
-
-        features.Add(feature);
-    }
-
-    for (auto feature : features)
-    {
-        cout << GetDistance(features[2], feature) << endl;
-    }*/
+    ////imshow(dx);
+    ////waitKey(0);
+    ////imshow(dy);
+    ////waitKey(0);
+    //imshow(dxx);
+    //waitKey(0);
+    //imshow(dxy);
+    //waitKey(0);
+    //imshow(dyy);
+    //waitKey(0);
+    //imshow(dxx + dyy);
+    //waitKey(0);
 }
