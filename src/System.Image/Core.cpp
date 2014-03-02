@@ -2,6 +2,7 @@
 #include "Core.h"
 #include <algorithm>
 #include <numeric>
+#include <cstdarg>
 #include <cv.h>
 using namespace std;
 using namespace cv;

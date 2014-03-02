@@ -180,14 +180,14 @@ namespace System
                 else if (i == image.rows - 1)
                     dyImage.at<double>(i, j) = getPixel(i, j) - getPixel(i - 1, j);
                 else
-                    dyImage.at<double>(i, j) = (getPixel(i + 1, j) + getPixel(i - 1, j)) / 2.0;
+                    dyImage.at<double>(i, j) = (getPixel(i + 1, j) - getPixel(i - 1, j)) / 2.0;
 
                 if (j == 0)
                     dxImage.at<double>(i, j) = getPixel(i, j + 1) - getPixel(i, j);
                 else if (j == image.cols - 1)
                     dxImage.at<double>(i, j) = getPixel(i, j) - getPixel(i, j - 1);
                 else
-                    dxImage.at<double>(i, j) = (getPixel(i, j + 1) + getPixel(i, j - 1)) / 2.0;
+                    dxImage.at<double>(i, j) = (getPixel(i, j + 1) - getPixel(i, j - 1)) / 2.0;
             }
 
             return CreateGroup(dxImage, dyImage);
@@ -536,6 +536,127 @@ namespace System
                 results.Add(pivot);
 
             return results;
+        }
+
+        ArrayList<Mat> GetSurfaceCurvature(const Mat& Z)
+        {
+            Mat X(Z.size(), CV_64F), Y(Z.size(), CV_64F);
+
+            for (int i = 0; i < Z.rows; i++)
+            for (int j = 0; j < Z.cols; j++)
+            {
+                X.at<double>(i, j) = j;
+                Y.at<double>(i, j) = i;
+            }
+
+            return GetSurfaceCurvature(X, Y, Z);
+        }
+
+        ArrayList<Mat> GetSurfaceCurvature(const Mat& X, const Mat& Y, const Mat& Z)
+        {
+            // first derivatives
+            auto tmp = GetDiscreteGradient(X);
+            Mat Xu = tmp.Item1(), Xv = tmp.Item2();
+
+            tmp = GetDiscreteGradient(Y);
+            Mat Yu = tmp.Item1(), Yv = tmp.Item2();
+
+            tmp = GetDiscreteGradient(Z);
+            Mat Zu = tmp.Item1(), Zv = tmp.Item2();
+
+            // second derivatives
+            tmp = GetDiscreteGradient(Xu);
+            Mat Xuu = tmp.Item1(), Xuv = tmp.Item2();
+
+            tmp = GetDiscreteGradient(Xv);
+            Mat Xvv = tmp.Item2();
+
+            tmp = GetDiscreteGradient(Yu);
+            Mat Yuu = tmp.Item1(), Yuv = tmp.Item2();
+
+            tmp = GetDiscreteGradient(Yv);
+            Mat Yvv = tmp.Item2();
+
+            tmp = GetDiscreteGradient(Zu);
+            Mat Zuu = tmp.Item1(), Zuv = tmp.Item2();
+
+            tmp = GetDiscreteGradient(Zv);
+            Mat Zvv = tmp.Item2();
+
+            // reshape 2D arrays into vectors
+            Xu = Xu.reshape(1, Xu.rows * Xu.cols);
+            Yu = Yu.reshape(1, Yu.rows * Yu.cols);
+            Zu = Zu.reshape(1, Zu.rows * Zu.cols);
+            Xv = Xv.reshape(1, Xv.rows * Xv.cols);
+            Yv = Yv.reshape(1, Yv.rows * Yv.cols);
+            Zv = Zv.reshape(1, Zv.rows * Zv.cols);
+            Xuu = Xuu.reshape(1, Xuu.rows * Xuu.cols);
+            Yuu = Yuu.reshape(1, Yuu.rows * Yuu.cols);
+            Zuu = Zuu.reshape(1, Zuu.rows * Zuu.cols);
+            Xuv = Xuv.reshape(1, Xuv.rows * Xuv.cols);
+            Yuv = Yuv.reshape(1, Yuv.rows * Yuv.cols);
+            Zuv = Zuv.reshape(1, Zuv.rows * Zuv.cols);
+            Xvv = Xvv.reshape(1, Xvv.rows * Xvv.cols);
+            Yvv = Yvv.reshape(1, Yvv.rows * Yvv.cols);
+            Zvv = Zvv.reshape(1, Zvv.rows * Zvv.cols);
+
+            Mat Du, Dv, Duu, Duv, Dvv;
+            Du = Xu.clone(); hconcat(Du, Yu, Du); hconcat(Du, Zu, Du);
+            Dv = Xv.clone(); hconcat(Dv, Yv, Dv); hconcat(Dv, Zv, Dv);
+            Duu = Xuu.clone(); hconcat(Duu, Yuu, Duu); hconcat(Duu, Zuu, Duu);
+            Duv = Xuv.clone(); hconcat(Duv, Yuv, Duv); hconcat(Duv, Zuv, Duv);
+            Dvv = Xvv.clone(); hconcat(Dvv, Yvv, Dvv); hconcat(Dvv, Zvv, Dvv);
+
+            // first fundamental coeffecients of the surface(E, F, G)
+            Mat E;
+            reduce(Du.mul(Du), E, 1, CV_REDUCE_SUM);
+
+            Mat F;
+            reduce(Du.mul(Dv), F, 1, CV_REDUCE_SUM);
+
+            Mat G;
+            reduce(Dv.mul(Dv), G, 1, CV_REDUCE_SUM);
+
+            Mat m(Du.size(), CV_64F);
+            for (int i = 0; i < Du.rows; i++)
+                Du.row(i).cross(Dv.row(i)).copyTo(m.row(i));
+
+            Mat p;
+            reduce(m.mul(m), p, 1, CV_REDUCE_SUM);
+            sqrt(p, p);
+            Mat n = m / repeat(p, 1, m.cols);
+
+            // second fundamental coeffecients of the surface(L, M, N)
+            Mat L;
+            reduce(Duu.mul(n), L, 1, CV_REDUCE_SUM);
+
+            Mat M;
+            reduce(Duv.mul(n), M, 1, CV_REDUCE_SUM);
+
+            Mat N;
+            reduce(Dvv.mul(n), N, 1, CV_REDUCE_SUM);
+
+            // Gaussian curvature
+            Mat K = (L.mul(N) - M.mul(M)) / (E.mul(G) - F.mul(F));
+            K = K.reshape(1, Z.rows);
+
+            // mean curvature
+            Mat H = (E.mul(N) + G.mul(L) - 2 * F.mul(M)) / (2 * (E.mul(G) - F.mul(F)));
+            H = H.reshape(1, Z.rows);
+
+            // principal curvatures
+            Mat dif;
+            sqrt(max(H.mul(H) - K, 0), dif);
+            Mat Pmax = H + dif;
+            Mat Pmin = H - dif;
+
+            ArrayList<Mat> result;
+            result.Add(K);
+            result.Add(H);
+            result.Add(Pmax);
+            result.Add(Pmin);
+
+            return result;
         }
 	}
 }

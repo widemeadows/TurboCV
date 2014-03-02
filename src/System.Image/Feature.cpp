@@ -1242,6 +1242,7 @@ namespace System
             }
 
             ArrayList<Mat> orientChannels = GetGaussDerivChannels(sketchImage, 4);
+
             //Group<Mat, Mat> kernel = GetGaussDerivKernels(1.0, 1e-2);
             //Mat dx, dy;
             //filter2D(sketchImage, dx, CV_64F, kernel.Item1());
@@ -1255,6 +1256,7 @@ namespace System
             //orientChannels.Add(dxx);
             //orientChannels.Add(dxy);
             //orientChannels.Add(dyy);
+
 
             for (int i = 0; i < orientChannels.Count(); i++)
                 orientChannels[i] = abs(orientChannels[i]);

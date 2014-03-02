@@ -203,6 +203,11 @@ namespace System
         ArrayList<cv::Point> SampleOnGrid(size_t height, size_t width, size_t numPerDirection);
         ArrayList<cv::Point> SampleFromPoints(const ArrayList<cv::Point>& points, size_t samplingNum);
 
+        // Compute Gaussian and mean curvatures of a surface
+        // return K(Gaussian curv), H(mean curv), Pmax(maximum curv), Pmin(minimum curv)
+        ArrayList<cv::Mat> GetSurfaceCurvature(const cv::Mat& Z);
+        ArrayList<cv::Mat> GetSurfaceCurvature(const cv::Mat& X, const cv::Mat& Y, const cv::Mat& Z);
+
 
 		//////////////////////////////////////////////////////////////////////////
 		// APIs for Vectors

@@ -340,10 +340,10 @@ int main(int argc, char* argv[])
     //LocalFeatureCrossValidation<RGabor>("subset", sketchPreprocess);
     //LocalFeatureCrossValidation<RHOG>("oracles", oraclePreprocess);
 
-    LocalFeatureCrossValidation<RHOG>("subset", oraclePreprocess);
+    //LocalFeatureCrossValidation<Test>("subset", oraclePreprocess);
     
-    //Mat image = imread("00001.png", CV_LOAD_IMAGE_GRAYSCALE);
-    //Mat sketchImage = oraclePreprocess(image);
+    Mat image = imread("00002.png", CV_LOAD_IMAGE_GRAYSCALE);
+    Mat sketchImage = oraclePreprocess(image);
 
     //auto channels = GetGaussDerivChannels(sketchImage, 4);
     //for (auto channel : channels)
