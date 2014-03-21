@@ -6,6 +6,8 @@
 #include "Util.h"
 #include <cv.h>
 #include <highgui.h>
+#include <mat.h>
+#include <H5Cpp.h>
 using namespace TurboCV::System;
 using namespace TurboCV::System::Image;
 using namespace TurboCV::System::ML;
@@ -258,125 +260,160 @@ Group<ArrayList<Word_f>, ArrayList<Histogram>, ArrayList<int>> LoadLocalFeatureD
     return CreateGroup(words, histograms, labels);
 }
 
-Group<ArrayList<PointList>, ArrayList<Mat>> GetBlock(
-    int x, int y, size_t blockSize,
-    const ArrayList<PointList>& pointLists)
+template<typename T>
+void MatlabSave(const TString& fileName, const Mat& mat, const TString& variable)
 {
-    int expectedTop = (int)(y - blockSize / 2),
-        expectedLeft = (int)(x - blockSize / 2),
-        expectedBottom = expectedTop + blockSize,
-        expectedRight = expectedLeft + blockSize;
+    int M = mat.rows;
+    int N = mat.cols;
+    double *data = (double*)mxCalloc(M * N, sizeof(double));
 
-    ArrayList<PointList> pLists;
+    // matlab中矩阵是按列存储的
+    for (int i = 0; i < M; i++)
+    for (int j = 0; j < N; j++)
+        data[j * M + i] = mat.at<T>(i, j);
 
-    for (int i = 0; i < pointLists.Count(); i++)
-    {
-        PointList pList;
+    MATFile *pmatFile = matOpen(fileName, "w");
+    mxArray *pMxArray = mxCreateDoubleMatrix(M, N, mxREAL);
+    mxSetData(pMxArray, data);
+    matPutVariable(pmatFile, variable, pMxArray);
 
-        for (int j = 0; j < pointLists[i].Count(); j++)
-        {
-            if (expectedLeft <= pointLists[i][j].x && pointLists[i][j].x < expectedRight &&
-                expectedTop <= pointLists[i][j].y && pointLists[i][j].y < expectedBottom)
-                pList.Add(Point(pointLists[i][j].x - expectedLeft, 
-                                pointLists[i][j].y - expectedTop));
-        }
-
-        pLists.Add(pList);
-    }
-
-    OCM machine;
-    return CreateGroup(pLists, machine.GetTransforms(Size(blockSize, blockSize), pLists));
+    matClose(pmatFile);
 }
 
-double GetOneWayDistance(const ArrayList<PointList>& u, ArrayList<TDTree>& v)
+template<typename T>
+Mat MatlabLoad(const TString& fileName, const TString& variable)
 {
-    int orientNum = u.Count(), uPointNum = 0;
-    double uToV = 0;
+    MATFile *pmatFile = matOpen(fileName, "r");
+    mxArray *pMxArray = matGetVariable(pmatFile, variable);
+    T *data = (T*)mxGetData(pMxArray);
+    int M = mxGetM(pMxArray);
+    int N = mxGetN(pMxArray);
 
-    for (int i = 0; i < orientNum; i++)
-    {
-        const ArrayList<Point>& uPoints = u[i];
-        TDTree& vTree = v[i];
+    // matlab中矩阵是按列存储的
+    Mat mat(M, N, CV_64F);
+    for (int i = 0; i < M; i++)
+    for (int j = 0; j < N; j++)
+        mat.at<T>(i, j) = data[j * M + i];
 
-        for (size_t i = 0; i < uPoints.Count(); i++)
-            uToV += vTree.Find(uPoints[i]).Item2();
+    matClose(pmatFile);
 
-        uPointNum += uPoints.Count();
-    }
-
-    if (uPointNum == 0)
-        return numeric_limits<double>::max();
-    else
-        return uToV / uPointNum;
+    return mat;
 }
 
-double GetOneWayDistance(const ArrayList<PointList>& u, const ArrayList<cv::Mat>& v)
+void HDF5Save(const char* fileName, const Mat& mat, const char* variable)
 {
-    assert(u.Count() == v.Count());
-    int orientNum = u.Count(), uPointNum = 0;
-    double uToV = 0;
+    H5::H5File file(fileName, H5F_ACC_TRUNC);
 
-    for (int i = 0; i < orientNum; i++)
-    {
-        const ArrayList<Point>& uPoints = u[i];
-        const Mat& vMat = v[i];
+    hsize_t dims[2] = { mat.rows, mat.cols };
+    H5::DataSpace dataspace(2, dims);
 
-        for (size_t i = 0; i < uPoints.Count(); i++)
-            uToV += sqrt(vMat.at<float>(uPoints[i].y, uPoints[i].x));
+    H5::FloatType datatype(H5::PredType::NATIVE_FLOAT);
+    datatype.setOrder(H5T_ORDER_LE);  // little endian
 
-        uPointNum += uPoints.Count();
-    }
+    H5::DataSet dataset = file.createDataSet(variable, datatype, dataspace);
 
-    if (uPointNum == 0)
-        return numeric_limits<double>::max();
-    else
-        return uToV / uPointNum;
+    dataset.write(mat.ptr<float>(), H5::PredType::NATIVE_FLOAT);
 }
 
 int main(int argc, char* argv[])
 {
-    //EnLocalFeatureCrossValidation<RGabor>("sketches", sketchPreprocess);
-    //EnLocalFeatureCrossValidation<RGabor>("oracles", oraclePreprocess);
-    //LocalFeatureCrossValidation<RGabor>("subset", sketchPreprocess);
-    //LocalFeatureCrossValidation<RHOG>("oracles", oraclePreprocess);
+    //LocalFeatureCrossValidation<RHOG>("subset", sketchPreprocess);
+    //return 0;
 
-    //LocalFeatureCrossValidation<Test>("subset", oraclePreprocess);
-    
-    Mat image = imread("00002.png", CV_LOAD_IMAGE_GRAYSCALE);
-    Mat sketchImage = oraclePreprocess(image);
+    //LocalFeatureCrossValidation<HOOSC>("sketches", sketchPreprocess);
+    //LocalFeatureCrossValidation<HOOSC>("oracles", oraclePreprocess);
+    //return 0;
 
-    //auto channels = GetGaussDerivChannels(sketchImage, 4);
-    //for (auto channel : channels)
+    auto dataset = LoadDataset("sketches");
+    ArrayList<TString> paths = dataset.Item1();
+    ArrayList<int> labels = dataset.Item2();
+    auto evaIdxes = SplitDatasetRandomly(labels, 3);
+
+    //int nImage = paths.Count();
+    //int nDescPerImage = 28 * 28;
+    //int nDesc = nImage * nDescPerImage;
+    //int dim = 4 * 4 * 9;
+    //
+    //Mat mat(dim, nDesc, CV_64F);
+
+    //#pragma omp parallel for
+    //for (int i = 0; i < nImage; i++)
     //{
-    //    imshow(channel);
-    //    waitKey(0);
+    //    Mat image = imread(paths[i], CV_LOAD_IMAGE_GRAYSCALE);
+    //    image = sketchPreprocess(image);
+    //    auto feature = RGabor()(image);
+
+    //    for (int j = 0; j < dim; j++)
+    //    for (int k = 0; k < feature.Count(); k++)
+    //        mat.at<double>(j, i * nDescPerImage + k) = feature[k][j];
     //}
-    //Group<Mat, Mat> kernel = GetGradientKernel(1.0, 1e-2);
-    //Mat dx, dy;
-    //filter2D(sketchImage, dx, CV_64F, kernel.Item1());
-    //filter2D(sketchImage, dy, CV_64F, kernel.Item2());
 
-    //Mat dxx, dyy, dxy;
-    //filter2D(dx, dxx, CV_64F, kernel.Item1());
-    //filter2D(dx, dxy, CV_64F, kernel.Item2());
-    //filter2D(dy, dyy, CV_64F, kernel.Item2());
+    int nImage = paths.Count();
+    int dim = 4 * 4 * 9 * 28 * 28;
 
-    //dx = abs(dx);
-    //dy = abs(dy);
-    //dxx = abs(dxx);
-    //dxy = abs(dxy);
-    //dyy = abs(dyy);
+    Mat mat(nImage, dim, CV_32F);
+    Mat y(nImage, 1, CV_32S);
 
-    ////imshow(dx);
-    ////waitKey(0);
-    ////imshow(dy);
-    ////waitKey(0);
-    //imshow(dxx);
-    //waitKey(0);
-    //imshow(dxy);
-    //waitKey(0);
-    //imshow(dyy);
-    //waitKey(0);
-    //imshow(dxx + dyy);
-    //waitKey(0);
+    #pragma omp parallel for
+    for (int i = 0; i < nImage; i++)
+    {
+        Mat image = imread(paths[i], CV_LOAD_IMAGE_GRAYSCALE);
+        image = sketchPreprocess(image);
+        auto feature = RHOG()(image);
+
+        for (int j = 0; j < feature.Count(); j++)
+        for (int k = 0; k < feature[j].Count(); k++)
+            mat.at<float>(i, j * feature[j].Count() + k) = feature[j][k];
+
+        y.at<int>(i, 0) = labels[i] - 1;
+    }
+
+    H5::H5File file("raw.mat", H5F_ACC_TRUNC);
+
+    hsize_t dims[2] = { mat.rows, mat.cols };
+    H5::DataSpace dataspace(2, dims);
+
+    H5::FloatType datatype(H5::PredType::NATIVE_FLOAT);
+    datatype.setOrder(H5T_ORDER_LE);  // little endian
+
+    H5::DataSet d = file.createDataSet("x", datatype, dataspace);
+    d.write(mat.ptr<float>(), H5::PredType::NATIVE_FLOAT);
+
+    dims[0] = y.rows;
+    dims[1] = y.cols;
+    dataspace = H5::DataSpace(2, dims);
+
+    H5::IntType datatype2(H5::PredType::NATIVE_INT32);
+    datatype2.setOrder(H5T_ORDER_LE);
+
+    d = file.createDataSet("y", datatype2, dataspace);
+    d.write(y.ptr<int>(), H5::PredType::NATIVE_INT32);
+    //MatlabSave<double>("raw.mat", mat, "raw");
+    return 0;
+
+    Mat hist = MatlabLoad<double>("hist.mat", "hist");
+    ArrayList<Histogram> histograms(hist.cols);
+    for (int i = 0; i < hist.cols; i++)
+    {
+        Histogram histogram(hist.rows);
+        for (int j = 0; j < hist.rows; j++)
+            histogram[j] = hist.at<double>(j, i);
+
+        histograms[i] = histogram;
+    }
+
+    for (int i = 0; i < evaIdxes.Count(); i++)
+    {
+        printf("\nBegin Fold %d...\n", i + 1);
+        const ArrayList<size_t>& pickUpIndexes = evaIdxes[i];
+        ArrayList<int> trainingLabels = Divide(labels, pickUpIndexes).Item2();
+        ArrayList<int> evaluationLabels = Divide(labels, pickUpIndexes).Item1();
+        ArrayList<Histogram> trainingHistograms = Divide(histograms, pickUpIndexes).Item2();
+        ArrayList<Histogram> evaluationHistograms = Divide(histograms, pickUpIndexes).Item1();
+
+        auto accuracy = KNN<Histogram>().
+            Evaluate(trainingHistograms, trainingLabels, evaluationHistograms, evaluationLabels).Item1();
+
+        printf("Fold %d Accuracy: %f\n", i + 1, accuracy);
+    }
 }

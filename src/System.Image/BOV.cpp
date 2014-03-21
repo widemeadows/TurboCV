@@ -38,16 +38,12 @@ namespace System
             //printf("K-Means Begin...\n");
             //kmeans(samples, clusterNum, clusterIds, termCriteria, 1, KMEANS_PP_CENTERS, centers);
 
-            auto samples = SampleDescriptors(descriptors, clusterNum);
-            Mat centers(clusterNum, descriptorSize, CV_32F);
-            for (size_t i = 0; i < clusterNum; i++)
-                for (size_t j = 0; j < descriptorSize; j++)
-                    centers.at<float>(i, j) = samples[i][j];
+            //ArrayList<Word_f> words(clusterNum);
+            //for (size_t i = 0; i < clusterNum; i++)
+            //    for (size_t j = 0; j < descriptorSize; j++)
+            //        words[i].Add(centers.at<float>(i, j));
 
-            ArrayList<Word_f> words(clusterNum);
-            for (size_t i = 0; i < clusterNum; i++)
-                for (size_t j = 0; j < descriptorSize; j++)
-                    words[i].Add(centers.at<float>(i, j));
+            ArrayList<Word_f> words = SampleDescriptors(descriptors, clusterNum);
 
             ArrayList<size_t> labels(descriptorNum);
             for (size_t i = 0; i < descriptorNum; i++)
@@ -178,11 +174,18 @@ namespace System
             {
                 ArrayList<double> distances = GetDistancesToVisualWords(feature[i]);
                 for (size_t j = 0; j < wordNum; j++)
-                    freqHistogram[j] += distances[j];
+                    freqHistogram[j] = max(freqHistogram[j], distances[j]);
             }
 
-            for (size_t i = 0; i < wordNum; i++)
-                freqHistogram[i] /= descriptorNum;
+            //for (size_t i = 0; i < descriptorNum; i++)
+            //{
+            //    ArrayList<double> distances = GetDistancesToVisualWords(feature[i]);
+            //    for (size_t j = 0; j < wordNum; j++)
+            //        freqHistogram[j] += distances[j];
+            //}
+
+            //for (size_t i = 0; i < wordNum; i++)
+            //    freqHistogram[i] /= descriptorNum;
 
             return freqHistogram;
         }

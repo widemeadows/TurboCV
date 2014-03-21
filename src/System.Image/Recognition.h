@@ -280,7 +280,7 @@ namespace System
         class RHOOSC : public LocalFeature
         {
         public:
-            RHOOSC(): angleNum(9), orientNum(8), sampleNum(28)
+            RHOOSC(): angleNum(6), orientNum(6), sampleNum(28)
             {
                 double tmp[] = {0, 0.125, 0.25, 0.5, 1, 2};
                 logDistances = ArrayList<double>(tmp, tmp + sizeof(tmp) / sizeof(double));
@@ -303,7 +303,7 @@ namespace System
                         printf(" %f", logDistances[i]);
                     printf("\n");
 
-                    printf("AngleNum: %d, OrientNum: %d, SampleNum: %f\n", angleNum, orientNum, sampleNum);
+                    printf("AngleNum: %d, OrientNum: %d, SampleNum: %d\n", angleNum, orientNum, sampleNum);
                 }
             }
 
@@ -431,7 +431,7 @@ namespace System
         class RSC : public LocalFeature
         {
         public:
-            RSC(): angleNum(12), sampleNum(28), pivotRatio(0.33)
+            RSC(): angleNum(8), sampleNum(28), radius(48), pivotRatio(0.33)
             {
                 double tmp[] = {0, 0.125, 0.25, 0.5, 1, 2};
                 logDistances = ArrayList<double>(tmp, tmp + sizeof(tmp) / sizeof(double));
@@ -439,8 +439,9 @@ namespace System
 
             RSC(const std::map<TString, TString>& params, bool printParams = false)
             {
-                angleNum = GetDoubleValue(params, "angleNum", 12);
+                angleNum = GetDoubleValue(params, "angleNum", 8);
                 sampleNum = GetDoubleValue(params, "sampleNum", 28);
+                radius = GetDoubleValue(params, "radius", 48);
                 pivotRatio = GetDoubleValue(params, "pivotRatio", 0.33);
 
                 double tmp[] = {0, 0.125, 0.25, 0.5, 1, 2};
@@ -454,7 +455,8 @@ namespace System
                         printf(" %f", logDistances[i]);
                     printf("\n");
 
-                    printf("AngleNum: %d, SampleNum: %d, PivotRatio: %f\n", angleNum, sampleNum, pivotRatio);
+                    printf("AngleNum: %d, SampleNum: %d, Radius: %d, PivotRatio: %f\n", 
+                        angleNum, sampleNum, radius, pivotRatio);
                 }
             }
 
@@ -474,7 +476,7 @@ namespace System
 
         private:
             ArrayList<double> logDistances;
-            int angleNum, sampleNum;
+            int angleNum, sampleNum, radius;
             double pivotRatio;
         };
 
@@ -697,6 +699,40 @@ namespace System
         private:
             int blockNum;
             ArrayList<int> orientNumPerScale;
+        };
+
+        // Dense GIST
+        class DGIST : public GlobalFeature
+        {
+        public:
+            DGIST() : orientNum(8), blockSize(36) {}
+
+            DGIST(const std::map<TString, TString>& params, bool printParams = false)
+            {
+                orientNum = GetDoubleValue(params, "orientNum", 8);
+                blockSize = GetDoubleValue(params, "blockSize", 36);
+
+                if (printParams)
+                {
+                    printf("OrientNum: %d, BlockSize: %d\n", orientNum, blockSize);
+                }
+            }
+
+            virtual GlobalFeatureVec operator()(const cv::Mat& sketchImage)
+            {
+                return GetFeature(sketchImage);
+            }
+
+            virtual TString GetName() const
+            {
+                return "dgist";
+            }
+
+        protected:
+            GlobalFeatureVec GetFeature(const cv::Mat& sketchImage);
+
+        private:
+            int orientNum, blockSize;
         };
 
 

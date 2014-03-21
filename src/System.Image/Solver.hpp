@@ -138,18 +138,18 @@ namespace System
             for (int i = 0; i < nImage; i++)
             {
                 LocalFeature machine(params);
-                cv::Mat image = cv::imread(paths[i], CV_LOAD_IMAGE_GRAYSCALE); 
+                cv::Mat image = cv::imread(paths[i], CV_LOAD_IMAGE_GRAYSCALE);
                 Convert(machine(Preprocess != NULL ? Preprocess(image) : image), features[i]);
             }
 
             printf("Compute Visual Words...\n");
             BOV bovL1(SampleDescriptors(features, nSample), nWord);
             ArrayList<Word_f> wordL1s = bovL1.GetVisualWords();
-            ArrayList<double> sigmaL1s = bovL1.GetSigmas();
 
             printf("Compute Frequency Histograms...\n");
-            FreqHist* freqHist = new FreqHist(features, wordL1s, sigmaL1s);
+            FreqHist* freqHist = new FreqHist(features, wordL1s);
             ArrayList<Histogram> histogramL1s = freqHist->GetFrequencyHistograms();
+            ArrayList<double> sigmaL1s = freqHist->GetSigmas();
 
             printf("Compute Errors...\n");
             features = freqHist->GetReconstructErrors();
@@ -159,13 +159,15 @@ namespace System
             printf("Compute Visual Words...\n");
             BOV bovL2(SampleDescriptors(features, nSample), nWord);
             ArrayList<Word_f> wordL2s = bovL2.GetVisualWords();
-            //ArrayList<double> sigmaL2s = bovL2.GetSigmas();
 
             printf("Compute Frequency Histograms...\n");
-            ArrayList<Histogram> histogramL2s = FreqHist(features, wordL2s).GetFrequencyHistograms();
+            freqHist = new FreqHist(features, wordL2s);
+            ArrayList<Histogram> histogramL2s = freqHist->GetFrequencyHistograms();
+            ArrayList<double> sigmaL2s = freqHist->GetSigmas();
 
             features.Clear();
             features.Shrink();
+            delete freqHist;
 
             this->words.Clear();
             this->words.Add(wordL1s);
@@ -173,7 +175,7 @@ namespace System
 
             this->sigmas.Clear();
             this->sigmas.Add(sigmaL1s);
-            //this->sigmas.Add(sigmaL2s);
+            this->sigmas.Add(sigmaL2s);
 
             this->histograms = ArrayList<Histogram>(nImage);
             for (int i = 0; i < nImage; i++)
@@ -264,91 +266,6 @@ namespace System
             ArrayList<Histogram> histograms;
         };
 
-        //template<typename LocalFeature>
-        //void LocalFeatureSolver<LocalFeature>::InnerCrossValidation(
-        //    const ArrayList<TString>& paths,
-        //    const ArrayList<int>& labels,
-        //    const std::map<TString, TString>& params,
-        //    const ArrayList<ArrayList<size_t>>& evaIdxes)
-        //{
-        //    int nImage = paths.Count(), 
-        //        nSample = GetDoubleValue(params, "inputNum", 1000000),
-        //        nWord = GetDoubleValue(params, "wordNum", 500);
-
-        //    printf("ImageNum: %d, SampleNum: %d, WordNum: %d\n", nImage, nSample, nWord);
-        //    LocalFeature(params, true); // display all params of the algorithm
-
-        //    printf("Cross Validation on " + LocalFeature().GetName() + "...\n");
-        //    ArrayList<LocalFeatureVec_f> features(nImage);
-
-        //    #pragma omp parallel for
-        //    for (int i = 0; i < nImage; i++)
-        //    {
-        //        LocalFeature machine(params);
-        //        cv::Mat image = cv::imread(paths[i], CV_LOAD_IMAGE_GRAYSCALE); 
-        //        Convert(machine(Preprocess != NULL ? Preprocess(image) : image), features[i]);
-        //    }
-
-        //    double maxAccuracy = -1;
-        //    this->accuracies.Clear();
-        //    for (int i = 0; i < evaIdxes.Count(); i++)
-        //    {
-        //        printf("\nBegin Fold %d...\n", i + 1);
-        //        const ArrayList<size_t>& pickUpIndexes = evaIdxes[i];
-        //        ArrayList<LocalFeatureVec_f> trainingSet = Divide(features, pickUpIndexes).Item2();
-        //        ArrayList<int> trainingLabels = Divide(labels, pickUpIndexes).Item2();
-        //        ArrayList<int> evaluationLabels = Divide(labels, pickUpIndexes).Item1();
-
-        //        printf("Compute Visual Words...\n");
-        //        BOV bov(SampleDescriptors(trainingSet, nSample), nWord);
-        //        ArrayList<Word_f> words = bov.GetVisualWords();
-        //        ArrayList<double> sigmas;
-
-        //        printf("Compute Frequency Histograms...\n");
-        //        ArrayList<Histogram> histograms;
-
-        //        if (adaptiveSigma)
-        //        {
-        //            sigmas = bov.GetSigmas();
-        //            histograms = FreqHist(features, words, sigmas).GetFrequencyHistograms();
-        //        }
-        //        else
-        //        {
-        //            FreqHist freqHist(features, words);
-        //            histograms = freqHist.GetFrequencyHistograms();
-        //            sigmas = freqHist.GetSigmas();
-        //        }
-        //        
-        //        ArrayList<Histogram> trainingHistograms = Divide(histograms, pickUpIndexes).Item2();
-        //        ArrayList<Histogram> evaluationHistograms = Divide(histograms, pickUpIndexes).Item1();
-
-        //        this->accuracies.Add(KNN<Histogram>().
-        //            Evaluate(trainingHistograms, trainingLabels, evaluationHistograms, evaluationLabels).Item1());
-
-        //        if (this->accuracies[i] > maxAccuracy)
-        //        {
-        //            maxAccuracy = accuracies[i];
-        //            this->words = words;
-        //            this->sigmas = sigmas;
-        //            this->histograms = histograms;
-        //        }
-
-        //        printf("Fold %d Accuracy: %f\n", i + 1, this->accuracies[i]);
-        //    }
-
-        //    printf("\nAverage: %f, Standard Deviation: %f\n", Math::Mean(this->accuracies), 
-        //        Math::StandardDeviation(this->accuracies));
-
-        //    this->precisions = MAP<Histogram>().
-        //        FullCrossValidation(this->histograms, this->labels).Item1();
-
-        //    printf("Mean Average Precision:");
-        //    int nDisplay = (5 <= this->precisions.Count() ? 5 : this->precisions.Count());
-        //    for (int i = 0; i < nDisplay; i++)
-        //        printf(" %.4f", this->precisions[i]);
-        //    printf("\n");
-        //}
-
         template<typename LocalFeature>
         void LocalFeatureSolver<LocalFeature>::InnerCrossValidation(
             const ArrayList<TString>& paths,
@@ -414,14 +331,14 @@ namespace System
             printf("\nAverage: %f, Standard Deviation: %f\n", Math::Mean(this->accuracies), 
                 Math::StandardDeviation(this->accuracies));
 
-            this->precisions = MAP<Histogram>().
-                FullCrossValidation(this->histograms, this->labels).Item1();
+            //this->precisions = MAP<Histogram>().
+            //    FullCrossValidation(this->histograms, this->labels).Item1();
 
-            printf("Mean Average Precision:");
-            int nDisplay = (5 <= this->precisions.Count() ? 5 : this->precisions.Count());
-            for (int i = 0; i < nDisplay; i++)
-                printf(" %.4f", this->precisions[i]);
-            printf("\n");
+            //printf("Mean Average Precision:");
+            //int nDisplay = (5 <= this->precisions.Count() ? 5 : this->precisions.Count());
+            //for (int i = 0; i < nDisplay; i++)
+            //    printf(" %.4f", this->precisions[i]);
+            //printf("\n");
         }
 
 

@@ -71,16 +71,16 @@ void LocalFeatureCrossValidation(const TString& datasetPath, cv::Mat (*preproces
 
     fclose(file);
 
-    // Save Mean Average Precision
+    //// Save Mean Average Precision
 
-    ArrayList<double> precisions = solver.GetPrecisions();
-    file = fopen(savePath + "_map.out", "w");
+    //ArrayList<double> precisions = solver.GetPrecisions();
+    //file = fopen(savePath + "_map.out", "w");
 
-    for (int i = 0; i < precisions.Count(); i++)
-        fprintf(file, "%f ", precisions[i]);
-    fprintf(file, "\n");
+    //for (int i = 0; i < precisions.Count(); i++)
+    //    fprintf(file, "%f ", precisions[i]);
+    //fprintf(file, "\n");
 
-    fclose(file);
+    //fclose(file);
 
 #if defined(SAVE_FEATURE) || defined(SAVE_DISTANCE_MATRIX)
     ArrayList<Word_f> words = solver.GetWords();

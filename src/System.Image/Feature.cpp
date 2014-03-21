@@ -779,13 +779,9 @@ namespace System
 
         LocalFeatureVec RSC::GetFeature(const Mat& sketchImage)
         {
-            double tmp[] = { 0, 0.125, 0.25, 0.5, 1, 2 };
-            ArrayList<double> logDistances(tmp, tmp + sizeof(tmp) / sizeof(double));
-            int angleNum = 12, sampleNum = 28;
-
             Mat orientImage = GetGradient(sketchImage).Item2();
             ArrayList<Point> points = GetEdgels(sketchImage); 
-            ArrayList<Point> pivots = SampleFromPoints(points, (size_t)(points.Count() * pivotRatio + 0.5));
+            ArrayList<Point> pivots = SampleFromPoints(points, 28 * 28);
 
             LocalFeatureVec feature;
             ArrayList<Point> centers = SampleOnGrid(sketchImage.rows, sketchImage.cols, sampleNum);
@@ -806,14 +802,8 @@ namespace System
             ArrayList<double> distances = EulerDistance(center, pivots);
             ArrayList<double> angles = Angle(center, pivots);
 
-            double mean;
-            if (pivots.Contains(center))
-                mean = Math::Sum(distances) / (pivotNum - 1); // Except pivot
-            else
-                mean = Math::Sum(distances) / pivotNum;
-
             for (int i = 0; i < pivotNum; i++)
-                distances[i] /= mean;
+                distances[i] /= radius;
 
             int distanceNum = logDistances.Count() - 1;
             Mat bins = Mat::zeros(distanceNum, angleNum, CV_64F);
@@ -999,6 +989,7 @@ namespace System
             NormTwoNormalize(descriptor.begin(), descriptor.end());
             return descriptor;
         }
+
 
         //////////////////////////////////////////////////////////////////////////
         // GHOG
@@ -1221,6 +1212,43 @@ namespace System
 
 
         //////////////////////////////////////////////////////////////////////////
+        // DGIST
+        //////////////////////////////////////////////////////////////////////////
+
+        GlobalFeatureVec DGIST::GetFeature(const Mat& sketchImage)
+        {
+            int kernelSize = blockSize * 2 + 1;
+            Mat tentKernel(kernelSize, kernelSize, CV_64F);
+            for (int i = 0; i < kernelSize; i++)
+            {
+                for (int j = 0; j < kernelSize; j++)
+                {
+                    double ratio = 1 - sqrt((i - blockSize) * (i - blockSize) +
+                        (j - blockSize) * (j - blockSize)) / blockSize;
+                    if (ratio < 0)
+                        ratio = 0;
+
+                    tentKernel.at<double>(i, j) = ratio;
+                }
+            }
+
+            ArrayList<Mat> orientChannels = GetGaborChannels(sketchImage, orientNum, 5.0);
+            ArrayList<Mat> filteredOrientChannels(orientNum);
+            for (int i = 0; i < orientNum; i++)
+                filter2D(orientChannels[i], filteredOrientChannels[i], -1, tentKernel);
+
+            GlobalFeatureVec feature;
+            for (int i = blockSize / 2 - 1; i < sketchImage.rows; i += blockSize / 2)
+            for (int j = blockSize / 2 - 1; j < sketchImage.cols; j += blockSize / 2)
+            for (int k = 0; k < orientNum; k++)
+                feature.Add(filteredOrientChannels[k].at<double>(i, j));
+
+            NormTwoNormalize(feature.begin(), feature.end());
+            return feature;
+        }
+
+
+        //////////////////////////////////////////////////////////////////////////
         // Test
         //////////////////////////////////////////////////////////////////////////
         
@@ -1241,28 +1269,10 @@ namespace System
                 }
             }
 
-            ArrayList<Mat> orientChannels = GetGaussDerivChannels(sketchImage, 4);
-
-            //Group<Mat, Mat> kernel = GetGaussDerivKernels(1.0, 1e-2);
-            //Mat dx, dy;
-            //filter2D(sketchImage, dx, CV_64F, kernel.Item1());
-            //filter2D(sketchImage, dy, CV_64F, kernel.Item2());
-            ////orientChannels.Add(dx);
-            ////orientChannels.Add(dy);
-            //Mat dxx, dyy, dxy;
-            //filter2D(dx, dxx, CV_64F, kernel.Item1());
-            //filter2D(dx, dxy, CV_64F, kernel.Item2());
-            //filter2D(dy, dyy, CV_64F, kernel.Item2());
-            //orientChannels.Add(dxx);
-            //orientChannels.Add(dxy);
-            //orientChannels.Add(dyy);
-
-
-            for (int i = 0; i < orientChannels.Count(); i++)
-                orientChannels[i] = abs(orientChannels[i]);
-
-            ArrayList<Mat> filteredOrientChannels(orientChannels.Count());
-            for (int i = 0; i < orientChannels.Count(); i++)
+            ArrayList<Mat> orientChannels(1);
+            sketchImage.convertTo(orientChannels[0], CV_64F);
+            ArrayList<Mat> filteredOrientChannels(1);
+            for (int i = 0; i < filteredOrientChannels.Count(); i++)
                 filter2D(orientChannels[i], filteredOrientChannels[i], -1, tentKernel);
 
             LocalFeatureVec feature;
