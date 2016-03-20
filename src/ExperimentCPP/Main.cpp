@@ -315,70 +315,27 @@ void HDF5Save(const char* fileName, const Mat& mat, const char* variable)
     dataset.write(mat.ptr<float>(), H5::PredType::NATIVE_FLOAT);
 }
 
-int main(int argc, char* argv[])
+void HDF5Save(const char* fileName, const Mat& x, const Mat& y)
 {
-    //LocalFeatureCrossValidation<RHOG>("subset", sketchPreprocess);
-    //return 0;
+    H5::H5File file(fileName, H5F_ACC_TRUNC);
 
-    //LocalFeatureCrossValidation<HOOSC>("sketches", sketchPreprocess);
-    //LocalFeatureCrossValidation<HOOSC>("oracles", oraclePreprocess);
-    //return 0;
+    H5::DSetCreatPropList pList = H5::DSetCreatPropList::DEFAULT;
+    //pList.setDeflate(2); // enable zlib
 
-    auto dataset = LoadDataset("sketches");
-    ArrayList<TString> paths = dataset.Item1();
-    ArrayList<int> labels = dataset.Item2();
-    auto evaIdxes = SplitDatasetRandomly(labels, 3);
+    //hsize_t chunk_dims[2] = { x.rows, 1 };
+    //pList.setChunk(2, chunk_dims); // enable chunk
 
-    //int nImage = paths.Count();
-    //int nDescPerImage = 28 * 28;
-    //int nDesc = nImage * nDescPerImage;
-    //int dim = 4 * 4 * 9;
-    //
-    //Mat mat(dim, nDesc, CV_64F);
-
-    //#pragma omp parallel for
-    //for (int i = 0; i < nImage; i++)
-    //{
-    //    Mat image = imread(paths[i], CV_LOAD_IMAGE_GRAYSCALE);
-    //    image = sketchPreprocess(image);
-    //    auto feature = RGabor()(image);
-
-    //    for (int j = 0; j < dim; j++)
-    //    for (int k = 0; k < feature.Count(); k++)
-    //        mat.at<double>(j, i * nDescPerImage + k) = feature[k][j];
-    //}
-
-    int nImage = paths.Count();
-    int dim = 4 * 4 * 9 * 28 * 28;
-
-    Mat mat(nImage, dim, CV_32F);
-    Mat y(nImage, 1, CV_32S);
-
-    #pragma omp parallel for
-    for (int i = 0; i < nImage; i++)
-    {
-        Mat image = imread(paths[i], CV_LOAD_IMAGE_GRAYSCALE);
-        image = sketchPreprocess(image);
-        auto feature = RHOG()(image);
-
-        for (int j = 0; j < feature.Count(); j++)
-        for (int k = 0; k < feature[j].Count(); k++)
-            mat.at<float>(i, j * feature[j].Count() + k) = feature[j][k];
-
-        y.at<int>(i, 0) = labels[i] - 1;
-    }
-
-    H5::H5File file("raw.mat", H5F_ACC_TRUNC);
-
-    hsize_t dims[2] = { mat.rows, mat.cols };
+    // save x
+    hsize_t dims[2] = { x.rows, x.cols };
     H5::DataSpace dataspace(2, dims);
 
-    H5::FloatType datatype(H5::PredType::NATIVE_FLOAT);
-    datatype.setOrder(H5T_ORDER_LE);  // little endian
+    H5::FloatType datatype1(H5::PredType::NATIVE_FLOAT);
+    datatype1.setOrder(H5T_ORDER_LE);  // little endian
 
-    H5::DataSet d = file.createDataSet("x", datatype, dataspace);
-    d.write(mat.ptr<float>(), H5::PredType::NATIVE_FLOAT);
+    H5::DataSet dataset = file.createDataSet("x", datatype1, dataspace, pList);
+    dataset.write(x.ptr<float>(), H5::PredType::NATIVE_FLOAT);
 
+    // save y
     dims[0] = y.rows;
     dims[1] = y.cols;
     dataspace = H5::DataSpace(2, dims);
@@ -386,12 +343,91 @@ int main(int argc, char* argv[])
     H5::IntType datatype2(H5::PredType::NATIVE_INT32);
     datatype2.setOrder(H5T_ORDER_LE);
 
-    d = file.createDataSet("y", datatype2, dataspace);
-    d.write(y.ptr<int>(), H5::PredType::NATIVE_INT32);
-    //MatlabSave<double>("raw.mat", mat, "raw");
+    dataset = file.createDataSet("y", datatype2, dataspace, pList);
+    dataset.write(y.ptr<int>(), H5::PredType::NATIVE_INT32);
+}
+
+int main(int argc, char* argv[])
+{
+    //LocalFeatureCrossValidation<RGabor>("sketches", sketchPreprocess);
+    //LocalFeatureCrossValidation<RGabor>("oracles", oraclePreprocess);
+    //return 0;
+
+    auto dataset = LoadDataset("sketches");
+    ArrayList<TString> paths = dataset.Item1();
+    ArrayList<int> labels = dataset.Item2();
+    auto evaIdxes = SplitDatasetRandomly(labels, 3);
+
+    int nImage = paths.Count();
+    int nDescPerImage = 28 * 28;
+    int nDesc = nImage * nDescPerImage;
+    int dim = 4 * 4 * 9;
+
+    Mat x(nDesc, dim, CV_32F);
+    Mat y(nDesc, 1, CV_32S);
+
+    #pragma omp parallel for
+    for (int i = 0; i < nImage; i++)
+    {
+        Mat image = imread(paths[i], CV_LOAD_IMAGE_GRAYSCALE);
+        image = sketchPreprocess(image);
+        auto feature = RGabor()(image);
+
+        if (feature.Count() != nDescPerImage || feature[0].Count() != dim)
+        {
+            cout << "Wrong parameters" << endl;
+        }
+
+        for (int j = 0; j < nDescPerImage; j++)
+        for (int k = 0; k < dim; k++)
+        {
+            x.at<float>(i * nDescPerImage + j, k) = feature[j][k];
+            y.at<int>(i * nDescPerImage + j, 0) = labels[i] - 1;
+        }            
+    }
+
+    /*int nDescPerImage = 28 * 28;
+    int dim = 4 * 4 * 9 * 4 * 4;
+
+    Mat x(nImage, dim, CV_32F);
+    Mat y(nImage, 1, CV_32S);
+
+    #pragma omp parallel for
+    for (int i = 0; i < nImage; i++)
+    {
+        Mat image = imread(paths[i], CV_LOAD_IMAGE_GRAYSCALE);
+        image = sketchPreprocess(image);
+        auto feature = RGabor()(image);
+
+        if (feature.Count() != nDescPerImage)
+        {
+            cout << "Wrong parameters" << endl;
+        }
+
+        ArrayList<double> pooled(dim);
+        for (int j = 0; j < nDescPerImage; j++)
+        {
+            int row = j / 28 / 7;
+            int col = j % 28 / 7;
+            int begin = (row * 4 + col) * 4 * 4 * 9;
+
+            for (int k = 0; k < 4 * 4 * 9; k++)
+            {
+                pooled[begin + k] += feature[j][k] / (7 * 7);
+            }
+        }
+
+        for (int k = 0; k < dim; k++)
+        {
+            x.at<float>(i, k) = pooled[k];
+            y.at<int>(i, 0) = labels[i] - 1;
+        }
+    }*/
+
+    HDF5Save("rgabor-sketch.mat", x, y);
     return 0;
 
-    Mat hist = MatlabLoad<double>("hist.mat", "hist");
+    /*Mat hist = MatlabLoad<double>("hist.mat", "hist");
     ArrayList<Histogram> histograms(hist.cols);
     for (int i = 0; i < hist.cols; i++)
     {
@@ -402,6 +438,7 @@ int main(int argc, char* argv[])
         histograms[i] = histogram;
     }
 
+    ArrayList<double> acc;
     for (int i = 0; i < evaIdxes.Count(); i++)
     {
         printf("\nBegin Fold %d...\n", i + 1);
@@ -412,8 +449,12 @@ int main(int argc, char* argv[])
         ArrayList<Histogram> evaluationHistograms = Divide(histograms, pickUpIndexes).Item1();
 
         auto accuracy = KNN<Histogram>().
-            Evaluate(trainingHistograms, trainingLabels, evaluationHistograms, evaluationLabels).Item1();
+            Evaluate(trainingHistograms, trainingLabels, evaluationHistograms, evaluationLabels,
+            Math::NormTwoDistance, 2.0).Item1();
+        cout << accuracy << endl;
 
+        acc.Add(accuracy);
         printf("Fold %d Accuracy: %f\n", i + 1, accuracy);
     }
+    printf("Mean Accuracy: %f\n", Math::Mean(acc));*/
 }

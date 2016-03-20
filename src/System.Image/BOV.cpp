@@ -170,22 +170,22 @@ namespace System
             size_t descriptorNum = feature.Count();
             Histogram freqHistogram(wordNum);
 
-            for (size_t i = 0; i < descriptorNum; i++)
-            {
-                ArrayList<double> distances = GetDistancesToVisualWords(feature[i]);
-                for (size_t j = 0; j < wordNum; j++)
-                    freqHistogram[j] = max(freqHistogram[j], distances[j]);
-            }
-
             //for (size_t i = 0; i < descriptorNum; i++)
             //{
             //    ArrayList<double> distances = GetDistancesToVisualWords(feature[i]);
             //    for (size_t j = 0; j < wordNum; j++)
-            //        freqHistogram[j] += distances[j];
+            //        freqHistogram[j] = max(freqHistogram[j], distances[j]);
             //}
 
-            //for (size_t i = 0; i < wordNum; i++)
-            //    freqHistogram[i] /= descriptorNum;
+            for (size_t i = 0; i < descriptorNum; i++)
+            {
+                ArrayList<double> distances = GetDistancesToVisualWords(feature[i]);
+                for (size_t j = 0; j < wordNum; j++)
+                    freqHistogram[j] += distances[j];
+            }
+
+            for (size_t i = 0; i < wordNum; i++)
+                freqHistogram[i] /= descriptorNum;
 
             return freqHistogram;
         }

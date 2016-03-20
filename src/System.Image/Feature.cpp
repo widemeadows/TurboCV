@@ -986,7 +986,7 @@ namespace System
                     for (int k = 0; k < orientNum; k++)
                         descriptor.Add(hist.at<double>(i, j, k));
 
-            NormTwoNormalize(descriptor.begin(), descriptor.end());
+            //NormTwoNormalize(descriptor.begin(), descriptor.end());
             return descriptor;
         }
 
